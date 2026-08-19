@@ -1,42 +1,58 @@
-# CSV Localization Pipeline
+# CSV Localization
 
-`assets/translations.csv` is the single editable translation source, but it is **not a Flutter runtime asset**.
+`assets/translations.csv` is the single source of truth for translators and developers, but it is **not** loaded by the app at runtime.
+
+The build/development pipeline validates the CSV and generates compact JSON assets under `assets/translations/`. `easy_localization` loads those JSON files directly in production.
+
+## Source format
 
 ```csv
 key,en,th
 app_title,Med Reminder,เตือนกินยา
 ```
 
-The first column is the translation key. Remaining columns are locale language codes. English (`en`) is required as the fallback source.
+The first column is always `key`. Remaining columns are locale language codes. English (`en`) is required as the fallback source.
 
-## Generate runtime assets
+## Validate
+
+Run the standalone validator when editing translations:
+
+```bash
+dart run tool/validate_translations.dart
+# or
+make l10n-validate
+```
+
+The validator fails on:
+
+- duplicate keys
+- missing or empty English fallback values
+- rows where all translations are empty
+- placeholder mismatches, such as `{count}` existing in English but missing from a non-empty Thai translation
+
+## Generate runtime JSON
 
 ```bash
 make l10n-generate
 ```
 
-This generates:
+This writes deterministic compact JSON files such as:
 
 ```text
 assets/translations/en.json
 assets/translations/th.json
-lib/l10n/generated_locales.dart
 ```
 
-Runtime `easy_localization` loads the generated JSON files from `assets/translations/`; the app never parses or loads the CSV at startup. `pubspec.yaml` bundles only the generated JSON directory, not `assets/translations.csv`.
+It also regenerates `lib/l10n/generated_locales.dart` from the CSV header. Adding a `ja` column therefore adds both `assets/translations/ja.json` and `Locale('ja')` after generation.
 
-Empty values in non-English locale columns are resolved to the English value during generation, so fallback normalization happens before the app is built.
+Empty non-English cells are resolved to the English fallback during generation, so runtime does not need CSV parsing or per-cell fallback logic.
 
-## Add a language
+## CI stale-output gate
 
-Add a locale column to the CSV, for example:
-
-```csv
-key,en,th,ja
+```bash
+make l10n-check
 ```
 
-Then run `make l10n-generate`. The generator creates `ja.json` and updates `generated_locales.dart` automatically.
+This runs validation and then verifies that every generated JSON file and the generated locale list exactly match the CSV source. CI fails when a developer changes the CSV but forgets to regenerate outputs, or when a removed locale leaves a stale JSON file behind.
 
-## Validation
-
-`make l10n-check` validates the CSV and verifies that committed JSON/locales are byte-for-byte up to date. CI fails on duplicate keys, missing English fallback, empty translation rows, placeholder mismatches, stale generated files, or unexpected generated locale JSON files.
+Only `assets/translations/` is declared as a Flutter asset. `assets/translations.csv` remains a repository source file and is not bundled for runtime loading.
