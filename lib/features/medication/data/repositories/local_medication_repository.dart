@@ -18,6 +18,12 @@ class LocalMedicationRepository implements MedicationRepository {
       _dataSource.replaceMedicationRecords(
         medications.map((item) => MedicationRecord.fromEntity(item).value).toList(growable: false),
       );
+
+  @override
+  Future<void> delete(String id) async {
+    final remaining = readAll().where((item) => item.id != id).toList(growable: false);
+    await replaceAll(remaining);
+  }
 }
 
 class LocalDoseLogRepository implements DoseLogRepository {
