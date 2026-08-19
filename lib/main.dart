@@ -53,7 +53,9 @@ Future<void> main() async {
         overrides: [
           medicationRepositoryProvider.overrideWithValue(medicationRepository),
           doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
-          medicationReminderSchedulerProvider.overrideWithValue(reminderScheduler),
+          medicationReminderSchedulerProvider.overrideWithValue(
+            reminderScheduler,
+          ),
           medicationPhotoStoreProvider.overrideWithValue(photoStore),
         ],
         child: const MedReminderApp(),
