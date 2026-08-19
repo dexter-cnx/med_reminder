@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 import 'package:med_reminder_offline/features/medication/domain/repositories/medication_repository.dart';
+import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
 import 'package:med_reminder_offline/features/medication/presentation/viewmodels/medication_view_model.dart';
 
 class _MemoryMedicationRepository implements MedicationRepository {
@@ -18,8 +19,35 @@ class _MemoryMedicationRepository implements MedicationRepository {
   }
 }
 
+class _FakeReminderScheduler implements MedicationReminderScheduler {
+  @override
+  Future<void> cancelIds(Iterable<int> ids) async {}
+
+  @override
+  Future<void> cancelSnooze(String medId, DateTime scheduledDose) async {}
+
+  @override
+  Future<List<int>> schedule(Medication medication) async => const <int>[];
+
+  @override
+  Future<void> scheduleSnooze({
+    required String medId,
+    required String medName,
+    required int dosage,
+    required DateTime scheduledDose,
+  }) async {}
+
+  @override
+  Future<void> showLowStock(String name, int remaining) async {}
+}
+
+class _FakePhotoStore implements MedicationPhotoStore {
+  @override
+  Future<void> delete(String? path) async {}
+}
+
 void main() {
-  test('Riverpod can inject a non-Hive medication repository', () {
+  test('Riverpod can inject non-Hive infrastructure into the ViewModel', () {
     final expected = Medication(
       id: 'med-1',
       name: 'Vitamin C',
@@ -28,8 +56,10 @@ void main() {
     );
     final repository = _MemoryMedicationRepository(<Medication>[expected]);
     final container = ProviderContainer(
-      overrides: <Override>[
+      overrides: [
         medicationRepositoryProvider.overrideWithValue(repository),
+        medicationReminderSchedulerProvider.overrideWithValue(_FakeReminderScheduler()),
+        medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
       ],
     );
     addTearDown(container.dispose);
