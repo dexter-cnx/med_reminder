@@ -40,7 +40,8 @@ final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
   final doses = <ScheduledDose>[];
 
   for (final med in meds) {
-    if (!med.isActiveOn(now)) continue;
+    if (!med.isActiveOn(now, logs: logs)) continue;
+    final remaining = med.remaining(logs);
     for (final time in med.times) {
       final parts = time.split(':');
       if (parts.length != 2) continue;
@@ -55,7 +56,14 @@ final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
           break;
         }
       }
-      doses.add(ScheduledDose(medication: med, scheduledAt: scheduled, log: existing));
+      doses.add(
+        ScheduledDose(
+          medication: med,
+          scheduledAt: scheduled,
+          log: existing,
+          remaining: remaining,
+        ),
+      );
     }
   }
 
@@ -89,36 +97,45 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
 
   Future<void> add(Medication medication) async {
     final ids = await _reminderScheduler.schedule(medication);
-    state = <Medication>[
-      ...state,
-      medication.copyWith(notificationIds: ids),
-    ];
+    state = <Medication>[...state, medication.copyWith(notificationIds: ids)];
     await _persist();
   }
 
-  Future<void> updateStock(String id, int requestedAmount) async {
+  Future<void> reconcileFromLogs(String id, Iterable<DoseLog> logs) async {
     final index = state.indexWhere((med) => med.id == id);
     if (index < 0) return;
 
     final old = state[index];
-    final newAmount = requestedAmount < 0 ? 0 : requestedAmount;
-    var updated = old.copyWith(totalAmount: newAmount);
+    final remaining = old.remaining(logs);
+    var updated = old;
 
-    if (old.mode == MedicationMode.untilEmpty && newAmount == 0) {
+    if (old.mode == MedicationMode.untilEmpty && remaining == 0 && old.notificationIds.isNotEmpty) {
       await _reminderScheduler.cancelIds(old.notificationIds);
-      updated = updated.copyWith(notificationIds: const <int>[]);
+      updated = old.copyWith(notificationIds: const <int>[]);
     }
 
     final threshold = old.lowThreshold;
-    if (threshold != null &&
-        old.totalAmount != null &&
-        old.totalAmount! > threshold &&
-        newAmount <= threshold) {
-      await _reminderScheduler.showLowStock(old.name, newAmount);
+    if (threshold != null && remaining != null) {
+      final before = remaining + old.dosagePerTime;
+      if (before > threshold && remaining <= threshold) {
+        await _reminderScheduler.showLowStock(old.name, remaining);
+      }
     }
 
-    final next = <Medication>[...state];
-    next[index] = updated;
+    if (!identical(updated, old)) {
+      final next = <Medication>[...state];
+      next[index] = updated;
+      state = next;
+      await _persist();
+    }
+  }
+
+  Future<void> rescheduleAll() async {
+    final next = <Medication>[];
+    for (final medication in state) {
+      final ids = await _reminderScheduler.schedule(medication);
+      next.add(medication.copyWith(notificationIds: ids));
+    }
     state = next;
     await _persist();
   }
@@ -126,7 +143,6 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
   Future<void> remove(String id) async {
     final med = state.where((item) => item.id == id).firstOrNull;
     if (med == null) return;
-
     await _reminderScheduler.cancelIds(med.notificationIds);
     await _photoStore.delete(med.imagePath);
     state = state.where((item) => item.id != id).toList(growable: false);
