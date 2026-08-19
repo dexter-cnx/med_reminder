@@ -6,10 +6,12 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/medication.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   static bool _timezoneReady = false;
   static String? _timezoneName;
-  static AndroidScheduleMode _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
+  static AndroidScheduleMode _androidScheduleMode =
+      AndroidScheduleMode.inexactAllowWhileIdle;
 
   static const NotificationDetails _doseDetails = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -29,12 +31,17 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await _plugin.initialize(const InitializationSettings(android: android, iOS: ios));
+    await _plugin.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+    );
 
-    final androidPlugin =
-        _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidPlugin?.requestNotificationsPermission();
-    final exactAlarmGranted = await androidPlugin?.requestExactAlarmsPermission();
+    final exactAlarmGranted = await androidPlugin
+        ?.requestExactAlarmsPermission();
     _androidScheduleMode = exactAlarmGranted == true
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -80,7 +87,8 @@ class NotificationService {
     await cancelIds(medication.notificationIds);
     await _initTimezone();
 
-    if (medication.mode == MedicationMode.untilEmpty && medication.initialAmount == 0) {
+    if (medication.mode == MedicationMode.untilEmpty &&
+        medication.initialAmount == 0) {
       return const <int>[];
     }
 
@@ -97,9 +105,18 @@ class NotificationService {
         for (var dayOffset = 0; dayOffset < count; dayOffset++) {
           final now = tz.TZDateTime.now(tz.local);
           final date = now.add(Duration(days: dayOffset));
-          final scheduled = tz.TZDateTime(tz.local, date.year, date.month, date.day, hour, minute);
+          final scheduled = tz.TZDateTime(
+            tz.local,
+            date.year,
+            date.month,
+            date.day,
+            hour,
+            minute,
+          );
           if (!scheduled.isAfter(now)) continue;
-          final id = _stableNotificationId('${medication.id}:$timeIndex:$dayOffset');
+          final id = _stableNotificationId(
+            '${medication.id}:$timeIndex:$dayOffset',
+          );
           ids.add(id);
           await _plugin.zonedSchedule(
             id,
@@ -108,13 +125,22 @@ class NotificationService {
             scheduled,
             _doseDetails,
             androidScheduleMode: _androidScheduleMode,
-            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
           );
         }
       } else {
         final now = tz.TZDateTime.now(tz.local);
-        var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-        if (!scheduled.isAfter(now)) scheduled = scheduled.add(const Duration(days: 1));
+        var scheduled = tz.TZDateTime(
+          tz.local,
+          now.year,
+          now.month,
+          now.day,
+          hour,
+          minute,
+        );
+        if (!scheduled.isAfter(now))
+          scheduled = scheduled.add(const Duration(days: 1));
         final id = _stableNotificationId('${medication.id}:$timeIndex:daily');
         ids.add(id);
         await _plugin.zonedSchedule(
@@ -124,7 +150,8 @@ class NotificationService {
           scheduled,
           _doseDetails,
           androidScheduleMode: _androidScheduleMode,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time,
         );
       }
@@ -148,7 +175,8 @@ class NotificationService {
       tz.TZDateTime.now(tz.local).add(const Duration(minutes: 10)),
       _doseDetails,
       androidScheduleMode: _androidScheduleMode,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -165,18 +193,18 @@ class NotificationService {
   }
 
   static Future<void> showLowStock(String name, int remaining) => _plugin.show(
-        _stableNotificationId('low-stock:$name'),
+    _stableNotificationId('low-stock:$name'),
+    'Low medication stock',
+    '$name: $remaining remaining',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'low_stock',
         'Low medication stock',
-        '$name: $remaining remaining',
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'low_stock',
-            'Low medication stock',
-            importance: Importance.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-      );
+        importance: Importance.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+  );
 
   static int _stableNotificationId(String input) {
     var hash = 0x811c9dc5;
