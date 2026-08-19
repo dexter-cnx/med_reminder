@@ -1,12 +1,49 @@
 # Code Walkthrough
 
-## Data model
+## Architecture
+
+The medication feature uses pragmatic Clean Architecture with MVVM and Riverpod as the dependency-injection/composition mechanism.
+
+```text
+features/medication/
+├── domain/
+│   ├── entities/
+│   ├── repositories/
+│   └── services/
+├── data/
+│   ├── datasources/
+│   ├── models/
+│   ├── repositories/
+│   └── services/
+└── presentation/
+    └── viewmodels/
+```
+
+Dependency direction is inward: domain has no Flutter, Riverpod, or Hive imports. Data implements domain contracts. Presentation depends on domain contracts and Riverpod. `main.dart` is the composition root and injects concrete Hive/local implementations through `ProviderScope.overrides`.
+
+Legacy paths under `lib/models`, `lib/providers`, and `lib/repositories` are compatibility exports while callers transition to the feature-first paths; new implementation logic belongs under `features/medication`.
+
+## Domain model
 
 `Medication` owns schedule configuration, stock, duration mode, persistent photo path, and the exact notification IDs currently scheduled for it. `DoseLog` is keyed semantically by `medId + scheduledAt`; a morning dose and evening dose therefore remain independent.
 
+Domain entities contain no Hive serialization. `MedicationRecord` and `DoseLogRecord` in the data layer own persistence mapping and backward migration from the earlier log schema.
+
+## Storage boundary
+
+`MedicationRepository` and `DoseLogRepository` are domain contracts. `MedicationLocalDataSource` is the data-source boundary. `HiveMedicationLocalDataSource` is currently the concrete storage implementation, while `LocalMedicationRepository` and `LocalDoseLogRepository` map stored records to domain entities.
+
+Because Riverpod injects the repository contracts, tests or future implementations can replace Hive with in-memory, SQLite, or another local store without changing the ViewModel or UI.
+
+## MVVM
+
+`MedicationViewModel` and `DoseLogViewModel` expose medication and dose-log state through Riverpod `StateNotifierProvider`s. They depend on repository and service ports rather than Hive or static notification/photo implementations.
+
+`MedicationReminderScheduler` and `MedicationPhotoStore` are domain-facing ports. Local adapters bridge them to the current notification and file-storage services.
+
 ## Scheduling
 
-`NotificationService.scheduleForMed()` cancels the medication's previously persisted IDs first. `forever` and `untilEmpty` use daily recurring notifications. `untilEmpty` differs in lifecycle: when stock reaches zero the notifier cancels the saved notification IDs. `days` schedules finite one-shot notifications for each configured day.
+The local notification adapter uses `NotificationService.scheduleForMed()`. `forever` and `untilEmpty` use daily recurring notifications. `untilEmpty` differs in lifecycle: when stock reaches zero the ViewModel cancels the saved notification IDs through `MedicationReminderScheduler`. `days` schedules finite one-shot notifications for each configured day.
 
 IDs use a stable FNV-1a-style hash instead of Dart `String.hashCode`, so persisted cancellation IDs do not depend on a process-local hash implementation.
 
@@ -20,7 +57,7 @@ Snooze is an upsert on the original scheduled dose and creates a one-shot remind
 
 ## Photos
 
-`PhotoService.persistPhoto()` copies the image-picker source into `<ApplicationDocuments>/med_photos/<uuid>.<ext>`. Removing medication also removes its owned image file.
+`PhotoService.persistPhoto()` copies the image-picker source into `<ApplicationDocuments>/med_photos/<uuid>.<ext>`. Deletion is exposed to the ViewModel through the `MedicationPhotoStore` port.
 
 ## Localization
 
