@@ -24,10 +24,9 @@ void main() {
     await kept.writeAsString('keep');
     await orphan.writeAsString('delete');
 
-    final deleted = await PhotoService.pruneOrphanedInDirectory(
-      root,
-      <String>[kept.path],
-    );
+    final deleted = await PhotoService.pruneOrphanedInDirectory(root, <String>[
+      kept.path,
+    ]);
 
     expect(deleted, 1);
     expect(await kept.exists(), isTrue);
