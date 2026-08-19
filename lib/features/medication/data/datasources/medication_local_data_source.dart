@@ -11,8 +11,8 @@ class HiveMedicationLocalDataSource implements MedicationLocalDataSource {
   HiveMedicationLocalDataSource({
     required Box<dynamic> medicationBox,
     required Box<dynamic> doseLogBox,
-  })  : _medicationBox = medicationBox,
-        _doseLogBox = doseLogBox;
+  }) : _medicationBox = medicationBox,
+       _doseLogBox = doseLogBox;
 
   final Box<dynamic> _medicationBox;
   final Box<dynamic> _doseLogBox;
@@ -28,7 +28,9 @@ class HiveMedicationLocalDataSource implements MedicationLocalDataSource {
       .toList(growable: false);
 
   @override
-  Future<void> replaceMedicationRecords(List<Map<String, dynamic>> records) async {
+  Future<void> replaceMedicationRecords(
+    List<Map<String, dynamic>> records,
+  ) async {
     await _medicationBox.clear();
     for (final record in records) {
       await _medicationBox.add(record);
