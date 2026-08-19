@@ -29,7 +29,7 @@ Future<void> main() async {
       fallbackLocale: const Locale('en'),
       assetLoader: const SingleCsvAssetLoader(),
       child: ProviderScope(
-        overrides: <Override>[
+        overrides: [
           medicationRepositoryProvider.overrideWithValue(
             HiveMedicationRepository(medsBox),
           ),
