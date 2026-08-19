@@ -8,7 +8,7 @@ class Medication {
     required this.times,
     required this.createdAt,
     this.description = '',
-    this.totalAmount,
+    this.initialAmount,
     this.lowThreshold,
     this.imagePath,
     this.dosagePerTime = 1,
@@ -22,7 +22,7 @@ class Medication {
   final String description;
   final List<String> times;
   final DateTime createdAt;
-  final int? totalAmount;
+  final int? initialAmount;
   final int? lowThreshold;
   final String? imagePath;
   final int dosagePerTime;
@@ -36,23 +36,41 @@ class Medication {
     return start.add(Duration(days: daysCount!));
   }
 
-  bool get isEmpty => totalAmount != null && totalAmount! <= 0;
+  DateTime? get expiryDate {
+    final exclusive = expiryExclusive;
+    return exclusive?.subtract(const Duration(days: 1));
+  }
 
-  bool isActiveOn(DateTime date) {
-    if (mode == MedicationMode.untilEmpty && isEmpty) return false;
+  bool isExpired(DateTime date) {
     final expiry = expiryExclusive;
-    return expiry == null || date.isBefore(expiry);
+    return expiry != null && !date.isBefore(expiry);
+  }
+
+  int? remaining(Iterable<DoseLog> logs) {
+    final initial = initialAmount;
+    if (initial == null) return null;
+    final takenCount = logs.where((log) => log.medId == id && log.status == DoseStatus.taken).length;
+    final value = initial - (takenCount * dosagePerTime);
+    return value < 0 ? 0 : value;
+  }
+
+  bool isEmpty(Iterable<DoseLog> logs) => remaining(logs) == 0;
+
+  bool isActiveOn(DateTime date, {Iterable<DoseLog> logs = const <DoseLog>[]}) {
+    if (mode == MedicationMode.untilEmpty && isEmpty(logs)) return false;
+    return !isExpired(date);
   }
 
   Medication copyWith({
-    int? totalAmount,
+    int? initialAmount,
     List<int>? notificationIds,
     String? imagePath,
-  }) => Medication(
+  }) =>
+      Medication(
         id: id,
         name: name,
         description: description,
-        totalAmount: totalAmount ?? this.totalAmount,
+        initialAmount: initialAmount ?? this.initialAmount,
         lowThreshold: lowThreshold,
         imagePath: imagePath ?? this.imagePath,
         times: times,
@@ -85,11 +103,13 @@ class ScheduledDose {
     required this.medication,
     required this.scheduledAt,
     this.log,
+    this.remaining,
   });
 
   final Medication medication;
   final DateTime scheduledAt;
   final DoseLog? log;
+  final int? remaining;
 
   bool get isTaken => log?.status == DoseStatus.taken;
   bool get isSkipped => log?.status == DoseStatus.skipped;
