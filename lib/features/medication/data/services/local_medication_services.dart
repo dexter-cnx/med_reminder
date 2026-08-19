@@ -24,12 +24,13 @@ class LocalMedicationReminderScheduler implements MedicationReminderScheduler {
     required String medName,
     required int dosage,
     required DateTime scheduledDose,
-  }) => NotificationService.scheduleSnooze(
-    medId: medId,
-    medName: medName,
-    dosage: dosage,
-    scheduledDose: scheduledDose,
-  );
+  }) =>
+      NotificationService.scheduleSnooze(
+        medId: medId,
+        medName: medName,
+        dosage: dosage,
+        scheduledDose: scheduledDose,
+      );
 
   @override
   Future<void> cancelSnooze(String medId, DateTime scheduledDose) =>

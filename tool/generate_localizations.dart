@@ -28,13 +28,10 @@ Future<void> main(List<String> arguments) async {
   }
 
   final rows = parseCsv(csv);
-  final header = rows.first
-      .map((value) => value.trim())
-      .toList(growable: false);
-  final locales = header
-      .skip(1)
-      .where((value) => value.isNotEmpty)
-      .toList(growable: false);
+  final header =
+      rows.first.map((value) => value.trim()).toList(growable: false);
+  final locales =
+      header.skip(1).where((value) => value.isNotEmpty).toList(growable: false);
   final englishIndex = header.indexOf('en');
   final expectedFiles = <String, String>{};
 

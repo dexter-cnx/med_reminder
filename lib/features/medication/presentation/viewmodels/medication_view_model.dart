@@ -19,10 +19,10 @@ final doseLogRepositoryProvider = Provider<DoseLogRepository>(
 
 final medicationReminderSchedulerProvider =
     Provider<MedicationReminderScheduler>(
-      (ref) => throw UnimplementedError(
-        'MedicationReminderScheduler must be provided by app DI.',
-      ),
-    );
+  (ref) => throw UnimplementedError(
+    'MedicationReminderScheduler must be provided by app DI.',
+  ),
+);
 
 final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
   (ref) => throw UnimplementedError(
@@ -40,13 +40,13 @@ void _reportFailure(Ref ref, Failure failure) {
 
 final medsProvider =
     StateNotifierProvider<MedicationViewModel, List<Medication>>(
-      (ref) => MedicationViewModel(
-        repository: ref.watch(medicationRepositoryProvider),
-        reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
-        photoStore: ref.watch(medicationPhotoStoreProvider),
-        onFailure: (failure) => _reportFailure(ref, failure),
-      ),
-    );
+  (ref) => MedicationViewModel(
+    repository: ref.watch(medicationRepositoryProvider),
+    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+    photoStore: ref.watch(medicationPhotoStoreProvider),
+    onFailure: (failure) => _reportFailure(ref, failure),
+  ),
+);
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
   (ref) => DoseLogViewModel(
@@ -106,24 +106,26 @@ bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
 List<Medication> _loadMedications(
   MedicationRepository repository,
   void Function(Failure failure) onFailure,
-) => repository.readAll().fold(
-  onSuccess: (items) => items,
-  onFailure: (failure) {
-    onFailure(failure);
-    return const <Medication>[];
-  },
-);
+) =>
+    repository.readAll().fold(
+          onSuccess: (items) => items,
+          onFailure: (failure) {
+            onFailure(failure);
+            return const <Medication>[];
+          },
+        );
 
 List<DoseLog> _loadLogs(
   DoseLogRepository repository,
   void Function(Failure failure) onFailure,
-) => repository.readAll().fold(
-  onSuccess: (items) => items,
-  onFailure: (failure) {
-    onFailure(failure);
-    return const <DoseLog>[];
-  },
-);
+) =>
+    repository.readAll().fold(
+          onSuccess: (items) => items,
+          onFailure: (failure) {
+            onFailure(failure);
+            return const <DoseLog>[];
+          },
+        );
 
 class MedicationViewModel extends StateNotifier<List<Medication>> {
   MedicationViewModel({
@@ -131,11 +133,11 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     required MedicationReminderScheduler reminderScheduler,
     required MedicationPhotoStore photoStore,
     required void Function(Failure failure) onFailure,
-  }) : _repository = repository,
-       _reminderScheduler = reminderScheduler,
-       _photoStore = photoStore,
-       _onFailure = onFailure,
-       super(_loadMedications(repository, onFailure));
+  })  : _repository = repository,
+        _reminderScheduler = reminderScheduler,
+        _photoStore = photoStore,
+        _onFailure = onFailure,
+        super(_loadMedications(repository, onFailure));
 
   final MedicationRepository _repository;
   final MedicationReminderScheduler _reminderScheduler;
@@ -225,17 +227,17 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
   }
 }
 
-typedef DoseTakenCallback =
-    Future<void> Function(String medId, List<DoseLog> logs);
+typedef DoseTakenCallback = Future<void> Function(
+    String medId, List<DoseLog> logs);
 
 class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
   DoseLogViewModel(
     DoseLogRepository repository, {
     required void Function(Failure failure) onFailure,
     this.onTaken,
-  }) : _repository = repository,
-       _onFailure = onFailure,
-       super(_loadLogs(repository, onFailure));
+  })  : _repository = repository,
+        _onFailure = onFailure,
+        super(_loadLogs(repository, onFailure));
 
   final DoseLogRepository _repository;
   final void Function(Failure failure) _onFailure;

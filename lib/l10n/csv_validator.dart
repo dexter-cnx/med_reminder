@@ -14,26 +14,23 @@ List<CsvValidationIssue> validateTranslationCsv(String input) {
     return const <CsvValidationIssue>[CsvValidationIssue('CSV is empty.')];
   }
 
-  final header = rows.first
-      .map((value) => value.trim())
-      .toList(growable: false);
+  final header =
+      rows.first.map((value) => value.trim()).toList(growable: false);
   if (header.isEmpty || header.first != 'key') {
     return const <CsvValidationIssue>[
       CsvValidationIssue('First CSV column must be key.'),
     ];
   }
 
-  final locales = header
-      .skip(1)
-      .where((value) => value.isNotEmpty)
-      .toList(growable: false);
+  final locales =
+      header.skip(1).where((value) => value.isNotEmpty).toList(growable: false);
   final englishIndex = header.indexOf('en');
   final seenKeys = <String>{};
   final issues = <CsvValidationIssue>[];
 
   Set<String> placeholders(String value) => RegExp(
-    r'\{([A-Za-z0-9_]+)\}',
-  ).allMatches(value).map((match) => match.group(1)!).toSet();
+        r'\{([A-Za-z0-9_]+)\}',
+      ).allMatches(value).map((match) => match.group(1)!).toSet();
 
   for (var rowIndex = 1; rowIndex < rows.length; rowIndex++) {
     final row = rows[rowIndex];

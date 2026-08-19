@@ -12,9 +12,8 @@ class PhotoService {
     String sourcePath, {
     required String fileId,
   }) {
-    final extension = p.extension(sourcePath).isEmpty
-        ? '.jpg'
-        : p.extension(sourcePath);
+    final extension =
+        p.extension(sourcePath).isEmpty ? '.jpg' : p.extension(sourcePath);
     return p.join(documentsPath, photoDirectoryName, '$fileId$extension');
   }
 

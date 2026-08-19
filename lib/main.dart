@@ -33,11 +33,13 @@ Future<void> main() async {
   // deleting every photo as "unreferenced" would turn a recoverable data
   // failure into permanent file loss.
   await medicationRepository.readAll().fold(
-    onSuccess: (medications) => photoStore.pruneOrphaned(
-      medications.map((medication) => medication.imagePath).whereType<String>(),
-    ),
-    onFailure: (_) async => 0,
-  );
+        onSuccess: (medications) => photoStore.pruneOrphaned(
+          medications
+              .map((medication) => medication.imagePath)
+              .whereType<String>(),
+        ),
+        onFailure: (_) async => 0,
+      );
 
   runApp(
     EasyLocalization(

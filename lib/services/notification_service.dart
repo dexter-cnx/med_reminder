@@ -35,13 +35,11 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    final androidPlugin = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
-    final exactAlarmGranted = await androidPlugin
-        ?.requestExactAlarmsPermission();
+    final exactAlarmGranted =
+        await androidPlugin?.requestExactAlarmsPermission();
     _androidScheduleMode = exactAlarmGranted == true
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -194,18 +192,18 @@ class NotificationService {
   }
 
   static Future<void> showLowStock(String name, int remaining) => _plugin.show(
-    _stableNotificationId('low-stock:$name'),
-    'Low medication stock',
-    '$name: $remaining remaining',
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'low_stock',
+        _stableNotificationId('low-stock:$name'),
         'Low medication stock',
-        importance: Importance.high,
-      ),
-      iOS: DarwinNotificationDetails(),
-    ),
-  );
+        '$name: $remaining remaining',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'low_stock',
+            'Low medication stock',
+            importance: Importance.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
 
   static int _stableNotificationId(String input) {
     var hash = 0x811c9dc5;
