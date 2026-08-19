@@ -11,7 +11,7 @@ void main() {
 
     await tester.pumpWidget(
       MediaQuery(
-        data: const MediaQueryData(textScaleFactor: 1.3),
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
         child: MaterialApp(
           home: Scaffold(
             body: SizedBox(
