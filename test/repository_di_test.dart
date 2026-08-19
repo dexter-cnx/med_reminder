@@ -17,6 +17,11 @@ class _MemoryMedicationRepository implements MedicationRepository {
   Future<void> replaceAll(List<Medication> medications) async {
     values = List<Medication>.from(medications);
   }
+
+  @override
+  Future<void> delete(String id) async {
+    values = values.where((item) => item.id != id).toList(growable: false);
+  }
 }
 
 class _FakeReminderScheduler implements MedicationReminderScheduler {
