@@ -30,7 +30,10 @@ final medsProvider = StateNotifierProvider<MedicationViewModel, List<Medication>
 );
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
-  (ref) => DoseLogViewModel(ref.watch(doseLogRepositoryProvider)),
+  (ref) => DoseLogViewModel(
+    ref.watch(doseLogRepositoryProvider),
+    onTaken: (medId, logs) => ref.read(medsProvider.notifier).reconcileFromLogs(medId, logs),
+  ),
 );
 
 final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
@@ -56,14 +59,12 @@ final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
           break;
         }
       }
-      doses.add(
-        ScheduledDose(
-          medication: med,
-          scheduledAt: scheduled,
-          log: existing,
-          remaining: remaining,
-        ),
-      );
+      doses.add(ScheduledDose(
+        medication: med,
+        scheduledAt: scheduled,
+        log: existing,
+        remaining: remaining,
+      ));
     }
   }
 
@@ -100,6 +101,9 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     state = <Medication>[...state, medication.copyWith(notificationIds: ids)];
     await _persist();
   }
+
+  @Deprecated('Stock is derived from DoseLog history; use reconcileFromLogs.')
+  Future<void> updateStock(String id, int requestedAmount) async {}
 
   Future<void> reconcileFromLogs(String id, Iterable<DoseLog> logs) async {
     final index = state.indexWhere((med) => med.id == id);
@@ -150,15 +154,20 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
   }
 }
 
+typedef DoseTakenCallback = Future<void> Function(String medId, List<DoseLog> logs);
+
 class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
-  DoseLogViewModel(this._repository) : super(_repository.readAll());
+  DoseLogViewModel(this._repository, {this.onTaken}) : super(_repository.readAll());
 
   final DoseLogRepository _repository;
+  final DoseTakenCallback? onTaken;
 
   Future<void> _persist() => _repository.replaceAll(state);
 
-  Future<void> markTaken(String medId, DateTime scheduledAt) =>
-      _upsert(medId, scheduledAt, DoseStatus.taken, takenAt: DateTime.now());
+  Future<void> markTaken(String medId, DateTime scheduledAt) async {
+    await _upsert(medId, scheduledAt, DoseStatus.taken, takenAt: DateTime.now());
+    await onTaken?.call(medId, state);
+  }
 
   Future<void> markSkipped(String medId, DateTime scheduledAt) =>
       _upsert(medId, scheduledAt, DoseStatus.skipped);
