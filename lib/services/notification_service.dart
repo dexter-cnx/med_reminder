@@ -8,6 +8,7 @@ import '../models/medication.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   static bool _timezoneReady = false;
+  static AndroidScheduleMode _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
   static const NotificationDetails _doseDetails = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -28,9 +29,15 @@ class NotificationService {
       requestSoundPermission: true,
     );
     await _plugin.initialize(const InitializationSettings(android: android, iOS: ios));
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+
+    final androidPlugin =
+        _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.requestNotificationsPermission();
+    final exactAlarmGranted = await androidPlugin?.requestExactAlarmsPermission();
+    _androidScheduleMode = exactAlarmGranted == true
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
     await _initTimezone();
   }
 
@@ -84,7 +91,7 @@ class NotificationService {
             '${medication.name} ${medication.dosagePerTime}',
             scheduled,
             _doseDetails,
-            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            androidScheduleMode: _androidScheduleMode,
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           );
         }
@@ -100,7 +107,7 @@ class NotificationService {
           '${medication.name} ${medication.dosagePerTime}',
           scheduled,
           _doseDetails,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          androidScheduleMode: _androidScheduleMode,
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time,
         );
@@ -124,7 +131,7 @@ class NotificationService {
       '$medName $dosage',
       tz.TZDateTime.now(tz.local).add(const Duration(minutes: 10)),
       _doseDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: _androidScheduleMode,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
