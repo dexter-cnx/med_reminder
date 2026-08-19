@@ -23,7 +23,7 @@ Hive is therefore one storage implementation rather than a dependency of medicat
 - Independent dose state per scheduled time (`scheduledAt`), so 08:00 and 20:00 do not share one taken flag.
 - Medication modes: `forever`, finite `days`, and `untilEmpty`.
 - Package photos copied into application documents storage instead of retaining an image-picker cache path.
-- UI actions: Taken, Skip, Snooze 10 minutes.
+- UI actions: Taken, Skip, Snooze 10 minutes with explicit semantics labels and a wrapping action layout for larger text.
 - Native Live Activity / Watch integration is kept as an explicit handoff and is not reported as complete until platform targets are wired and device-tested.
 
 ## Localization workflow
@@ -56,4 +56,12 @@ make analyze
 make test
 ```
 
-See `handoff/CODE_WALKTHROUGH.md` for architecture, `handoff/CSV_LOCALIZATION.md` for the CSV-to-JSON pipeline, and `handoff/NATIVE_HANDOFF.md` for Live Activity / watch work.
+Accessibility regression tests include explicit Semantics labels for the dose actions and a 1.3x text-scale layout check.
+
+## Roadmap / release baseline
+
+- PR #2: native companion work from `handoff/NATIVE_HANDOFF.md`.
+- PR #3: offline ZIP export/import backup and restore. See `docs/BACKLOG.md` for the versioned archive contract and acceptance criteria.
+- After PR #1 is merged with required CI green, tag `main` as `v0.1.0-bootstrap-fixed` and use that tag as the baseline reference for PR #2.
+
+See `handoff/CODE_WALKTHROUGH.md` for architecture, `handoff/CSV_LOCALIZATION.md` for the CSV-to-JSON pipeline, `handoff/NATIVE_HANDOFF.md` for Live Activity / watch work, and `docs/BACKLOG.md` for planned offline backup/restore.
