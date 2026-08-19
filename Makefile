@@ -1,4 +1,4 @@
-.PHONY: bootstrap pub-get format format-check analyze test check
+.PHONY: bootstrap pub-get l10n-generate l10n-check format format-check analyze test check
 
 bootstrap:
 	./tool/bootstrap_platforms.sh
@@ -6,11 +6,17 @@ bootstrap:
 pub-get:
 	flutter pub get
 
+l10n-generate:
+	dart run tool/generate_localizations.dart
+
+l10n-check:
+	dart run tool/generate_localizations.dart --check
+
 format:
-	dart format lib test
+	dart format lib test tool
 
 format-check:
-	dart format --output=none --set-exit-if-changed lib test
+	dart format --output=none --set-exit-if-changed lib test tool
 
 analyze:
 	flutter analyze
@@ -18,4 +24,4 @@ analyze:
 test:
 	flutter test
 
-check: format-check analyze test
+check: l10n-check format-check analyze test
