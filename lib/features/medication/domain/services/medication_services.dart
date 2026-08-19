@@ -15,4 +15,5 @@ abstract interface class MedicationReminderScheduler {
 
 abstract interface class MedicationPhotoStore {
   Future<void> delete(String? path);
+  Future<int> pruneOrphaned(Iterable<String> referencedPaths);
 }
