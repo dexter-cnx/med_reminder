@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:med_reminder_offline/models/medication.dart';
+import 'package:med_reminder_offline/features/medication/data/models/medication_record.dart';
+import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 
 void main() {
   test('days mode expires after configured day count', () {
@@ -27,11 +28,12 @@ void main() {
     expect(med.isActiveOn(DateTime(2026, 8, 19)), isFalse);
   });
 
-  test('old dose log format migrates as taken', () {
-    final log = DoseLog.fromMap(<String, dynamic>{
+  test('old dose log record migrates as taken in the data layer', () {
+    const record = DoseLogRecord(<String, dynamic>{
       'medId': 'm1',
       'time': '2026-08-19T08:00:00.000',
     });
+    final log = record.toEntity();
     expect(log.status, DoseStatus.taken);
     expect(log.scheduledAt.hour, 8);
   });
