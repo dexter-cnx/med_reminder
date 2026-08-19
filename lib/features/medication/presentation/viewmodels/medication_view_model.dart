@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../services/notification_service.dart';
-import '../../../../services/photo_service.dart';
 import '../../domain/entities/medication.dart';
 import '../../domain/repositories/medication_repository.dart';
+import '../../domain/services/medication_services.dart';
 
 final medicationRepositoryProvider = Provider<MedicationRepository>(
   (ref) => throw UnimplementedError('MedicationRepository must be provided by app DI.'),
@@ -14,8 +13,20 @@ final doseLogRepositoryProvider = Provider<DoseLogRepository>(
   (ref) => throw UnimplementedError('DoseLogRepository must be provided by app DI.'),
 );
 
+final medicationReminderSchedulerProvider = Provider<MedicationReminderScheduler>(
+  (ref) => throw UnimplementedError('MedicationReminderScheduler must be provided by app DI.'),
+);
+
+final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
+  (ref) => throw UnimplementedError('MedicationPhotoStore must be provided by app DI.'),
+);
+
 final medsProvider = StateNotifierProvider<MedicationViewModel, List<Medication>>(
-  (ref) => MedicationViewModel(ref.watch(medicationRepositoryProvider)),
+  (ref) => MedicationViewModel(
+    repository: ref.watch(medicationRepositoryProvider),
+    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+    photoStore: ref.watch(medicationPhotoStoreProvider),
+  ),
 );
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
@@ -61,14 +72,23 @@ bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
     log.scheduledAt.minute == scheduled.minute;
 
 class MedicationViewModel extends StateNotifier<List<Medication>> {
-  MedicationViewModel(this._repository) : super(_repository.readAll());
+  MedicationViewModel({
+    required MedicationRepository repository,
+    required MedicationReminderScheduler reminderScheduler,
+    required MedicationPhotoStore photoStore,
+  })  : _repository = repository,
+        _reminderScheduler = reminderScheduler,
+        _photoStore = photoStore,
+        super(repository.readAll());
 
   final MedicationRepository _repository;
+  final MedicationReminderScheduler _reminderScheduler;
+  final MedicationPhotoStore _photoStore;
 
   Future<void> _persist() => _repository.replaceAll(state);
 
   Future<void> add(Medication medication) async {
-    final ids = await NotificationService.scheduleForMed(medication);
+    final ids = await _reminderScheduler.schedule(medication);
     state = <Medication>[
       ...state,
       medication.copyWith(notificationIds: ids),
@@ -85,7 +105,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     var updated = old.copyWith(totalAmount: newAmount);
 
     if (old.mode == MedicationMode.untilEmpty && newAmount == 0) {
-      await NotificationService.cancelIds(old.notificationIds);
+      await _reminderScheduler.cancelIds(old.notificationIds);
       updated = updated.copyWith(notificationIds: const <int>[]);
     }
 
@@ -94,7 +114,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
         old.totalAmount != null &&
         old.totalAmount! > threshold &&
         newAmount <= threshold) {
-      await NotificationService.showLowStock(old.name, newAmount);
+      await _reminderScheduler.showLowStock(old.name, newAmount);
     }
 
     final next = <Medication>[...state];
@@ -107,8 +127,8 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     final med = state.where((item) => item.id == id).firstOrNull;
     if (med == null) return;
 
-    await NotificationService.cancelIds(med.notificationIds);
-    await PhotoService.deletePhoto(med.imagePath);
+    await _reminderScheduler.cancelIds(med.notificationIds);
+    await _photoStore.delete(med.imagePath);
     state = state.where((item) => item.id != id).toList(growable: false);
     await _persist();
   }
