@@ -79,4 +79,8 @@ At app startup, orphan cleanup runs only after a successful medication repositor
 
 ## Localization
 
-Runtime loading and CI validation share the same CSV parser. The validator rejects duplicate keys, missing/empty English fallback values, rows with no translations, and placeholder mismatches such as `{count}` appearing in English but not in another non-empty translation. The production CSV itself is validated by the test suite, so these errors fail `make test` and GitHub Actions.
+`assets/translations.csv` is the single editable localization source, but it is build-time input only and is deliberately omitted from Flutter's asset manifest.
+
+`tool/generate_localizations.dart` validates the CSV, applies English fallback to empty non-English cells, and generates compact runtime files under `assets/translations/<locale>.json` plus `lib/l10n/generated_locales.dart`. `EasyLocalization` loads those JSON files directly; no CSV parser or CSV asset is used during app startup.
+
+`make l10n-check` regenerates the expected content in memory and fails when committed JSON or generated locale metadata is stale. The same validation also rejects duplicate keys, missing/empty English fallback values, rows with no translations, placeholder mismatches, and unexpected generated locale JSON files.
