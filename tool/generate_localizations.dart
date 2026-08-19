@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../lib/l10n/csv_table.dart';
-import '../lib/l10n/csv_validator.dart';
+import 'package:med_reminder_offline/l10n/csv_table.dart';
+import 'package:med_reminder_offline/l10n/csv_validator.dart';
 
 const _sourcePath = 'assets/translations.csv';
 const _outputDirectory = 'assets/translations';
