@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:med_reminder_offline/core/result/result.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 import 'package:med_reminder_offline/features/medication/domain/repositories/medication_repository.dart';
 import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
@@ -10,16 +11,19 @@ class _MedicationRepository implements MedicationRepository {
   List<Medication> values;
 
   @override
-  List<Medication> readAll() => List<Medication>.unmodifiable(values);
+  Result<List<Medication>> readAll() =>
+      Success<List<Medication>>(List<Medication>.unmodifiable(values));
 
   @override
-  Future<void> replaceAll(List<Medication> medications) async {
+  Future<Result<void>> replaceAll(List<Medication> medications) async {
     values = List<Medication>.from(medications);
+    return const Success<void>(null);
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<Result<void>> delete(String id) async {
     values = values.where((item) => item.id != id).toList(growable: false);
+    return const Success<void>(null);
   }
 }
 
@@ -28,11 +32,13 @@ class _LogRepository implements DoseLogRepository {
   List<DoseLog> values;
 
   @override
-  List<DoseLog> readAll() => List<DoseLog>.unmodifiable(values);
+  Result<List<DoseLog>> readAll() =>
+      Success<List<DoseLog>>(List<DoseLog>.unmodifiable(values));
 
   @override
-  Future<void> replaceAll(List<DoseLog> logs) async {
+  Future<Result<void>> replaceAll(List<DoseLog> logs) async {
     values = List<DoseLog>.from(logs);
+    return const Success<void>(null);
   }
 }
 
@@ -44,7 +50,12 @@ class _Scheduler implements MedicationReminderScheduler {
   @override
   Future<void> cancelSnooze(String medId, DateTime scheduledDose) async {}
   @override
-  Future<void> scheduleSnooze({required String medId, required String medName, required int dosage, required DateTime scheduledDose}) async {}
+  Future<void> scheduleSnooze({
+    required String medId,
+    required String medName,
+    required int dosage,
+    required DateTime scheduledDose,
+  }) async {}
   @override
   Future<void> showLowStock(String name, int remaining) async {}
 }
@@ -52,6 +63,9 @@ class _Scheduler implements MedicationReminderScheduler {
 class _PhotoStore implements MedicationPhotoStore {
   @override
   Future<void> delete(String? path) async {}
+
+  @override
+  Future<int> pruneOrphaned(Iterable<String> referencedPaths) async => 0;
 }
 
 void main() {
@@ -74,8 +88,12 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
-        medicationRepositoryProvider.overrideWithValue(_MedicationRepository(<Medication>[medication])),
-        doseLogRepositoryProvider.overrideWithValue(_LogRepository(<DoseLog>[takenMorning])),
+        medicationRepositoryProvider.overrideWithValue(
+          _MedicationRepository(<Medication>[medication]),
+        ),
+        doseLogRepositoryProvider.overrideWithValue(
+          _LogRepository(<DoseLog>[takenMorning]),
+        ),
         medicationReminderSchedulerProvider.overrideWithValue(_Scheduler()),
         medicationPhotoStoreProvider.overrideWithValue(_PhotoStore()),
       ],
