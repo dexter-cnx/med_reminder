@@ -50,13 +50,31 @@ Required native wiring:
 4. Keep local scheduled dose notifications separate from the ongoing status notification.
 5. Add Wear OS Data Layer integration only after the phone-side contract is stable.
 
-### Screenshot evidence
+## Required real-device validation matrix
 
-No screenshot is committed yet because the Android fallback is not wired to a device build. Do **not** use a design mock as validation evidence. After native wiring, capture and commit a real-device screenshot showing the fallback ongoing notification and link it here.
+PR #2 must not mark native companion work complete until the following physical-device matrix has evidence:
 
-Suggested evidence path:
+- Android 13: scheduled reminder, reboot restore, exact/inexact alarm behavior, ongoing fallback notification.
+- Android 14: notification permission, exact-alarm permission path, reboot restore, ongoing fallback notification.
+- iOS 17: local reminder, timezone-change reschedule, Live Activity start/update/end, lock screen and Dynamic Island where supported.
+- iOS 18: the same Live Activity and local-reminder lifecycle checks, including foreground/background/terminated transitions.
 
-`docs/evidence/android-ongoing-notification.png`
+A newer OS version may be added, but it does not replace the minimum matrix above unless this document is intentionally revised.
+
+## Evidence checklist before PR #2 can be called complete
+
+Create `docs/evidence/` and commit real-device evidence for each applicable item:
+
+- `android-13-reminder.png` — scheduled reminder visible on a physical Android 13 device.
+- `android-13-reboot.md` — device/model, reboot steps, expected schedule, actual delivery result.
+- `android-14-reminder.png` — Android 14 permission/alarm path validated.
+- `android-ongoing-notification.png` — native ongoing fallback notification from the real app build.
+- `ios-17-live-activity.png` — lock-screen or Dynamic Island Live Activity from a physical iOS 17 device.
+- `ios-18-live-activity.png` — equivalent evidence on iOS 18.
+- `timezone-reschedule.md` — before/after IANA timezone, configured local dose time, and observed rescheduled delivery.
+- `native-test-matrix.md` — device model, OS version, app commit SHA, pass/fail for every required scenario.
+
+Do **not** use design mocks, simulator-only screenshots, or screenshots from another app as validation evidence.
 
 ## Wear OS
 
