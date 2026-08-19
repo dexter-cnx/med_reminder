@@ -134,9 +134,15 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
   }
 
-  Future<void> rescheduleAll() async {
+  Future<void> rescheduleAll(Iterable<DoseLog> logs) async {
+    final now = DateTime.now();
     final next = <Medication>[];
     for (final medication in state) {
+      if (!medication.isActiveOn(now, logs: logs)) {
+        await _reminderScheduler.cancelIds(medication.notificationIds);
+        next.add(medication.copyWith(notificationIds: const <int>[]));
+        continue;
+      }
       final ids = await _reminderScheduler.schedule(medication);
       next.add(medication.copyWith(notificationIds: ids));
     }
@@ -149,8 +155,8 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     if (med == null) return;
     await _reminderScheduler.cancelIds(med.notificationIds);
     await _photoStore.delete(med.imagePath);
+    await _repository.delete(id);
     state = state.where((item) => item.id != id).toList(growable: false);
-    await _persist();
   }
 }
 
