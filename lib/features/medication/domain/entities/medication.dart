@@ -30,6 +30,9 @@ class Medication {
   final int? daysCount;
   final List<int> notificationIds;
 
+  @Deprecated('Use initialAmount for configured stock and remaining(logs) for current stock.')
+  int? get totalAmount => initialAmount;
+
   DateTime? get expiryExclusive {
     if (mode != MedicationMode.days || daysCount == null) return null;
     final start = DateTime(createdAt.year, createdAt.month, createdAt.day);
@@ -65,8 +68,7 @@ class Medication {
     int? initialAmount,
     List<int>? notificationIds,
     String? imagePath,
-  }) =>
-      Medication(
+  }) => Medication(
         id: id,
         name: name,
         description: description,
