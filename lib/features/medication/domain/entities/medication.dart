@@ -8,15 +8,14 @@ class Medication {
     required this.times,
     required this.createdAt,
     this.description = '',
-    int? initialAmount,
-    @Deprecated('Use initialAmount.') int? totalAmount,
+    this.initialAmount,
     this.lowThreshold,
     this.imagePath,
     this.dosagePerTime = 1,
     this.mode = MedicationMode.forever,
     this.daysCount,
     this.notificationIds = const <int>[],
-  }) : initialAmount = initialAmount ?? totalAmount;
+  });
 
   final String id;
   final String name;
@@ -30,9 +29,6 @@ class Medication {
   final MedicationMode mode;
   final int? daysCount;
   final List<int> notificationIds;
-
-  @Deprecated('Use initialAmount for configured stock and remaining(logs) for current stock.')
-  int? get totalAmount => initialAmount;
 
   DateTime? get expiryExclusive {
     if (mode != MedicationMode.days || daysCount == null) return null;
@@ -53,7 +49,9 @@ class Medication {
   int? remaining(Iterable<DoseLog> logs) {
     final initial = initialAmount;
     if (initial == null) return null;
-    final takenCount = logs.where((log) => log.medId == id && log.status == DoseStatus.taken).length;
+    final takenCount = logs.where(
+      (log) => log.medId == id && log.status == DoseStatus.taken,
+    ).length;
     final value = initial - (takenCount * dosagePerTime);
     return value < 0 ? 0 : value;
   }
@@ -99,6 +97,8 @@ class DoseLog {
   final DateTime scheduledAt;
   final DateTime? takenAt;
   final DoseStatus status;
+
+  bool get isTaken => status == DoseStatus.taken;
 }
 
 class ScheduledDose {
