@@ -4,6 +4,7 @@
 .vscode/
 .DS_Store
 *.iml
+tool/.bootstrap_backup/
 
 # Miscellaneous
 *.class
