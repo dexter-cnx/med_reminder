@@ -48,6 +48,26 @@ void main() {
     expect(med.isEmpty(logs), isFalse);
   });
 
+  test('medication defensively freezes collection fields', () {
+    final times = <String>['08:00'];
+    final ids = <int>[1];
+    final med = Medication(
+      id: 'm1',
+      name: 'Immutable',
+      times: times,
+      notificationIds: ids,
+      createdAt: DateTime(2026, 8, 19),
+    );
+
+    times.add('20:00');
+    ids.add(2);
+
+    expect(med.times, <String>['08:00']);
+    expect(med.notificationIds, <int>[1]);
+    expect(() => med.times.add('12:00'), throwsUnsupportedError);
+    expect(() => med.notificationIds.add(3), throwsUnsupportedError);
+  });
+
   test('legacy totalAmount maps into initialAmount', () {
     const record = MedicationRecord(<String, dynamic>{
       'id': 'm1',
