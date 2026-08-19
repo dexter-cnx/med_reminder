@@ -28,8 +28,10 @@ Future<void> main(List<String> arguments) async {
   }
 
   final rows = parseCsv(csv);
-  final header = rows.first.map((value) => value.trim()).toList(growable: false);
-  final locales = header.skip(1).where((value) => value.isNotEmpty).toList(growable: false);
+  final header =
+      rows.first.map((value) => value.trim()).toList(growable: false);
+  final locales =
+      header.skip(1).where((value) => value.isNotEmpty).toList(growable: false);
   final englishIndex = header.indexOf('en');
   final expectedFiles = <String, String>{};
 
@@ -47,7 +49,8 @@ Future<void> main(List<String> arguments) async {
       }
       translations[key] = value;
     }
-    expectedFiles['$_outputDirectory/$locale.json'] = '${jsonEncode(translations)}\n';
+    expectedFiles['$_outputDirectory/$locale.json'] =
+        '${jsonEncode(translations)}\n';
   }
 
   expectedFiles[_generatedLocalesPath] = _renderLocales(locales);
@@ -65,10 +68,13 @@ Future<void> main(List<String> arguments) async {
     final outputDirectory = Directory(_outputDirectory);
     if (outputDirectory.existsSync()) {
       final expectedJsonPaths = expectedFiles.keys
-          .where((path) => path.startsWith('$_outputDirectory/') && path.endsWith('.json'))
+          .where((path) =>
+              path.startsWith('$_outputDirectory/') && path.endsWith('.json'))
           .toSet();
       for (final entity in outputDirectory.listSync()) {
-        if (entity is File && entity.path.endsWith('.json') && !expectedJsonPaths.contains(entity.path)) {
+        if (entity is File &&
+            entity.path.endsWith('.json') &&
+            !expectedJsonPaths.contains(entity.path)) {
           stderr.writeln('Unexpected generated localization: ${entity.path}');
           valid = false;
         }
@@ -94,7 +100,8 @@ Future<void> main(List<String> arguments) async {
     }
   }
 
-  stdout.writeln('Generated ${locales.length} locale JSON files from $_sourcePath.');
+  stdout.writeln(
+      'Generated ${locales.length} locale JSON files from $_sourcePath.');
 }
 
 String _renderLocales(List<String> locales) {

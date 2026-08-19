@@ -18,7 +18,8 @@ final class Success<T> extends Result<T> {
   R fold<R>({
     required R Function(T value) onSuccess,
     required R Function(Failure failure) onFailure,
-  }) => onSuccess(value);
+  }) =>
+      onSuccess(value);
 }
 
 final class Failed<T> extends Result<T> {
@@ -29,7 +30,8 @@ final class Failed<T> extends Result<T> {
   R fold<R>({
     required R Function(T value) onSuccess,
     required R Function(Failure failure) onFailure,
-  }) => onFailure(failure);
+  }) =>
+      onFailure(failure);
 }
 
 class Failure {

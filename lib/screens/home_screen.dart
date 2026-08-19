@@ -190,8 +190,8 @@ class _TodayList extends StatelessWidget {
                 trailing: dose.isTaken
                     ? const Icon(Icons.check_circle)
                     : dose.isSkipped
-                    ? Text('skipped'.tr())
-                    : null,
+                        ? Text('skipped'.tr())
+                        : null,
               ),
               if (hasActions)
                 Padding(
@@ -320,15 +320,15 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             ),
             const SizedBox(height: 12),
             ..._times.asMap().entries.map(
-              (entry) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(entry.value),
-                trailing: IconButton(
-                  onPressed: () => _editTime(entry.key),
-                  icon: const Icon(Icons.schedule),
+                  (entry) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(entry.value),
+                    trailing: IconButton(
+                      onPressed: () => _editTime(entry.key),
+                      icon: const Icon(Icons.schedule),
+                    ),
+                  ),
                 ),
-              ),
-            ),
             TextButton.icon(
               onPressed: () => setState(() => _times.add('12:00')),
               icon: const Icon(Icons.add),

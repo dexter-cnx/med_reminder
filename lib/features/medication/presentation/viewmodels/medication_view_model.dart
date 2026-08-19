@@ -19,10 +19,10 @@ final doseLogRepositoryProvider = Provider<DoseLogRepository>(
 
 final medicationReminderSchedulerProvider =
     Provider<MedicationReminderScheduler>(
-      (ref) => throw UnimplementedError(
-        'MedicationReminderScheduler must be provided by app DI.',
-      ),
-    );
+  (ref) => throw UnimplementedError(
+    'MedicationReminderScheduler must be provided by app DI.',
+  ),
+);
 
 final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
   (ref) => throw UnimplementedError(
@@ -34,14 +34,14 @@ final repositoryFailureProvider = StateProvider<Failure?>((ref) => null);
 
 final medsProvider =
     StateNotifierProvider<MedicationViewModel, List<Medication>>(
-      (ref) => MedicationViewModel(
-        repository: ref.watch(medicationRepositoryProvider),
-        reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
-        photoStore: ref.watch(medicationPhotoStoreProvider),
-        onFailure: (failure) =>
-            ref.read(repositoryFailureProvider.notifier).state = failure,
-      ),
-    );
+  (ref) => MedicationViewModel(
+    repository: ref.watch(medicationRepositoryProvider),
+    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+    photoStore: ref.watch(medicationPhotoStoreProvider),
+    onFailure: (failure) =>
+        ref.read(repositoryFailureProvider.notifier).state = failure,
+  ),
+);
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
   (ref) => DoseLogViewModel(
@@ -102,24 +102,26 @@ bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
 List<Medication> _loadMedications(
   MedicationRepository repository,
   void Function(Failure failure) onFailure,
-) => repository.readAll().fold(
-  onSuccess: (items) => items,
-  onFailure: (failure) {
-    onFailure(failure);
-    return const <Medication>[];
-  },
-);
+) =>
+    repository.readAll().fold(
+          onSuccess: (items) => items,
+          onFailure: (failure) {
+            onFailure(failure);
+            return const <Medication>[];
+          },
+        );
 
 List<DoseLog> _loadLogs(
   DoseLogRepository repository,
   void Function(Failure failure) onFailure,
-) => repository.readAll().fold(
-  onSuccess: (items) => items,
-  onFailure: (failure) {
-    onFailure(failure);
-    return const <DoseLog>[];
-  },
-);
+) =>
+    repository.readAll().fold(
+          onSuccess: (items) => items,
+          onFailure: (failure) {
+            onFailure(failure);
+            return const <DoseLog>[];
+          },
+        );
 
 class MedicationViewModel extends StateNotifier<List<Medication>> {
   MedicationViewModel({
@@ -127,11 +129,11 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     required MedicationReminderScheduler reminderScheduler,
     required MedicationPhotoStore photoStore,
     required void Function(Failure failure) onFailure,
-  }) : _repository = repository,
-       _reminderScheduler = reminderScheduler,
-       _photoStore = photoStore,
-       _onFailure = onFailure,
-       super(_loadMedications(repository, onFailure));
+  })  : _repository = repository,
+        _reminderScheduler = reminderScheduler,
+        _photoStore = photoStore,
+        _onFailure = onFailure,
+        super(_loadMedications(repository, onFailure));
 
   final MedicationRepository _repository;
   final MedicationReminderScheduler _reminderScheduler;
@@ -231,8 +233,8 @@ class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
     this._repository, {
     required void Function(Failure failure) onFailure,
     this.onTaken,
-  }) : _onFailure = onFailure,
-       super(_loadLogs(repository, onFailure));
+  })  : _onFailure = onFailure,
+        super(_loadLogs(repository, onFailure));
 
   final DoseLogRepository _repository;
   final void Function(Failure failure) _onFailure;

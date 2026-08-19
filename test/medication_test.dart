@@ -21,7 +21,8 @@ void main() {
     },
   );
 
-  test('remaining and low-stock state are derived from taken dose logs only', () {
+  test('remaining and low-stock state are derived from taken dose logs only',
+      () {
     final med = Medication(
       id: 'm1',
       name: 'Test',

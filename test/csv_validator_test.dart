@@ -19,9 +19,8 @@ void main() {
 
   test('validator rejects rows with no translations', () {
     const csv = 'key,en,th\nempty,,\n';
-    final messages = validateTranslationCsv(csv)
-        .map((issue) => issue.message)
-        .toList();
+    final messages =
+        validateTranslationCsv(csv).map((issue) => issue.message).toList();
     expect(messages, contains('All translations are empty for key: empty'));
     expect(messages, contains('English fallback is empty for key: empty'));
   });
