@@ -33,7 +33,7 @@ Current stock is not a mutable persisted counter. `Medication.remaining(logs)` d
 
 `initialAmount - takenDoseCount * dosagePerTime`
 
-Only `DoseStatus.taken` consumes stock. Skipped and snoozed logs do not. `untilEmpty` therefore follows dose history rather than a separately decremented field.
+Only `DoseStatus.taken` consumes stock. Skipped and snoozed logs do not. `untilEmpty` therefore follows dose history rather than a separately decremented field. `Medication.isLowStock(logs)` is also derived from the same history rather than a stored mutable counter.
 
 `expiryDate`, `expiryExclusive`, and `isExpired()` keep finite-day schedule rules in the domain layer.
 
@@ -84,3 +84,15 @@ At app startup, orphan cleanup runs only after a successful medication repositor
 `tool/generate_localizations.dart` validates the CSV, applies English fallback to empty non-English cells, and generates compact runtime files under `assets/translations/<locale>.json` plus `lib/l10n/generated_locales.dart`. `EasyLocalization` loads those JSON files directly; no CSV parser or CSV asset is used during app startup.
 
 `make l10n-check` regenerates the expected content in memory and fails when committed JSON or generated locale metadata is stale. The same validation also rejects duplicate keys, missing/empty English fallback values, rows with no translations, placeholder mismatches, and unexpected generated locale JSON files.
+
+## Accessibility
+
+Dose actions are rendered through `DoseActionButtons`. Taken, Skip, and Snooze each expose an explicit `Semantics` label with button semantics rather than relying only on icon recognition.
+
+The action group is placed below the dose `ListTile` and uses `Wrap`, so larger text can move actions onto another run instead of overflowing the constrained trailing slot. `test/accessibility_test.dart` exercises the component with a 1.3x text scale and checks all three semantic labels.
+
+## Roadmap baselines
+
+`docs/BACKLOG.md` records PR #3 as the offline backup/restore milestone. The planned export is a versioned ZIP containing medications, dose logs, photos, and manifest metadata; import validates the archive, restores through application/repository boundaries, and rebuilds reminders rather than trusting exported notification IDs.
+
+After PR #1 is merged and required CI is green, `main` should be tagged `v0.1.0-bootstrap-fixed`. PR #2 native companion work should reference that immutable baseline rather than an intermediate feature-branch commit.
