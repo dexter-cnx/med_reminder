@@ -137,8 +137,9 @@ class NotificationService {
           hour,
           minute,
         );
-        if (!scheduled.isAfter(now))
+        if (!scheduled.isAfter(now)) {
           scheduled = scheduled.add(const Duration(days: 1));
+        }
         final id = _stableNotificationId('${medication.id}:$timeIndex:daily');
         ids.add(id);
         await _plugin.zonedSchedule(
