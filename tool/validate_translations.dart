@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../lib/l10n/csv_validator.dart';
+import 'package:med_reminder_offline/l10n/csv_validator.dart';
 
 const _defaultSourcePath = 'assets/translations.csv';
 
