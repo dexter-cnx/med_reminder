@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -134,6 +135,8 @@ class _TodayList extends StatelessWidget {
       itemBuilder: (_, index) {
         final dose = doses[index];
         final med = dose.medication;
+        final hour = dose.scheduledAt.hour.toString().padLeft(2, '0');
+        final minute = dose.scheduledAt.minute.toString().padLeft(2, '0');
         return Card(
           child: ListTile(
             leading: med.imagePath == null
@@ -142,7 +145,7 @@ class _TodayList extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.file(File(med.imagePath!), width: 48, height: 48, fit: BoxFit.cover),
                   ),
-            title: Text('${DateFormat.Hm().format(dose.scheduledAt)} · ${med.name} × ${med.dosagePerTime}'),
+            title: Text('$hour:$minute · ${med.name} × ${med.dosagePerTime}'),
             subtitle: Text('remaining'.tr(namedArgs: <String, String>{'count': '${med.totalAmount ?? '-'}'})),
             trailing: dose.isTaken
                 ? const Icon(Icons.check_circle)
