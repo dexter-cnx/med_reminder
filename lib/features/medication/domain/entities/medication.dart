@@ -58,6 +58,12 @@ class Medication {
     return value < 0 ? 0 : value;
   }
 
+  bool isLowStock(Iterable<DoseLog> logs) {
+    final threshold = lowThreshold;
+    final value = remaining(logs);
+    return threshold != null && value != null && value <= threshold;
+  }
+
   bool isEmpty(Iterable<DoseLog> logs) => remaining(logs) == 0;
 
   bool isActiveOn(DateTime date, {Iterable<DoseLog> logs = const <DoseLog>[]}) {
