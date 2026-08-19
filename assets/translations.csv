@@ -1,0 +1,30 @@
+key,en,th
+app_title,Med • Offline • No Server,ยา • ออฟไลน์ • ไม่มีเซิร์ฟเวอร์
+today,Today,วันนี้
+all_meds,All Meds,ยาทั้งหมด
+add_med,Add Medication,เพิ่มยา
+med_name,Medication Name,ชื่อยา
+med_desc,Description / Indication,สรรพคุณ
+total_amount,Stock (optional),จำนวนที่มี (เว้นได้)
+low_threshold,Low alert at,เตือนเมื่อเหลือ
+dosage,Dosage per time,จำนวนเม็ดต่อครั้ง
+times,Times per day,เวลากินต่อวัน
+mode,Duration Mode,โหมดการกิน
+mode_forever,Forever,กินตลอด
+mode_days,For N days,กินตามจำนวนวัน
+mode_until_empty,Until empty,กินจนหมด
+save_offline,Save (Offline),บันทึก (ออฟไลน์)
+take,Taken,กินแล้ว
+snooze,Snooze 10m,เลื่อน 10 นาที
+skip,Skip,ข้าม
+low_stock_title,Low Stock,ยาใกล้หมด
+low_stock_body,{name} left {count},{name} เหลือ {count} เม็ดแล้ว
+taken_success,Took {name} left {count},กิน {name} แล้ว เหลือ {count} เม็ด
+live_activity,Time to take medication,ถึงเวลากินยา
+no_dose,No doses today,ไม่มีมื้อยาวันนี้
+add_time,Add time,เพิ่มเวลา
+camera_local,Take package photo (local only),ถ่ายรูปซองยา (เก็บในเครื่อง)
+remaining,Remaining {count},เหลือ {count} เม็ด
+next_dose,Next dose {time},มื้อต่อไป {time}
+snoozed,Snoozed until {time},เลื่อนไป {time}
+skipped,Skipped,ข้ามแล้ว
