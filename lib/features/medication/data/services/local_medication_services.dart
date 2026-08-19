@@ -11,7 +11,8 @@ class LocalMedicationReminderScheduler implements MedicationReminderScheduler {
       NotificationService.scheduleForMed(medication);
 
   @override
-  Future<void> cancelIds(Iterable<int> ids) => NotificationService.cancelIds(ids);
+  Future<void> cancelIds(Iterable<int> ids) =>
+      NotificationService.cancelIds(ids);
 
   @override
   Future<void> showLowStock(String name, int remaining) =>
@@ -23,13 +24,12 @@ class LocalMedicationReminderScheduler implements MedicationReminderScheduler {
     required String medName,
     required int dosage,
     required DateTime scheduledDose,
-  }) =>
-      NotificationService.scheduleSnooze(
-        medId: medId,
-        medName: medName,
-        dosage: dosage,
-        scheduledDose: scheduledDose,
-      );
+  }) => NotificationService.scheduleSnooze(
+    medId: medId,
+    medName: medName,
+    dosage: dosage,
+    scheduledDose: scheduledDose,
+  );
 
   @override
   Future<void> cancelSnooze(String medId, DateTime scheduledDose) =>
