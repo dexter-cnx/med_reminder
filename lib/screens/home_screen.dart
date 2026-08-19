@@ -34,14 +34,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: <Widget>[
           IconButton(
             onPressed: () => context.setLocale(
-              context.locale.languageCode == 'th' ? const Locale('en') : const Locale('th'),
+              context.locale.languageCode == 'th'
+                  ? const Locale('en')
+                  : const Locale('th'),
             ),
             icon: const Icon(Icons.language),
           ),
         ],
       ),
       body: _tab == 0
-          ? _TodayList(doses: doses, onTake: _take, onSkip: _skip, onSnooze: _snooze)
+          ? _TodayList(
+              doses: doses,
+              onTake: _take,
+              onSkip: _skip,
+              onSnooze: _snooze,
+            )
           : _MedicationList(meds: meds),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addMedication,
@@ -52,26 +59,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         currentIndex: _tab,
         onTap: (value) => setState(() => _tab = value),
         items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: const Icon(Icons.today), label: 'today'.tr()),
-          BottomNavigationBarItem(icon: const Icon(Icons.medication), label: 'all_meds'.tr()),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.today),
+            label: 'today'.tr(),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.medication),
+            label: 'all_meds'.tr(),
+          ),
         ],
       ),
     );
   }
 
   Future<void> _take(ScheduledDose dose) async {
-    await ref.read(logsProvider.notifier).markTaken(dose.medication.id, dose.scheduledAt);
-    await NotificationService.cancelSnooze(dose.medication.id, dose.scheduledAt);
+    await ref
+        .read(logsProvider.notifier)
+        .markTaken(dose.medication.id, dose.scheduledAt);
+    await NotificationService.cancelSnooze(
+      dose.medication.id,
+      dose.scheduledAt,
+    );
     await _syncCompanions();
   }
 
   Future<void> _skip(ScheduledDose dose) async {
-    await ref.read(logsProvider.notifier).markSkipped(dose.medication.id, dose.scheduledAt);
-    await NotificationService.cancelSnooze(dose.medication.id, dose.scheduledAt);
+    await ref
+        .read(logsProvider.notifier)
+        .markSkipped(dose.medication.id, dose.scheduledAt);
+    await NotificationService.cancelSnooze(
+      dose.medication.id,
+      dose.scheduledAt,
+    );
   }
 
   Future<void> _snooze(ScheduledDose dose) async {
-    await ref.read(logsProvider.notifier).markSnoozed(dose.medication.id, dose.scheduledAt);
+    await ref
+        .read(logsProvider.notifier)
+        .markSnoozed(dose.medication.id, dose.scheduledAt);
     await NotificationService.scheduleSnooze(
       medId: dose.medication.id,
       medName: dose.medication.name,
@@ -99,7 +124,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref.read(medsProvider.notifier).add(draft);
     await _syncCompanions();
     try {
-      await LiveActivityService.start(draft.name, draft.dosagePerTime, draft.times.first);
+      await LiveActivityService.start(
+        draft.name,
+        draft.dosagePerTime,
+        draft.times.first,
+      );
     } on MissingPluginException {
       // Native Live Activity support is an optional handoff.
     }
@@ -136,30 +165,44 @@ class _TodayList extends StatelessWidget {
                 ? const Icon(Icons.medication)
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(File(med.imagePath!), width: 48, height: 48, fit: BoxFit.cover),
+                    child: Image.file(
+                      File(med.imagePath!),
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
                   ),
             title: Text('$hour:$minute · ${med.name} × ${med.dosagePerTime}'),
-            subtitle: Text('remaining'.tr(namedArgs: <String, String>{'count': '${dose.remaining ?? '-'}'})),
+            subtitle: Text(
+              'remaining'.tr(
+                namedArgs: <String, String>{
+                  'count': '${dose.remaining ?? '-'}',
+                },
+              ),
+            ),
             trailing: dose.isTaken
                 ? const Icon(Icons.check_circle)
                 : dose.isSkipped
-                    ? Text('skipped'.tr())
-                    : Wrap(
-                        spacing: 4,
-                        children: <Widget>[
-                          IconButton(
-                            onPressed: () => onSnooze(dose),
-                            icon: const Icon(Icons.snooze),
-                            tooltip: 'snooze'.tr(),
-                          ),
-                          IconButton(
-                            onPressed: () => onSkip(dose),
-                            icon: const Icon(Icons.close),
-                            tooltip: 'skip'.tr(),
-                          ),
-                          FilledButton(onPressed: () => onTake(dose), child: Text('take'.tr())),
-                        ],
+                ? Text('skipped'.tr())
+                : Wrap(
+                    spacing: 4,
+                    children: <Widget>[
+                      IconButton(
+                        onPressed: () => onSnooze(dose),
+                        icon: const Icon(Icons.snooze),
+                        tooltip: 'snooze'.tr(),
                       ),
+                      IconButton(
+                        onPressed: () => onSkip(dose),
+                        icon: const Icon(Icons.close),
+                        tooltip: 'skip'.tr(),
+                      ),
+                      FilledButton(
+                        onPressed: () => onTake(dose),
+                        child: Text('take'.tr()),
+                      ),
+                    ],
+                  ),
           ),
         );
       },
@@ -225,7 +268,12 @@ class _MedicationEditorState extends State<_MedicationEditor> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, MediaQuery.viewInsetsOf(context).bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        24,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -241,17 +289,38 @@ class _MedicationEditorState extends State<_MedicationEditor> {
               icon: const Icon(Icons.camera_alt),
               label: Text('camera_local'.tr()),
             ),
-            TextField(controller: _name, decoration: InputDecoration(labelText: 'med_name'.tr())),
-            TextField(controller: _description, decoration: InputDecoration(labelText: 'med_desc'.tr())),
-            TextField(controller: _stock, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'total_amount'.tr())),
-            TextField(controller: _threshold, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'low_threshold'.tr())),
-            TextField(controller: _dosage, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'dosage'.tr())),
+            TextField(
+              controller: _name,
+              decoration: InputDecoration(labelText: 'med_name'.tr()),
+            ),
+            TextField(
+              controller: _description,
+              decoration: InputDecoration(labelText: 'med_desc'.tr()),
+            ),
+            TextField(
+              controller: _stock,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'total_amount'.tr()),
+            ),
+            TextField(
+              controller: _threshold,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'low_threshold'.tr()),
+            ),
+            TextField(
+              controller: _dosage,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: 'dosage'.tr()),
+            ),
             const SizedBox(height: 12),
             ..._times.asMap().entries.map(
               (entry) => ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(entry.value),
-                trailing: IconButton(onPressed: () => _editTime(entry.key), icon: const Icon(Icons.schedule)),
+                trailing: IconButton(
+                  onPressed: () => _editTime(entry.key),
+                  icon: const Icon(Icons.schedule),
+                ),
               ),
             ),
             TextButton.icon(
@@ -262,11 +331,21 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             DropdownButtonFormField<MedicationMode>(
               value: _mode,
               items: <DropdownMenuItem<MedicationMode>>[
-                DropdownMenuItem(value: MedicationMode.forever, child: Text('mode_forever'.tr())),
-                DropdownMenuItem(value: MedicationMode.days, child: Text('mode_days'.tr())),
-                DropdownMenuItem(value: MedicationMode.untilEmpty, child: Text('mode_until_empty'.tr())),
+                DropdownMenuItem(
+                  value: MedicationMode.forever,
+                  child: Text('mode_forever'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: MedicationMode.days,
+                  child: Text('mode_days'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: MedicationMode.untilEmpty,
+                  child: Text('mode_until_empty'.tr()),
+                ),
               ],
-              onChanged: (value) => setState(() => _mode = value ?? MedicationMode.forever),
+              onChanged: (value) =>
+                  setState(() => _mode = value ?? MedicationMode.forever),
             ),
             if (_mode == MedicationMode.days)
               TextField(
@@ -291,10 +370,14 @@ class _MedicationEditorState extends State<_MedicationEditor> {
   }
 
   Future<void> _editTime(int index) async {
-    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
     if (picked == null) return;
     setState(
-      () => _times[index] = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
+      () => _times[index] =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
     );
   }
 
