@@ -1,13 +1,1 @@
-import '../models/medication.dart';
-
-abstract interface class MedicationRepository {
-  List<Medication> readAll();
-
-  Future<void> replaceAll(List<Medication> medications);
-}
-
-abstract interface class DoseLogRepository {
-  List<DoseLog> readAll();
-
-  Future<void> replaceAll(List<DoseLog> logs);
-}
+export '../features/medication/domain/repositories/medication_repository.dart';
