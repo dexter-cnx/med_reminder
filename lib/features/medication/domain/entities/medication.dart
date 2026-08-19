@@ -8,14 +8,15 @@ class Medication {
     required this.times,
     required this.createdAt,
     this.description = '',
-    this.initialAmount,
+    int? initialAmount,
+    @Deprecated('Use initialAmount.') int? totalAmount,
     this.lowThreshold,
     this.imagePath,
     this.dosagePerTime = 1,
     this.mode = MedicationMode.forever,
     this.daysCount,
     this.notificationIds = const <int>[],
-  });
+  }) : initialAmount = initialAmount ?? totalAmount;
 
   final String id;
   final String name;
