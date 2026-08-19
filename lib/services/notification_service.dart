@@ -8,6 +8,7 @@ import '../models/medication.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   static bool _timezoneReady = false;
+  static String? _timezoneName;
   static AndroidScheduleMode _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
   static const NotificationDetails _doseDetails = NotificationDetails(
@@ -41,23 +42,45 @@ class NotificationService {
     await _initTimezone();
   }
 
+  static Future<String> _readTimezoneName() async {
+    try {
+      return await FlutterTimezone.getLocalTimezone();
+    } catch (_) {
+      return 'UTC';
+    }
+  }
+
   static Future<void> _initTimezone() async {
     if (_timezoneReady) return;
     tzdata.initializeTimeZones();
+    _timezoneName = await _readTimezoneName();
     try {
-      final timezone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timezone));
+      tz.setLocalLocation(tz.getLocation(_timezoneName!));
     } catch (_) {
+      _timezoneName = 'UTC';
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
     _timezoneReady = true;
+  }
+
+  static Future<bool> refreshTimezoneIfChanged() async {
+    await _initTimezone();
+    final next = await _readTimezoneName();
+    if (next == _timezoneName) return false;
+    try {
+      tz.setLocalLocation(tz.getLocation(next));
+      _timezoneName = next;
+    } catch (_) {
+      return false;
+    }
+    return true;
   }
 
   static Future<List<int>> scheduleForMed(Medication medication) async {
     await cancelIds(medication.notificationIds);
     await _initTimezone();
 
-    if (medication.mode == MedicationMode.untilEmpty && medication.isEmpty) {
+    if (medication.mode == MedicationMode.untilEmpty && medication.initialAmount == 0) {
       return const <int>[];
     }
 
@@ -74,14 +97,7 @@ class NotificationService {
         for (var dayOffset = 0; dayOffset < count; dayOffset++) {
           final now = tz.TZDateTime.now(tz.local);
           final date = now.add(Duration(days: dayOffset));
-          final scheduled = tz.TZDateTime(
-            tz.local,
-            date.year,
-            date.month,
-            date.day,
-            hour,
-            minute,
-          );
+          final scheduled = tz.TZDateTime(tz.local, date.year, date.month, date.day, hour, minute);
           if (!scheduled.isAfter(now)) continue;
           final id = _stableNotificationId('${medication.id}:$timeIndex:$dayOffset');
           ids.add(id);
@@ -148,21 +164,19 @@ class NotificationService {
     }
   }
 
-  static Future<void> showLowStock(String name, int remaining) {
-    return _plugin.show(
-      _stableNotificationId('low-stock:$name'),
-      'Low medication stock',
-      '$name: $remaining remaining',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'low_stock',
-          'Low medication stock',
-          importance: Importance.high,
+  static Future<void> showLowStock(String name, int remaining) => _plugin.show(
+        _stableNotificationId('low-stock:$name'),
+        'Low medication stock',
+        '$name: $remaining remaining',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'low_stock',
+            'Low medication stock',
+            importance: Importance.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-    );
-  }
+      );
 
   static int _stableNotificationId(String input) {
     var hash = 0x811c9dc5;
