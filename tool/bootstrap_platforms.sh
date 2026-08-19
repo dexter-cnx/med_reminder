@@ -13,9 +13,32 @@ from pathlib import Path
 
 manifest = Path('android/app/src/main/AndroidManifest.xml')
 text = manifest.read_text()
-permission = '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />'
-if permission not in text:
-    text = text.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    ' + permission)
+manifest_tag = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+permissions = [
+    '<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />',
+    '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />',
+]
+for permission in permissions:
+    if permission not in text:
+        text = text.replace(manifest_tag, manifest_tag + '\n    ' + permission)
+
+receivers = '''
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+'''
+if 'ScheduledNotificationReceiver' not in text:
+    text = text.replace('    </application>', receivers + '    </application>')
 manifest.write_text(text)
 
 plist = Path('ios/Runner/Info.plist')
