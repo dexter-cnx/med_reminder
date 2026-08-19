@@ -39,4 +39,25 @@ class PhotoService {
     final file = File(path);
     if (await file.exists()) await file.delete();
   }
+
+  static Future<int> pruneOrphaned(Iterable<String> referencedPaths) async {
+    final documents = await getApplicationDocumentsDirectory();
+    final directory = Directory(p.join(documents.path, photoDirectoryName));
+    if (!await directory.exists()) return 0;
+
+    final referenced = referencedPaths
+        .where((path) => path.isNotEmpty)
+        .map((path) => p.normalize(File(path).absolute.path))
+        .toSet();
+
+    var deleted = 0;
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final normalized = p.normalize(entity.absolute.path);
+      if (referenced.contains(normalized)) continue;
+      await entity.delete();
+      deleted++;
+    }
+    return deleted;
+  }
 }
