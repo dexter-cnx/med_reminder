@@ -13,7 +13,10 @@ class LocalMedicationRepository implements MedicationRepository {
     try {
       final items = _dataSource
           .readMedicationRecords()
-          .map((record) => MedicationRecord(Map<String, dynamic>.from(record)).toEntity())
+          .map(
+            (record) =>
+                MedicationRecord(Map<String, dynamic>.from(record)).toEntity(),
+          )
           .toList(growable: false);
       return Success<List<Medication>>(items);
     } catch (error) {
@@ -27,7 +30,9 @@ class LocalMedicationRepository implements MedicationRepository {
   Future<Result<void>> replaceAll(List<Medication> medications) async {
     try {
       await _dataSource.replaceMedicationRecords(
-        medications.map((item) => MedicationRecord.fromEntity(item).value).toList(growable: false),
+        medications
+            .map((item) => MedicationRecord.fromEntity(item).value)
+            .toList(growable: false),
       );
       return const Success<void>(null);
     } catch (error) {
@@ -57,7 +62,10 @@ class LocalDoseLogRepository implements DoseLogRepository {
     try {
       final items = _dataSource
           .readDoseLogRecords()
-          .map((record) => DoseLogRecord(Map<String, dynamic>.from(record)).toEntity())
+          .map(
+            (record) =>
+                DoseLogRecord(Map<String, dynamic>.from(record)).toEntity(),
+          )
           .toList(growable: false);
       return Success<List<DoseLog>>(items);
     } catch (error) {
@@ -71,7 +79,9 @@ class LocalDoseLogRepository implements DoseLogRepository {
   Future<Result<void>> replaceAll(List<DoseLog> logs) async {
     try {
       await _dataSource.replaceDoseLogRecords(
-        logs.map((item) => DoseLogRecord.fromEntity(item).value).toList(growable: false),
+        logs
+            .map((item) => DoseLogRecord.fromEntity(item).value)
+            .toList(growable: false),
       );
       return const Success<void>(null);
     } catch (error) {
