@@ -2,6 +2,7 @@ name: Format Artifact
 
 on:
   push:
+  pull_request:
 
 jobs:
   format:
