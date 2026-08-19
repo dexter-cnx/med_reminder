@@ -41,4 +41,8 @@ class LocalMedicationPhotoStore implements MedicationPhotoStore {
 
   @override
   Future<void> delete(String? path) => PhotoService.deletePhoto(path);
+
+  @override
+  Future<int> pruneOrphaned(Iterable<String> referencedPaths) =>
+      PhotoService.pruneOrphaned(referencedPaths);
 }
