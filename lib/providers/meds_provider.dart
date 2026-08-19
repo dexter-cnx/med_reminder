@@ -1,16 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/medication.dart';
+import '../repositories/medication_repository.dart';
 import '../services/notification_service.dart';
 import '../services/photo_service.dart';
+import 'repository_providers.dart';
 
 final medsProvider = StateNotifierProvider<MedsNotifier, List<Medication>>(
-  (ref) => MedsNotifier(),
+  (ref) => MedsNotifier(ref.watch(medicationRepositoryProvider)),
 );
 final logsProvider = StateNotifierProvider<LogsNotifier, List<DoseLog>>(
-  (ref) => LogsNotifier(),
+  (ref) => LogsNotifier(ref.watch(doseLogRepositoryProvider)),
 );
 
 final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
@@ -35,7 +36,13 @@ final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
           break;
         }
       }
-      doses.add(ScheduledDose(medication: med, scheduledAt: scheduled, log: existing));
+      doses.add(
+        ScheduledDose(
+          medication: med,
+          scheduledAt: scheduled,
+          log: existing,
+        ),
+      );
     }
   }
   doses.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
@@ -51,24 +58,11 @@ bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
     log.scheduledAt.minute == scheduled.minute;
 
 class MedsNotifier extends StateNotifier<List<Medication>> {
-  MedsNotifier() : super(const <Medication>[]) {
-    _load();
-  }
+  MedsNotifier(this._repository) : super(_repository.readAll());
 
-  Box<dynamic> get _box => Hive.box('meds');
+  final MedicationRepository _repository;
 
-  void _load() {
-    state = _box.values
-        .map((value) => Medication.fromMap(Map<dynamic, dynamic>.from(value as Map)))
-        .toList();
-  }
-
-  Future<void> _save() async {
-    await _box.clear();
-    for (final med in state) {
-      await _box.add(med.toMap());
-    }
-  }
+  Future<void> _save() => _repository.replaceAll(state);
 
   Future<void> add(Medication med) async {
     final ids = await NotificationService.scheduleForMed(med);
@@ -89,7 +83,10 @@ class MedsNotifier extends StateNotifier<List<Medication>> {
     }
 
     final threshold = old.lowThreshold;
-    if (threshold != null && old.totalAmount != null && old.totalAmount! > threshold && newAmount <= threshold) {
+    if (threshold != null &&
+        old.totalAmount != null &&
+        old.totalAmount! > threshold &&
+        newAmount <= threshold) {
       await NotificationService.showLowStock(old.name, newAmount);
     }
 
@@ -110,24 +107,11 @@ class MedsNotifier extends StateNotifier<List<Medication>> {
 }
 
 class LogsNotifier extends StateNotifier<List<DoseLog>> {
-  LogsNotifier() : super(const <DoseLog>[]) {
-    _load();
-  }
+  LogsNotifier(this._repository) : super(_repository.readAll());
 
-  Box<dynamic> get _box => Hive.box('logs');
+  final DoseLogRepository _repository;
 
-  void _load() {
-    state = _box.values
-        .map((value) => DoseLog.fromMap(Map<dynamic, dynamic>.from(value as Map)))
-        .toList();
-  }
-
-  Future<void> _save() async {
-    await _box.clear();
-    for (final log in state) {
-      await _box.add(log.toMap());
-    }
-  }
+  Future<void> _save() => _repository.replaceAll(state);
 
   Future<void> markTaken(String medId, DateTime scheduledAt) =>
       _upsert(medId, scheduledAt, DoseStatus.taken, takenAt: DateTime.now());
