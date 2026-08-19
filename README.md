@@ -2,10 +2,22 @@
 
 Offline-first Flutter medication reminder. All medication data, dose logs, photos, and reminder scheduling stay on-device; there is no application server.
 
+## Architecture
+
+The project uses pragmatic Clean Architecture + MVVM with Riverpod for dependency injection.
+
+- `domain`: pure entities, repository contracts, and service ports. No Flutter, Riverpod, or Hive dependencies.
+- `data`: Hive/local data sources, persistence records/mappers, repository implementations, and local service adapters.
+- `presentation`: Riverpod-backed ViewModels and UI-facing state.
+- `main.dart`: composition root that injects concrete implementations through `ProviderScope.overrides`.
+
+Hive is therefore one storage implementation rather than a dependency of medication business/presentation logic. Repository providers can be overridden with in-memory, SQLite, or other implementations without changing the ViewModel.
+
 ## Current baseline
 
-- Riverpod `StateNotifier` for medications and dose logs.
-- Hive boxes `meds` and `logs` for local persistence.
+- Riverpod `StateNotifier` ViewModels for medications and dose logs.
+- Abstract `MedicationRepository` / `DoseLogRepository` contracts with Hive-backed local implementation.
+- Hive boxes `meds` and `logs` for current local persistence.
 - One CSV localization source: `assets/translations.csv` (`key,en,th,...`) with locale discovery from the header and English value fallback.
 - Local scheduled notifications using timezone-aware `zonedSchedule`.
 - Independent dose state per scheduled time (`scheduledAt`), so 08:00 and 20:00 do not share one taken flag.
