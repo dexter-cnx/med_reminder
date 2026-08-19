@@ -50,10 +50,7 @@ class DoseActionButtons extends StatelessWidget {
           button: true,
           label: takeLabel,
           excludeSemantics: true,
-          child: FilledButton(
-            onPressed: onTake,
-            child: Text(takeLabel),
-          ),
+          child: FilledButton(onPressed: onTake, child: Text(takeLabel)),
         ),
       ],
     );

@@ -21,38 +21,40 @@ void main() {
     },
   );
 
-  test('remaining and low-stock state are derived from taken dose logs only',
-      () {
-    final med = Medication(
-      id: 'm1',
-      name: 'Test',
-      times: const <String>['08:00', '20:00'],
-      initialAmount: 10,
-      lowThreshold: 8,
-      dosagePerTime: 2,
-      mode: MedicationMode.untilEmpty,
-      createdAt: DateTime(2026, 8, 19),
-    );
-    final logs = <DoseLog>[
-      DoseLog(
-        id: 'l1',
-        medId: 'm1',
-        scheduledAt: DateTime(2026, 8, 19, 8),
-        takenAt: DateTime(2026, 8, 19, 8, 5),
-        status: DoseStatus.taken,
-      ),
-      DoseLog(
-        id: 'l2',
-        medId: 'm1',
-        scheduledAt: DateTime(2026, 8, 19, 20),
-        status: DoseStatus.skipped,
-      ),
-    ];
+  test(
+    'remaining and low-stock state are derived from taken dose logs only',
+    () {
+      final med = Medication(
+        id: 'm1',
+        name: 'Test',
+        times: const <String>['08:00', '20:00'],
+        initialAmount: 10,
+        lowThreshold: 8,
+        dosagePerTime: 2,
+        mode: MedicationMode.untilEmpty,
+        createdAt: DateTime(2026, 8, 19),
+      );
+      final logs = <DoseLog>[
+        DoseLog(
+          id: 'l1',
+          medId: 'm1',
+          scheduledAt: DateTime(2026, 8, 19, 8),
+          takenAt: DateTime(2026, 8, 19, 8, 5),
+          status: DoseStatus.taken,
+        ),
+        DoseLog(
+          id: 'l2',
+          medId: 'm1',
+          scheduledAt: DateTime(2026, 8, 19, 20),
+          status: DoseStatus.skipped,
+        ),
+      ];
 
-    expect(med.remaining(logs), 8);
-    expect(med.isLowStock(logs), isTrue);
-    expect(med.isEmpty(logs), isFalse);
-  });
+      expect(med.remaining(logs), 8);
+      expect(med.isLowStock(logs), isTrue);
+      expect(med.isEmpty(logs), isFalse);
+    },
+  );
 
   test('medication defensively freezes collection fields', () {
     final times = <String>['08:00'];

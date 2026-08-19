@@ -11,8 +11,8 @@ class HiveMedicationLocalDataSource implements MedicationLocalDataSource {
   HiveMedicationLocalDataSource({
     required Box<dynamic> medicationBox,
     required Box<dynamic> doseLogBox,
-  })  : _medicationBox = medicationBox,
-        _doseLogBox = doseLogBox;
+  }) : _medicationBox = medicationBox,
+       _doseLogBox = doseLogBox;
 
   final Box<dynamic> _medicationBox;
   final Box<dynamic> _doseLogBox;

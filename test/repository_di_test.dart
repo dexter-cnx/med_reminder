@@ -81,31 +81,36 @@ void main() {
     expect(container.read(medsProvider), <Medication>[expected]);
   });
 
-  test('repository failure is exposed through Riverpod presentation state',
-      () async {
-    final repository = _FailingMedicationRepository();
-    final container = ProviderContainer(
-      overrides: [
-        medicationRepositoryProvider.overrideWithValue(repository),
-        medicationReminderSchedulerProvider.overrideWithValue(
-          _FakeReminderScheduler(),
-        ),
-        medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
-      ],
-    );
-    addTearDown(container.dispose);
+  test(
+    'repository failure is exposed through Riverpod presentation state',
+    () async {
+      final repository = _FailingMedicationRepository();
+      final container = ProviderContainer(
+        overrides: [
+          medicationRepositoryProvider.overrideWithValue(repository),
+          medicationReminderSchedulerProvider.overrideWithValue(
+            _FakeReminderScheduler(),
+          ),
+          medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    expect(container.read(medsProvider), isEmpty);
-    await Future<void>.delayed(Duration.zero);
-    expect(container.read(repositoryFailureProvider)?.code, 'test_read_failed');
-  });
+      expect(container.read(medsProvider), isEmpty);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(repositoryFailureProvider)?.code,
+        'test_read_failed',
+      );
+    },
+  );
 }
 
 class _FailingMedicationRepository implements MedicationRepository {
   @override
   Result<List<Medication>> readAll() => const Failed<List<Medication>>(
-        Failure(code: 'test_read_failed', message: 'boom'),
-      );
+    Failure(code: 'test_read_failed', message: 'boom'),
+  );
 
   @override
   Future<Result<void>> replaceAll(List<Medication> medications) async =>
