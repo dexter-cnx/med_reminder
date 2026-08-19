@@ -6,7 +6,8 @@ class MedicationRecord {
   const MedicationRecord(this.value);
   final Map<String, dynamic> value;
 
-  factory MedicationRecord.fromEntity(Medication medication) => MedicationRecord(<String, dynamic>{
+  factory MedicationRecord.fromEntity(Medication medication) =>
+      MedicationRecord(<String, dynamic>{
         'id': medication.id,
         'name': medication.name,
         'description': medication.description,
@@ -40,7 +41,9 @@ class MedicationRecord {
       mode: mode,
       daysCount: value['daysCount'] as int?,
       createdAt: DateTime.parse(value['createdAt'] as String),
-      notificationIds: List<int>.from(value['notificationIds'] as List? ?? const <int>[]),
+      notificationIds: List<int>.from(
+        value['notificationIds'] as List? ?? const <int>[],
+      ),
     );
   }
 }
@@ -49,7 +52,8 @@ class DoseLogRecord {
   const DoseLogRecord(this.value);
   final Map<String, dynamic> value;
 
-  factory DoseLogRecord.fromEntity(DoseLog log) => DoseLogRecord(<String, dynamic>{
+  factory DoseLogRecord.fromEntity(DoseLog log) =>
+      DoseLogRecord(<String, dynamic>{
         'id': log.id,
         'medId': log.medId,
         'scheduledAt': log.scheduledAt.toIso8601String(),
@@ -72,7 +76,9 @@ class DoseLogRecord {
       id: (value['id'] as String?) ?? const Uuid().v4(),
       medId: value['medId'] as String,
       scheduledAt: DateTime.parse(value['scheduledAt'] as String),
-      takenAt: value['takenAt'] == null ? null : DateTime.parse(value['takenAt'] as String),
+      takenAt: value['takenAt'] == null
+          ? null
+          : DateTime.parse(value['takenAt'] as String),
       status: DoseStatus.values.firstWhere(
         (item) => item.name == value['status'],
         orElse: () => DoseStatus.pending,
