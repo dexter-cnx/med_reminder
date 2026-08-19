@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'features/medication/data/datasources/medication_local_data_source.dart';
+import 'features/medication/data/repositories/local_medication_repository.dart';
+import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'l10n/csv_loader.dart';
-import 'providers/repository_providers.dart';
-import 'repositories/hive/hive_medication_repository.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 
@@ -17,6 +18,11 @@ Future<void> main() async {
   final medsBox = await Hive.openBox<dynamic>('meds');
   final logsBox = await Hive.openBox<dynamic>('logs');
   await NotificationService.init();
+
+  final localDataSource = HiveMedicationLocalDataSource(
+    medicationBox: medsBox,
+    doseLogBox: logsBox,
+  );
 
   final locales = await SingleCsvAssetLoader.detectLocalesFromCsv(
     'assets/translations.csv',
@@ -31,10 +37,10 @@ Future<void> main() async {
       child: ProviderScope(
         overrides: [
           medicationRepositoryProvider.overrideWithValue(
-            HiveMedicationRepository(medsBox),
+            LocalMedicationRepository(localDataSource),
           ),
           doseLogRepositoryProvider.overrideWithValue(
-            HiveDoseLogRepository(logsBox),
+            LocalDoseLogRepository(localDataSource),
           ),
         ],
         child: const MedReminderApp(),
