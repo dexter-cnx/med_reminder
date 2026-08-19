@@ -16,6 +16,11 @@ class _MedicationRepository implements MedicationRepository {
   Future<void> replaceAll(List<Medication> medications) async {
     values = List<Medication>.from(medications);
   }
+
+  @override
+  Future<void> delete(String id) async {
+    values = values.where((item) => item.id != id).toList(growable: false);
+  }
 }
 
 class _LogRepository implements DoseLogRepository {
@@ -84,5 +89,6 @@ void main() {
     expect(morning.isTaken, isTrue);
     expect(evening.isTaken, isFalse);
     expect(evening.log, isNull);
+    expect(evening.remaining, 9);
   });
 }
