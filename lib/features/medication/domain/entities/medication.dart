@@ -2,10 +2,10 @@ enum MedicationMode { forever, days, untilEmpty }
 enum DoseStatus { pending, taken, skipped, snoozed }
 
 class Medication {
-  const Medication({
+  Medication({
     required this.id,
     required this.name,
-    required this.times,
+    required List<String> times,
     required this.createdAt,
     this.description = '',
     this.initialAmount,
@@ -14,8 +14,9 @@ class Medication {
     this.dosagePerTime = 1,
     this.mode = MedicationMode.forever,
     this.daysCount,
-    this.notificationIds = const <int>[],
-  });
+    List<int> notificationIds = const <int>[],
+  })  : times = List<String>.unmodifiable(times),
+        notificationIds = List<int>.unmodifiable(notificationIds);
 
   final String id;
   final String name;
@@ -50,7 +51,7 @@ class Medication {
     final initial = initialAmount;
     if (initial == null) return null;
     final takenCount = logs.where(
-      (log) => log.medId == id && log.status == DoseStatus.taken,
+      (log) => log.medId == id && log.isTaken,
     ).length;
     final value = initial - (takenCount * dosagePerTime);
     return value < 0 ? 0 : value;
