@@ -335,7 +335,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
               label: Text('add_time'.tr()),
             ),
             DropdownButtonFormField<MedicationMode>(
-              value: _mode,
+              initialValue: _mode,
               items: <DropdownMenuItem<MedicationMode>>[
                 DropdownMenuItem(
                   value: MedicationMode.forever,
