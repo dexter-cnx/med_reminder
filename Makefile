@@ -1,36 +1,73 @@
-.PHONY: bootstrap pub-get ensure-pub l10n-generate l10n-validate l10n-check format format-check analyze test check
+FLUTTER ?= flutter
+DART ?= dart
+
+.PHONY: bootstrap pub-get ensure-pub l10n-generate l10n-validate l10n-check \
+	format format-check analyze test test-domain test-data test-presentation \
+	test-suites test-all check android-build android-test android ios-build \
+	ios-test ios
 
 bootstrap:
 	./tool/bootstrap_platforms.sh
 
 pub-get:
-	flutter pub get
+	$(FLUTTER) pub get
 
 ensure-pub:
 	@if [ ! -f .dart_tool/package_config.json ]; then \
 		echo "Resolving Flutter dependencies..."; \
-		flutter pub get; \
+		$(FLUTTER) pub get; \
 	fi
 
 l10n-generate: ensure-pub
-	dart run tool/generate_localizations.dart
+	$(DART) run tool/generate_localizations.dart
 
 l10n-validate: ensure-pub
-	dart run tool/validate_translations.dart
+	$(DART) run tool/validate_translations.dart
 
 l10n-check: l10n-validate
-	dart run tool/generate_localizations.dart --check
+	$(DART) run tool/generate_localizations.dart --check
 
 format: ensure-pub
-	dart format lib test tool
+	$(DART) format lib test tool
 
 format-check: ensure-pub
-	dart format --output=none --set-exit-if-changed lib test tool
+	$(DART) format --output=none --set-exit-if-changed lib test tool
 
 analyze: ensure-pub
-	flutter analyze
+	$(FLUTTER) analyze
 
-test: ensure-pub
-	flutter test
+test: test-all
 
-check: l10n-check format-check analyze test
+test-domain: ensure-pub
+	$(FLUTTER) test test/medication_test.dart
+
+test-data: ensure-pub
+	$(FLUTTER) test test/csv_validator_test.dart test/photo_service_test.dart
+
+test-presentation: ensure-pub
+	$(FLUTTER) test test/repository_di_test.dart test/today_doses_provider_test.dart test/accessibility_test.dart
+
+test-suites: test-domain test-data test-presentation
+
+test-all: ensure-pub
+	$(FLUTTER) test
+
+check: l10n-check format-check analyze test-all
+
+android-build: ensure-pub
+	$(FLUTTER) build apk --debug
+
+android-test: check android-build
+
+android: android-test
+
+ios-build: ensure-pub
+	@if [ "$$(uname -s)" != "Darwin" ]; then \
+		echo "iOS builds require macOS/Xcode."; \
+		exit 1; \
+	fi
+	$(FLUTTER) build ios --simulator --debug
+
+ios-test: check ios-build
+
+ios: ios-test
