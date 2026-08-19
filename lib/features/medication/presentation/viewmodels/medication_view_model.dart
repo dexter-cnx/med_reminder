@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/result/result.dart';
 import '../../domain/entities/medication.dart';
 import '../../domain/repositories/medication_repository.dart';
 import '../../domain/services/medication_services.dart';
@@ -21,17 +22,21 @@ final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
   (ref) => throw UnimplementedError('MedicationPhotoStore must be provided by app DI.'),
 );
 
+final repositoryFailureProvider = StateProvider<Failure?>((ref) => null);
+
 final medsProvider = StateNotifierProvider<MedicationViewModel, List<Medication>>(
   (ref) => MedicationViewModel(
     repository: ref.watch(medicationRepositoryProvider),
     reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
     photoStore: ref.watch(medicationPhotoStoreProvider),
+    onFailure: (failure) => ref.read(repositoryFailureProvider.notifier).state = failure,
   ),
 );
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
   (ref) => DoseLogViewModel(
     ref.watch(doseLogRepositoryProvider),
+    onFailure: (failure) => ref.read(repositoryFailureProvider.notifier).state = failure,
     onTaken: (medId, logs) => ref.read(medsProvider.notifier).reconcileFromLogs(medId, logs),
   ),
 );
@@ -80,30 +85,61 @@ bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
     log.scheduledAt.hour == scheduled.hour &&
     log.scheduledAt.minute == scheduled.minute;
 
+List<Medication> _loadMedications(
+  MedicationRepository repository,
+  void Function(Failure failure) onFailure,
+) => repository.readAll().fold(
+      onSuccess: (items) => items,
+      onFailure: (failure) {
+        onFailure(failure);
+        return const <Medication>[];
+      },
+    );
+
+List<DoseLog> _loadLogs(
+  DoseLogRepository repository,
+  void Function(Failure failure) onFailure,
+) => repository.readAll().fold(
+      onSuccess: (items) => items,
+      onFailure: (failure) {
+        onFailure(failure);
+        return const <DoseLog>[];
+      },
+    );
+
 class MedicationViewModel extends StateNotifier<List<Medication>> {
   MedicationViewModel({
     required MedicationRepository repository,
     required MedicationReminderScheduler reminderScheduler,
     required MedicationPhotoStore photoStore,
+    required void Function(Failure failure) onFailure,
   })  : _repository = repository,
         _reminderScheduler = reminderScheduler,
         _photoStore = photoStore,
-        super(repository.readAll());
+        _onFailure = onFailure,
+        super(_loadMedications(repository, onFailure));
 
   final MedicationRepository _repository;
   final MedicationReminderScheduler _reminderScheduler;
   final MedicationPhotoStore _photoStore;
+  final void Function(Failure failure) _onFailure;
 
-  Future<void> _persist() => _repository.replaceAll(state);
+  Future<bool> _persist() async {
+    final result = await _repository.replaceAll(state);
+    return result.fold(
+      onSuccess: (_) => true,
+      onFailure: (failure) {
+        _onFailure(failure);
+        return false;
+      },
+    );
+  }
 
   Future<void> add(Medication medication) async {
     final ids = await _reminderScheduler.schedule(medication);
     state = <Medication>[...state, medication.copyWith(notificationIds: ids)];
     await _persist();
   }
-
-  @Deprecated('Stock is derived from DoseLog history; use reconcileFromLogs.')
-  Future<void> updateStock(String id, int requestedAmount) async {}
 
   Future<void> reconcileFromLogs(String id, Iterable<DoseLog> logs) async {
     final index = state.indexWhere((med) => med.id == id);
@@ -138,7 +174,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     final now = DateTime.now();
     final next = <Medication>[];
     for (final medication in state) {
-      if (!medication.isActiveOn(now, logs: logs)) {
+      if (medication.isExpired(now) || !medication.isActiveOn(now, logs: logs)) {
         await _reminderScheduler.cancelIds(medication.notificationIds);
         next.add(medication.copyWith(notificationIds: const <int>[]));
         continue;
@@ -155,7 +191,15 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     if (med == null) return;
     await _reminderScheduler.cancelIds(med.notificationIds);
     await _photoStore.delete(med.imagePath);
-    await _repository.delete(id);
+    final result = await _repository.delete(id);
+    final deleted = result.fold(
+      onSuccess: (_) => true,
+      onFailure: (failure) {
+        _onFailure(failure);
+        return false;
+      },
+    );
+    if (!deleted) return;
     state = state.where((item) => item.id != id).toList(growable: false);
   }
 }
@@ -163,12 +207,27 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
 typedef DoseTakenCallback = Future<void> Function(String medId, List<DoseLog> logs);
 
 class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
-  DoseLogViewModel(this._repository, {this.onTaken}) : super(_repository.readAll());
+  DoseLogViewModel(
+    this._repository, {
+    required void Function(Failure failure) onFailure,
+    this.onTaken,
+  })  : _onFailure = onFailure,
+        super(_loadLogs(repository, onFailure));
 
   final DoseLogRepository _repository;
+  final void Function(Failure failure) _onFailure;
   final DoseTakenCallback? onTaken;
 
-  Future<void> _persist() => _repository.replaceAll(state);
+  Future<bool> _persist() async {
+    final result = await _repository.replaceAll(state);
+    return result.fold(
+      onSuccess: (_) => true,
+      onFailure: (failure) {
+        _onFailure(failure);
+        return false;
+      },
+    );
+  }
 
   Future<void> markTaken(String medId, DateTime scheduledAt) async {
     await _upsert(medId, scheduledAt, DoseStatus.taken, takenAt: DateTime.now());
@@ -194,11 +253,14 @@ class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
       takenAt: takenAt,
       status: status,
     );
+    final previous = state;
     state = <DoseLog>[
       ...state.where((log) => !_sameDose(log, medId, scheduledAt)),
       replacement,
     ];
-    await _persist();
+    if (!await _persist()) {
+      state = previous;
+    }
   }
 }
 
