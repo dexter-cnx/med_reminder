@@ -56,8 +56,39 @@ Future<void> main() async {
   );
 }
 
-class MedReminderApp extends StatelessWidget {
+class MedReminderApp extends ConsumerStatefulWidget {
   const MedReminderApp({super.key});
+
+  @override
+  ConsumerState<MedReminderApp> createState() => _MedReminderAppState();
+}
+
+class _MedReminderAppState extends ConsumerState<MedReminderApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshTimezone();
+    }
+  }
+
+  Future<void> _refreshTimezone() async {
+    final changed = await NotificationService.refreshTimezoneIfChanged();
+    if (!changed || !mounted) return;
+    await ref.read(medsProvider.notifier).rescheduleAll();
+  }
 
   @override
   Widget build(BuildContext context) {
