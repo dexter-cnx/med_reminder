@@ -2,19 +2,25 @@
 set -euo pipefail
 
 command -v flutter >/dev/null 2>&1 || { echo "flutter is required" >&2; exit 1; }
-flutter --version >/dev/null
+flutter --version
 
-[[ -f pubspec.yaml && -d lib ]] || {
+[[ -f pubspec.yaml && -d lib && -d tool ]] || {
   echo "Run this script from the med_reminder repository root." >&2
   exit 1
 }
 
-backup_root=".bootstrap_backup"
-rm -rf "$backup_root"
+if [[ -n "$(git status --porcelain 2>/dev/null || true)" ]]; then
+  echo "Working tree is not clean. Commit or stash changes before bootstrap." >&2
+  exit 1
+fi
+
+timestamp="$(date +%Y%m%d-%H%M%S)"
+backup_root="tool/.bootstrap_backup/$timestamp"
 mkdir -p "$backup_root"
 cp -R lib "$backup_root/lib"
 [[ -d assets ]] && cp -R assets "$backup_root/assets"
 [[ -d test ]] && cp -R test "$backup_root/test"
+printf '%s\n' "Backup created at $backup_root"
 
 restore_sources() {
   rm -rf lib
@@ -28,7 +34,8 @@ restore_sources() {
     cp -R "$backup_root/test" test
   fi
 }
-trap restore_sources ERR
+
+trap 'restore_sources; echo "Bootstrap failed; source backup kept at $backup_root" >&2' ERR
 
 flutter create \
   --project-name med_reminder_offline \
@@ -38,7 +45,6 @@ flutter create \
 
 restore_sources
 trap - ERR
-rm -rf "$backup_root"
 
 python3 - <<'PY'
 from pathlib import Path
@@ -85,4 +91,6 @@ if '<key>NSCameraUsageDescription</key>' not in text:
 plist.write_text(text)
 PY
 
-echo "Android/iOS scaffolding created. Source folders were restored from backup; review signing and bundle IDs before device builds."
+echo "Android/iOS scaffolding created."
+echo "Source backup retained at: $backup_root"
+echo "Delete it manually after verifying the generated platform projects."
