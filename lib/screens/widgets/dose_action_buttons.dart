@@ -29,6 +29,7 @@ class DoseActionButtons extends StatelessWidget {
         Semantics(
           button: true,
           label: snoozeLabel,
+          excludeSemantics: true,
           child: IconButton(
             onPressed: onSnooze,
             icon: const Icon(Icons.snooze),
@@ -38,6 +39,7 @@ class DoseActionButtons extends StatelessWidget {
         Semantics(
           button: true,
           label: skipLabel,
+          excludeSemantics: true,
           child: IconButton(
             onPressed: onSkip,
             icon: const Icon(Icons.close),
@@ -47,6 +49,7 @@ class DoseActionButtons extends StatelessWidget {
         Semantics(
           button: true,
           label: takeLabel,
+          excludeSemantics: true,
           child: FilledButton(
             onPressed: onTake,
             child: Text(takeLabel),
