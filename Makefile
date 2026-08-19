@@ -1,10 +1,11 @@
 FLUTTER ?= flutter
 DART ?= dart
+DEVICE ?=
 
 .PHONY: bootstrap pub-get ensure-pub l10n-generate l10n-validate l10n-check \
 	format format-check analyze test test-domain test-data test-presentation \
 	test-suites test-all check android-build android-test android ios-build \
-	ios-test ios
+	ios-test ios ios-device-profile ios-device-release
 
 bootstrap:
 	./tool/bootstrap_platforms.sh
@@ -71,3 +72,25 @@ ios-build: ensure-pub
 ios-test: check ios-build
 
 ios: ios-test
+
+ios-device-profile: ensure-pub
+	@if [ "$$(uname -s)" != "Darwin" ]; then \
+		echo "iOS device runs require macOS/Xcode."; \
+		exit 1; \
+	fi
+	@if [ -z "$(DEVICE)" ]; then \
+		echo "DEVICE is required. Example: make ios-device-profile DEVICE=00008030-0004694C3E68C02E"; \
+		exit 1; \
+	fi
+	$(FLUTTER) run --profile -d "$(DEVICE)"
+
+ios-device-release: ensure-pub
+	@if [ "$$(uname -s)" != "Darwin" ]; then \
+		echo "iOS device runs require macOS/Xcode."; \
+		exit 1; \
+	fi
+	@if [ -z "$(DEVICE)" ]; then \
+		echo "DEVICE is required. Example: make ios-device-release DEVICE=00008030-0004694C3E68C02E"; \
+		exit 1; \
+	fi
+	$(FLUTTER) run --release -d "$(DEVICE)"
