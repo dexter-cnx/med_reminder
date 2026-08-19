@@ -13,6 +13,17 @@ import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await _bootstrapApplication();
+  } catch (error, stackTrace) {
+    debugPrint('Application bootstrap failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+    runApp(StartupFailureApp(error: error));
+  }
+}
+
+Future<void> _bootstrapApplication() async {
   await EasyLocalization.ensureInitialized();
   await Hive.initFlutter();
 
@@ -70,6 +81,38 @@ Future<void> main() async {
   );
 }
 
+class StartupFailureApp extends StatelessWidget {
+  const StartupFailureApp({required this.error, super.key});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Med Reminder could not finish startup.',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                SelectableText(error.toString()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class MedReminderApp extends ConsumerStatefulWidget {
   const MedReminderApp({super.key});
 
@@ -99,11 +142,18 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
   }
 
   Future<void> _refreshTimezone() async {
-    final changed = await NotificationService.refreshTimezoneIfChanged();
-    if (!changed || !mounted) return;
-    // rescheduleAll iterates the Medication state and uses both medication
-    // expiry and DoseLog-derived remaining stock before scheduling anything.
-    await ref.read(medsProvider.notifier).rescheduleAll(ref.read(logsProvider));
+    try {
+      final changed = await NotificationService.refreshTimezoneIfChanged();
+      if (!changed || !mounted) return;
+      // rescheduleAll iterates the Medication state and uses both medication
+      // expiry and DoseLog-derived remaining stock before scheduling anything.
+      await ref
+          .read(medsProvider.notifier)
+          .rescheduleAll(ref.read(logsProvider));
+    } catch (error, stackTrace) {
+      debugPrint('Timezone refresh failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   @override
