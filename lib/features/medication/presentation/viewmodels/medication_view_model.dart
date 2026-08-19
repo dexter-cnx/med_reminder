@@ -32,22 +32,26 @@ final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
 
 final repositoryFailureProvider = StateProvider<Failure?>((ref) => null);
 
+void _reportFailure(Ref ref, Failure failure) {
+  Future<void>.microtask(() {
+    ref.read(repositoryFailureProvider.notifier).state = failure;
+  });
+}
+
 final medsProvider =
     StateNotifierProvider<MedicationViewModel, List<Medication>>(
   (ref) => MedicationViewModel(
     repository: ref.watch(medicationRepositoryProvider),
     reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
     photoStore: ref.watch(medicationPhotoStoreProvider),
-    onFailure: (failure) =>
-        ref.read(repositoryFailureProvider.notifier).state = failure,
+    onFailure: (failure) => _reportFailure(ref, failure),
   ),
 );
 
 final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
   (ref) => DoseLogViewModel(
     ref.watch(doseLogRepositoryProvider),
-    onFailure: (failure) =>
-        ref.read(repositoryFailureProvider.notifier).state = failure,
+    onFailure: (failure) => _reportFailure(ref, failure),
     onTaken: (medId, logs) =>
         ref.read(medsProvider.notifier).reconcileFromLogs(medId, logs),
   ),
