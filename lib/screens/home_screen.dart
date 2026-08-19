@@ -13,6 +13,7 @@ import '../services/live_activity_service.dart';
 import '../services/notification_service.dart';
 import '../services/photo_service.dart';
 import '../services/watch_sync_service.dart';
+import 'widgets/dose_action_buttons.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -159,50 +160,55 @@ class _TodayList extends StatelessWidget {
         final med = dose.medication;
         final hour = dose.scheduledAt.hour.toString().padLeft(2, '0');
         final minute = dose.scheduledAt.minute.toString().padLeft(2, '0');
+        final hasActions = !dose.isTaken && !dose.isSkipped;
         return Card(
-          child: ListTile(
-            leading: med.imagePath == null
-                ? const Icon(Icons.medication)
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      File(med.imagePath!),
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              ListTile(
+                leading: med.imagePath == null
+                    ? const Icon(Icons.medication)
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(med.imagePath!),
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                title: Text(
+                  '$hour:$minute · ${med.name} × ${med.dosagePerTime}',
+                ),
+                subtitle: Text(
+                  'remaining'.tr(
+                    namedArgs: <String, String>{
+                      'count': '${dose.remaining ?? '-'}',
+                    },
+                  ),
+                ),
+                trailing: dose.isTaken
+                    ? const Icon(Icons.check_circle)
+                    : dose.isSkipped
+                    ? Text('skipped'.tr())
+                    : null,
+              ),
+              if (hasActions)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: DoseActionButtons(
+                      takeLabel: 'take'.tr(),
+                      skipLabel: 'skip'.tr(),
+                      snoozeLabel: 'snooze'.tr(),
+                      onTake: () => onTake(dose),
+                      onSkip: () => onSkip(dose),
+                      onSnooze: () => onSnooze(dose),
                     ),
                   ),
-            title: Text('$hour:$minute · ${med.name} × ${med.dosagePerTime}'),
-            subtitle: Text(
-              'remaining'.tr(
-                namedArgs: <String, String>{
-                  'count': '${dose.remaining ?? '-'}',
-                },
-              ),
-            ),
-            trailing: dose.isTaken
-                ? const Icon(Icons.check_circle)
-                : dose.isSkipped
-                ? Text('skipped'.tr())
-                : Wrap(
-                    spacing: 4,
-                    children: <Widget>[
-                      IconButton(
-                        onPressed: () => onSnooze(dose),
-                        icon: const Icon(Icons.snooze),
-                        tooltip: 'snooze'.tr(),
-                      ),
-                      IconButton(
-                        onPressed: () => onSkip(dose),
-                        icon: const Icon(Icons.close),
-                        tooltip: 'skip'.tr(),
-                      ),
-                      FilledButton(
-                        onPressed: () => onTake(dose),
-                        child: Text('take'.tr()),
-                      ),
-                    ],
-                  ),
+                ),
+            ],
           ),
         );
       },
