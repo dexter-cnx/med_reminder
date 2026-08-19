@@ -81,7 +81,8 @@ void main() {
     expect(container.read(medsProvider), <Medication>[expected]);
   });
 
-  test('repository failure is exposed through Riverpod presentation state', () async {
+  test('repository failure is exposed through Riverpod presentation state',
+      () async {
     final repository = _FailingMedicationRepository();
     final container = ProviderContainer(
       overrides: [
