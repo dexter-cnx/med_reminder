@@ -42,7 +42,16 @@ class PhotoService {
 
   static Future<int> pruneOrphaned(Iterable<String> referencedPaths) async {
     final documents = await getApplicationDocumentsDirectory();
-    final directory = Directory(p.join(documents.path, photoDirectoryName));
+    return pruneOrphanedInDirectory(
+      Directory(p.join(documents.path, photoDirectoryName)),
+      referencedPaths,
+    );
+  }
+
+  static Future<int> pruneOrphanedInDirectory(
+    Directory directory,
+    Iterable<String> referencedPaths,
+  ) async {
     if (!await directory.exists()) return 0;
 
     final referenced = referencedPaths
