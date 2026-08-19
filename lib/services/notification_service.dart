@@ -50,7 +50,7 @@ class NotificationService {
   static Future<String> _readTimezoneName() async {
     try {
       final timezone = await FlutterTimezone.getLocalTimezone();
-      return timezone.name;
+      return timezone.identifier;
     } catch (_) {
       return 'UTC';
     }
