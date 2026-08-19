@@ -171,9 +171,9 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
 
     final threshold = old.lowThreshold;
-    if (threshold != null && remaining != null) {
+    if (threshold != null && remaining != null && old.isLowStock(logs)) {
       final before = remaining + old.dosagePerTime;
-      if (before > threshold && remaining <= threshold) {
+      if (before > threshold) {
         await _reminderScheduler.showLowStock(old.name, remaining);
       }
     }
