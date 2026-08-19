@@ -3,20 +3,23 @@ import 'package:med_reminder_offline/features/medication/data/models/medication_
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 
 void main() {
-  test('days mode exposes expiry date and expires after configured day count', () {
-    final med = Medication(
-      id: 'm1',
-      name: 'Test',
-      times: const <String>['08:00'],
-      mode: MedicationMode.days,
-      daysCount: 3,
-      createdAt: DateTime(2026, 8, 19),
-    );
+  test(
+    'days mode exposes expiry date and expires after configured day count',
+    () {
+      final med = Medication(
+        id: 'm1',
+        name: 'Test',
+        times: const <String>['08:00'],
+        mode: MedicationMode.days,
+        daysCount: 3,
+        createdAt: DateTime(2026, 8, 19),
+      );
 
-    expect(med.expiryDate, DateTime(2026, 8, 21));
-    expect(med.isExpired(DateTime(2026, 8, 21, 23, 59)), isFalse);
-    expect(med.isExpired(DateTime(2026, 8, 22)), isTrue);
-  });
+      expect(med.expiryDate, DateTime(2026, 8, 21));
+      expect(med.isExpired(DateTime(2026, 8, 21, 23, 59)), isFalse);
+      expect(med.isExpired(DateTime(2026, 8, 22)), isTrue);
+    },
+  );
 
   test('remaining is derived from taken dose logs only', () {
     final med = Medication(
