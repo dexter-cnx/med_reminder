@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:med_reminder_offline/core/result/result.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 import 'package:med_reminder_offline/features/medication/domain/repositories/medication_repository.dart';
 import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
@@ -11,16 +12,19 @@ class _MemoryMedicationRepository implements MedicationRepository {
   List<Medication> values;
 
   @override
-  List<Medication> readAll() => List<Medication>.unmodifiable(values);
+  Result<List<Medication>> readAll() =>
+      Success<List<Medication>>(List<Medication>.unmodifiable(values));
 
   @override
-  Future<void> replaceAll(List<Medication> medications) async {
+  Future<Result<void>> replaceAll(List<Medication> medications) async {
     values = List<Medication>.from(medications);
+    return const Success<void>(null);
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<Result<void>> delete(String id) async {
     values = values.where((item) => item.id != id).toList(growable: false);
+    return const Success<void>(null);
   }
 }
 
@@ -49,6 +53,9 @@ class _FakeReminderScheduler implements MedicationReminderScheduler {
 class _FakePhotoStore implements MedicationPhotoStore {
   @override
   Future<void> delete(String? path) async {}
+
+  @override
+  Future<int> pruneOrphaned(Iterable<String> referencedPaths) async => 0;
 }
 
 void main() {
@@ -71,4 +78,33 @@ void main() {
 
     expect(container.read(medsProvider), <Medication>[expected]);
   });
+
+  test('repository failure is exposed through Riverpod presentation state', () {
+    final repository = _FailingMedicationRepository();
+    final container = ProviderContainer(
+      overrides: [
+        medicationRepositoryProvider.overrideWithValue(repository),
+        medicationReminderSchedulerProvider.overrideWithValue(_FakeReminderScheduler()),
+        medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(container.read(medsProvider), isEmpty);
+    expect(container.read(repositoryFailureProvider)?.code, 'test_read_failed');
+  });
+}
+
+class _FailingMedicationRepository implements MedicationRepository {
+  @override
+  Result<List<Medication>> readAll() => const Failed<List<Medication>>(
+        Failure(code: 'test_read_failed', message: 'boom'),
+      );
+
+  @override
+  Future<Result<void>> replaceAll(List<Medication> medications) async =>
+      const Success<void>(null);
+
+  @override
+  Future<Result<void>> delete(String id) async => const Success<void>(null);
 }
