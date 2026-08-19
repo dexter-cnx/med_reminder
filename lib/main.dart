@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
+import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'l10n/csv_loader.dart';
 import 'screens/home_screen.dart';
@@ -41,6 +42,12 @@ Future<void> main() async {
           ),
           doseLogRepositoryProvider.overrideWithValue(
             LocalDoseLogRepository(localDataSource),
+          ),
+          medicationReminderSchedulerProvider.overrideWithValue(
+            const LocalMedicationReminderScheduler(),
+          ),
+          medicationPhotoStoreProvider.overrideWithValue(
+            const LocalMedicationPhotoStore(),
           ),
         ],
         child: const MedReminderApp(),
