@@ -13,6 +13,7 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
+      - run: make l10n-check
       - run: make format-check
       - run: make analyze
       - run: make test
