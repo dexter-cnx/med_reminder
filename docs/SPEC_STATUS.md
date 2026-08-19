@@ -4,8 +4,9 @@
 |---|---|---|
 | Offline Hive storage | Implemented | `meds` + `logs` behind repository/data-source abstractions |
 | Repository errors | Implemented | core `Result<T>` / `Failure`; Hive/mapper exceptions do not leak through repository contracts |
-| Single CSV localization | Implemented | header auto-detect + English fallback |
-| CSV validation | Implemented | CI tests duplicate keys, empty fallback/rows, and placeholder mismatch |
+| CSV localization source | Implemented | `assets/translations.csv` remains the single editable source and is not bundled at runtime |
+| Generated JSON localization | Implemented | compact per-locale JSON + generated locale list; runtime never parses CSV |
+| CSV validation | Implemented | CI checks duplicate keys, empty fallback/rows, placeholder mismatch, and stale generated output |
 | Persistent package photo | Implemented | copied to app documents; deletion removes owned file |
 | Photo orphan cleanup | Implemented | startup prune after successful medication repository read |
 | Multiple doses per day | Implemented | per-`scheduledAt` dose log |
