@@ -70,7 +70,9 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         medicationRepositoryProvider.overrideWithValue(repository),
-        medicationReminderSchedulerProvider.overrideWithValue(_FakeReminderScheduler()),
+        medicationReminderSchedulerProvider.overrideWithValue(
+          _FakeReminderScheduler(),
+        ),
         medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
       ],
     );
@@ -84,7 +86,9 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         medicationRepositoryProvider.overrideWithValue(repository),
-        medicationReminderSchedulerProvider.overrideWithValue(_FakeReminderScheduler()),
+        medicationReminderSchedulerProvider.overrideWithValue(
+          _FakeReminderScheduler(),
+        ),
         medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
       ],
     );
@@ -98,8 +102,8 @@ void main() {
 class _FailingMedicationRepository implements MedicationRepository {
   @override
   Result<List<Medication>> readAll() => const Failed<List<Medication>>(
-        Failure(code: 'test_read_failed', message: 'boom'),
-      );
+    Failure(code: 'test_read_failed', message: 'boom'),
+  );
 
   @override
   Future<Result<void>> replaceAll(List<Medication> medications) async =>
