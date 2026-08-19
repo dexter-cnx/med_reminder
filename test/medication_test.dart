@@ -21,12 +21,13 @@ void main() {
     },
   );
 
-  test('remaining is derived from taken dose logs only', () {
+  test('remaining and low-stock state are derived from taken dose logs only', () {
     final med = Medication(
       id: 'm1',
       name: 'Test',
       times: const <String>['08:00', '20:00'],
       initialAmount: 10,
+      lowThreshold: 8,
       dosagePerTime: 2,
       mode: MedicationMode.untilEmpty,
       createdAt: DateTime(2026, 8, 19),
@@ -48,6 +49,7 @@ void main() {
     ];
 
     expect(med.remaining(logs), 8);
+    expect(med.isLowStock(logs), isTrue);
     expect(med.isEmpty(logs), isFalse);
   });
 
