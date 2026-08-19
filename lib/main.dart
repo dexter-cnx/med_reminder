@@ -18,7 +18,16 @@ Future<void> main() async {
 
   final medsBox = await Hive.openBox<dynamic>('meds');
   final logsBox = await Hive.openBox<dynamic>('logs');
-  await NotificationService.init();
+
+  // Notification/timezone setup must not prevent the application UI from
+  // starting. Native permission/plugin failures are recoverable and can be
+  // retried after launch.
+  try {
+    await NotificationService.init();
+  } catch (error, stackTrace) {
+    debugPrint('Notification initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 
   final localDataSource = HiveMedicationLocalDataSource(
     medicationBox: medsBox,
