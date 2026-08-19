@@ -111,15 +111,9 @@ Future<void> main(List<String> arguments) async {
 }
 
 String _renderLocales(List<String> locales) {
-  final buffer = StringBuffer()
-    ..writeln("import 'package:flutter/widgets.dart';")
-    ..writeln()
-    ..writeln('// GENERATED FILE. DO NOT EDIT.')
-    ..writeln('// Source: assets/translations.csv')
-    ..writeln('const supportedLocales = <Locale>[');
-  for (final locale in locales) {
-    buffer.writeln("  Locale('$locale'),");
-  }
-  buffer.writeln('];');
-  return buffer.toString();
+  final localeValues = locales.map((locale) => "Locale('$locale')").join(', ');
+  return "import 'package:flutter/widgets.dart';\n\n"
+      '// GENERATED FILE. DO NOT EDIT.\n'
+      '// Source: assets/translations.csv\n'
+      'const supportedLocales = <Locale>[$localeValues];\n';
 }
