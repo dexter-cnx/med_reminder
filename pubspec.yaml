@@ -1,5 +1,5 @@
 name: med_reminder_offline
-description: Offline-first medication reminder with local notifications, CSV localization, Hive storage, and native companion handoff.
+description: Offline-first medication reminder with generated JSON localization, Hive storage, local notifications, and native companion handoff.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -29,4 +29,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/translations.csv
+    - assets/translations/
