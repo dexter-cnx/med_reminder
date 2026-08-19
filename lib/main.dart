@@ -24,6 +24,20 @@ Future<void> main() async {
     medicationBox: medsBox,
     doseLogBox: logsBox,
   );
+  final medicationRepository = LocalMedicationRepository(localDataSource);
+  final doseLogRepository = LocalDoseLogRepository(localDataSource);
+  const reminderScheduler = LocalMedicationReminderScheduler();
+  const photoStore = LocalMedicationPhotoStore();
+
+  // Only prune after a successful repository read. If storage is corrupt,
+  // deleting every photo as "unreferenced" would turn a recoverable data
+  // failure into permanent file loss.
+  await medicationRepository.readAll().fold(
+    onSuccess: (medications) => photoStore.pruneOrphaned(
+      medications.map((medication) => medication.imagePath).whereType<String>(),
+    ),
+    onFailure: (_) async => 0,
+  );
 
   final locales = await SingleCsvAssetLoader.detectLocalesFromCsv(
     'assets/translations.csv',
@@ -37,18 +51,10 @@ Future<void> main() async {
       assetLoader: const SingleCsvAssetLoader(),
       child: ProviderScope(
         overrides: [
-          medicationRepositoryProvider.overrideWithValue(
-            LocalMedicationRepository(localDataSource),
-          ),
-          doseLogRepositoryProvider.overrideWithValue(
-            LocalDoseLogRepository(localDataSource),
-          ),
-          medicationReminderSchedulerProvider.overrideWithValue(
-            const LocalMedicationReminderScheduler(),
-          ),
-          medicationPhotoStoreProvider.overrideWithValue(
-            const LocalMedicationPhotoStore(),
-          ),
+          medicationRepositoryProvider.overrideWithValue(medicationRepository),
+          doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
+          medicationReminderSchedulerProvider.overrideWithValue(reminderScheduler),
+          medicationPhotoStoreProvider.overrideWithValue(photoStore),
         ],
         child: const MedReminderApp(),
       ),
@@ -87,6 +93,8 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
   Future<void> _refreshTimezone() async {
     final changed = await NotificationService.refreshTimezoneIfChanged();
     if (!changed || !mounted) return;
+    // rescheduleAll iterates the Medication state and uses both medication
+    // expiry and DoseLog-derived remaining stock before scheduling anything.
     await ref.read(medsProvider.notifier).rescheduleAll(ref.read(logsProvider));
   }
 
