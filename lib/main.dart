@@ -87,7 +87,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
   Future<void> _refreshTimezone() async {
     final changed = await NotificationService.refreshTimezoneIfChanged();
     if (!changed || !mounted) return;
-    await ref.read(medsProvider.notifier).rescheduleAll();
+    await ref.read(medsProvider.notifier).rescheduleAll(ref.read(logsProvider));
   }
 
   @override
