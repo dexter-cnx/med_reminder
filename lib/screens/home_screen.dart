@@ -62,13 +62,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _take(ScheduledDose dose) async {
     await ref.read(logsProvider.notifier).markTaken(dose.medication.id, dose.scheduledAt);
     await NotificationService.cancelSnooze(dose.medication.id, dose.scheduledAt);
-    final stock = dose.medication.totalAmount;
-    if (stock != null) {
-      await ref.read(medsProvider.notifier).updateStock(
-            dose.medication.id,
-            stock - dose.medication.dosagePerTime,
-          );
-    }
     await _syncCompanions();
   }
 
@@ -146,7 +139,7 @@ class _TodayList extends StatelessWidget {
                     child: Image.file(File(med.imagePath!), width: 48, height: 48, fit: BoxFit.cover),
                   ),
             title: Text('$hour:$minute · ${med.name} × ${med.dosagePerTime}'),
-            subtitle: Text('remaining'.tr(namedArgs: <String, String>{'count': '${med.totalAmount ?? '-'}'})),
+            subtitle: Text('remaining'.tr(namedArgs: <String, String>{'count': '${dose.remaining ?? '-'}'})),
             trailing: dose.isTaken
                 ? const Icon(Icons.check_circle)
                 : dose.isSkipped
@@ -312,7 +305,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
       id: const Uuid().v4(),
       name: name,
       description: _description.text.trim(),
-      totalAmount: int.tryParse(_stock.text),
+      initialAmount: int.tryParse(_stock.text),
       lowThreshold: int.tryParse(_threshold.text),
       imagePath: _photoPath,
       times: List<String>.unmodifiable(_times),
