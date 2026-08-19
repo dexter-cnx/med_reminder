@@ -230,10 +230,11 @@ typedef DoseTakenCallback = Future<void> Function(
 
 class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
   DoseLogViewModel(
-    this._repository, {
+    DoseLogRepository repository, {
     required void Function(Failure failure) onFailure,
     this.onTaken,
-  })  : _onFailure = onFailure,
+  })  : _repository = repository,
+        _onFailure = onFailure,
         super(_loadLogs(repository, onFailure));
 
   final DoseLogRepository _repository;
