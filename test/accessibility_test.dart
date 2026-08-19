@@ -7,7 +7,6 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
 
     await tester.pumpWidget(
       MediaQuery(
@@ -34,5 +33,7 @@ void main() {
     expect(find.bySemanticsLabel('Skip'), findsOneWidget);
     expect(find.bySemanticsLabel('Snooze 10m'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    semantics.dispose();
   });
 }
