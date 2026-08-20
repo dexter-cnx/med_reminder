@@ -14,121 +14,169 @@ import 'l10n/generated_locales.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  FlutterError.onError = (details) {
-    FlutterError.dumpErrorToConsole(details);
-  };
+  FlutterError.onError = FlutterError.dumpErrorToConsole;
   PlatformDispatcher.instance.onError = (error, stackTrace) {
     debugPrint('Uncaught platform/Dart error: $error');
     debugPrintStack(stackTrace: stackTrace);
     return true;
   };
 
-  try {
-    await _bootstrapApplication();
-  } catch (error, stackTrace) {
-    debugPrint('Application bootstrap failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
-    runApp(StartupFailureApp(error: error));
+  runApp(const BootstrapApp());
+}
+
+class BootstrapApp extends StatefulWidget {
+  const BootstrapApp({super.key});
+
+  @override
+  State<BootstrapApp> createState() => _BootstrapAppState();
+}
+
+class _BootstrapAppState extends State<BootstrapApp> {
+  String _stage = 'Flutter first frame';
+  Widget? _readyApp;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      _checkpoint('Initializing localization');
+      await EasyLocalization.ensureInitialized()
+          .timeout(const Duration(seconds: 5));
+
+      _checkpoint('Initializing local storage');
+      await Hive.initFlutter().timeout(const Duration(seconds: 5));
+
+      _checkpoint('Opening medication storage');
+      final medsBox = await Hive.openBox<dynamic>('meds')
+          .timeout(const Duration(seconds: 5));
+
+      _checkpoint('Opening dose-log storage');
+      final logsBox = await Hive.openBox<dynamic>('logs')
+          .timeout(const Duration(seconds: 5));
+
+      final localDataSource = HiveMedicationLocalDataSource(
+        medicationBox: medsBox,
+        doseLogBox: logsBox,
+      );
+      final medicationRepository = LocalMedicationRepository(localDataSource);
+      final doseLogRepository = LocalDoseLogRepository(localDataSource);
+      const reminderScheduler = LocalMedicationReminderScheduler();
+      const photoStore = LocalMedicationPhotoStore();
+
+      _checkpoint('Checking medication photos');
+      await medicationRepository.readAll().fold(
+            onSuccess: (medications) => photoStore
+                .pruneOrphaned(
+                  medications
+                      .map((medication) => medication.imagePath)
+                      .whereType<String>(),
+                )
+                .timeout(const Duration(seconds: 5)),
+            onFailure: (_) async => 0,
+          );
+
+      final app = EasyLocalization(
+        supportedLocales: supportedLocales,
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en'),
+        child: ProviderScope(
+          overrides: [
+            medicationRepositoryProvider.overrideWithValue(
+              medicationRepository,
+            ),
+            doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
+            medicationReminderSchedulerProvider.overrideWithValue(
+              reminderScheduler,
+            ),
+            medicationPhotoStoreProvider.overrideWithValue(photoStore),
+          ],
+          child: const MedReminderApp(),
+        ),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _stage = 'Ready';
+        _readyApp = app;
+      });
+
+      unawaited(_initializeNotificationsAfterLaunch());
+    } catch (error, stackTrace) {
+      debugPrint('Application bootstrap failed at "$_stage": $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() => _error = error);
+    }
+  }
+
+  void _checkpoint(String stage) {
+    debugPrint('BOOTSTRAP: $stage');
+    if (!mounted) return;
+    setState(() => _stage = stage);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final readyApp = _readyApp;
+    if (readyApp != null) return readyApp;
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Med Reminder',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_error == null) ...[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(_stage, textAlign: TextAlign.center),
+                  ] else ...[
+                    const Text(
+                      'Startup failed',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_stage, textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      _error.toString(),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
-Future<void> _bootstrapApplication() async {
-  await EasyLocalization.ensureInitialized();
-  await Hive.initFlutter();
-
-  final medsBox = await Hive.openBox<dynamic>('meds');
-  final logsBox = await Hive.openBox<dynamic>('logs');
-
-  final localDataSource = HiveMedicationLocalDataSource(
-    medicationBox: medsBox,
-    doseLogBox: logsBox,
-  );
-  final medicationRepository = LocalMedicationRepository(localDataSource);
-  final doseLogRepository = LocalDoseLogRepository(localDataSource);
-  const reminderScheduler = LocalMedicationReminderScheduler();
-  const photoStore = LocalMedicationPhotoStore();
-
-  // Only prune after a successful repository read. If storage is corrupt,
-  // deleting every photo as "unreferenced" would turn a recoverable data
-  // failure into permanent file loss.
-  await medicationRepository.readAll().fold(
-        onSuccess: (medications) => photoStore.pruneOrphaned(
-          medications
-              .map((medication) => medication.imagePath)
-              .whereType<String>(),
-        ),
-        onFailure: (_) async => 0,
-      );
-
-  // Render the application before touching notification/timezone plugins.
-  // Some iOS plugin calls can wait on native state or permissions. They must
-  // never hold the first Flutter frame hostage.
-  runApp(
-    EasyLocalization(
-      supportedLocales: supportedLocales,
-      path: 'assets/translations',
-      fallbackLocale: const Locale('en'),
-      child: ProviderScope(
-        overrides: [
-          medicationRepositoryProvider.overrideWithValue(medicationRepository),
-          doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
-          medicationReminderSchedulerProvider.overrideWithValue(
-            reminderScheduler,
-          ),
-          medicationPhotoStoreProvider.overrideWithValue(photoStore),
-        ],
-        child: const MedReminderApp(),
-      ),
-    ),
-  );
-
-  unawaited(_initializeNotificationsAfterLaunch());
-}
-
 Future<void> _initializeNotificationsAfterLaunch() async {
-  // Give Flutter an opportunity to submit the first frame before invoking
-  // native notification/timezone channels.
   await Future<void>.delayed(Duration.zero);
   try {
     await NotificationService.init();
   } catch (error, stackTrace) {
     debugPrint('Notification initialization failed after launch: $error');
     debugPrintStack(stackTrace: stackTrace);
-  }
-}
-
-class StartupFailureApp extends StatelessWidget {
-  const StartupFailureApp({required this.error, super.key});
-
-  final Object error;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Med Reminder could not finish startup.',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                SelectableText(error.toString()),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -164,8 +212,6 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
     try {
       final changed = await NotificationService.refreshTimezoneIfChanged();
       if (!changed || !mounted) return;
-      // rescheduleAll iterates the Medication state and uses both medication
-      // expiry and DoseLog-derived remaining stock before scheduling anything.
       await ref
           .read(medsProvider.notifier)
           .rescheduleAll(ref.read(logsProvider));
