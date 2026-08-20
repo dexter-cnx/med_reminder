@@ -71,11 +71,31 @@ Timezone is re-read when the app resumes. If the IANA timezone changed, `tz.loca
 
 IDs use a stable FNV-1a-style hash instead of Dart `String.hashCode`, so persisted cancellation IDs do not depend on a process-local hash implementation. Finite-day IDs include the original course day offset, so IDs remain stable across rescheduling.
 
-## Notification startup
+## Startup and onboarding
 
-`NotificationService` initialization is idempotent and bounded. Native plugin initialization, notification permission requests, exact-alarm permission checks, and timezone lookup cannot hold the first Flutter frame indefinitely. The Flutter UI is rendered before notification/timezone initialization is allowed to continue in the background.
+`main()` submits a minimal Flutter frame immediately. Localization, Hive setup, box opens, and photo pruning then run through bounded bootstrap checkpoints so a stalled dependency produces a visible diagnostic state instead of a permanent black screen.
 
-Android 13+ notification permission and exact-alarm permissions are declared in the manifest. Platform-specific permission behavior still requires real-device validation.
+Hive currently opens three boxes during composition:
+
+- `meds` — medication persistence;
+- `logs` — dose-log persistence;
+- `settings` — small local app flags such as `onboarding_completed`.
+
+If `onboarding_completed` is not true, `MedReminderApp` renders `OnboardingScreen` instead of `HomeScreen`. The onboarding flow explains the offline-first design and then asks for notification access only after the user presses **Enable notifications**. On Android, the third step optionally offers **Enable precise reminders** for exact-alarm access. On iOS, the third step is a ready screen.
+
+Completing onboarding writes `onboarding_completed = true` to the Hive `settings` box and transitions to Home. Camera/photo access remains just-in-time when the user actually captures a medication image.
+
+## Notification initialization and permissions
+
+`NotificationService.init()` is idempotent and bounded for non-interactive native initialization. It initializes `flutter_local_notifications`, initializes timezone data, and keeps Android scheduling on `AndroidScheduleMode.inexactAllowWhileIdle` by default.
+
+**Permission prompts are not part of `init()`.** This distinction is intentional. A physical Samsung Android 16 run showed the Flutter activity becoming non-visible while a startup notification permission request was active, followed by a five-second `TimeoutException`. Moving permission requests behind explicit onboarding actions prevents system permission UI from interfering with first-frame/debugger attach.
+
+`NotificationService.requestNotificationPermission()` is called only from the onboarding button. It requests Android notification access or iOS alert/badge/sound permission depending on the platform. Interactive permission calls do not use the five-second native timeout because the user may legitimately take longer than five seconds to answer a system dialog.
+
+`NotificationService.requestExactAlarmPermission()` is Android-only from the app's point of view and is also explicitly user-driven. When granted it switches scheduling to `exactAllowWhileIdle`; when denied/skipped the baseline remains on `inexactAllowWhileIdle`. Exact-alarm access is therefore an enhancement rather than a startup requirement.
+
+Android 13+ notification permission and exact-alarm permissions are declared in the manifest. Camera/photo-library permissions are not pre-requested during onboarding.
 
 ## Snooze
 
