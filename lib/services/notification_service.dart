@@ -63,14 +63,13 @@ class NotificationService {
       await androidPlugin
           .requestNotificationsPermission()
           .timeout(_nativeTimeout);
-      final exactAlarmGranted =
-          await androidPlugin.requestExactAlarmsPermission().timeout(
-                _nativeTimeout,
-              );
-      _androidScheduleMode = exactAlarmGranted == true
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
     }
+
+    // Exact-alarm permission must be user-driven on modern Android. Requesting
+    // it during startup can open system settings while Flutter is still
+    // attaching to the process. Keep the baseline on inexact scheduling until
+    // a dedicated exact-alarm permission flow is triggered by the user.
+    _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
     await _initTimezone().timeout(_nativeTimeout);
     _initialized = true;
