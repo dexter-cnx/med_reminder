@@ -74,18 +74,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => context.setLocale(
-                    context.locale.languageCode == 'th'
-                        ? const Locale('en')
-                        : const Locale('th'),
-                  ),
-                  icon: const Icon(Icons.language),
-                  label: Text(context.locale.languageCode.toUpperCase()),
-                ),
-              ),
               Expanded(child: _buildStep(context)),
               const SizedBox(height: 16),
               Row(
@@ -189,7 +177,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     switch (_step) {
       case 0:
         return _OnboardingPanel(
-          icon: Icons.medication_outlined,
+          icon: Icons.favorite_outline,
           title: 'onboarding_welcome_title'.tr(),
           body: 'onboarding_welcome_body'.tr(),
           bullets: [
