@@ -5,6 +5,7 @@ class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
     required this.onRequestNotifications,
     required this.onComplete,
+    required this.onLanguageSelected,
     this.onRequestExactAlarm,
     this.showExactAlarmStep = false,
     super.key,
@@ -13,6 +14,7 @@ class OnboardingScreen extends StatefulWidget {
   final Future<bool> Function() onRequestNotifications;
   final Future<bool> Function()? onRequestExactAlarm;
   final Future<void> Function() onComplete;
+  final Future<void> Function(String languageCode) onLanguageSelected;
   final bool showExactAlarmStep;
 
   @override
@@ -24,6 +26,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _busy = false;
   bool? _notificationsGranted;
   bool? _exactAlarmGranted;
+
+  Future<void> _toggleLanguage() async {
+    if (_busy) return;
+    final next = context.locale.languageCode == 'th' ? 'en' : 'th';
+    setState(() => _busy = true);
+    try {
+      await widget.onLanguageSelected(next);
+      if (!mounted) return;
+      await context.setLocale(Locale(next));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _requestNotifications() async {
     if (_busy) return;
@@ -74,6 +89,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _busy ? null : _toggleLanguage,
+                  icon: const Icon(Icons.language),
+                  label: Text(context.locale.languageCode.toUpperCase()),
+                ),
+              ),
               Expanded(child: _buildStep(context)),
               const SizedBox(height: 16),
               Row(
