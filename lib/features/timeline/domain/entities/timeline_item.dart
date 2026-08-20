@@ -12,8 +12,7 @@ sealed class TimelineItem {
 }
 
 final class MedicationDoseTimelineItem extends TimelineItem {
-  const MedicationDoseTimelineItem({required this.dose})
-      : super(at: dose.scheduledAt);
+  MedicationDoseTimelineItem({required this.dose}) : super(at: dose.scheduledAt);
 
   final ScheduledDose dose;
 }
