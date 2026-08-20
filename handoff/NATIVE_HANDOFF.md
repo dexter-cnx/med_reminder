@@ -2,18 +2,35 @@
 
 Native companion features are intentionally separated from the tested Flutter baseline.
 
+## iOS host lifecycle baseline
+
+The current Runner deliberately uses the classic `FlutterAppDelegate` lifecycle and does **not** contain `UIApplicationSceneManifest`.
+
+During physical-device bootstrap validation with the Flutter 3.47 baseline, the generated UIScene host built successfully and started the Dart VM, but UIKit could not resolve `Runner.SceneDelegate` at runtime. The device therefore showed a black screen while Xcode reported:
+
+```text
+could not load class with name "Runner.SceneDelegate"
+There is no scene delegate set.
+flutter: The Dart VM service is listening on ...
+```
+
+Reverting Runner to classic `FlutterAppDelegate` + `UIMainStoryboardFile = Main` restored rendering on the physical iPhone.
+
+This is documented in detail in `docs/iphone_black_screen_issue.md`. Do not reintroduce UIScene as incidental generated-project churn. If PR #2 or a later Flutter baseline requires UIScene, make it an explicit migration and validate Debug/Profile first frame on a physical iPhone before keeping it.
+
 ## iOS Live Activity / Dynamic Island
 
 Requirements:
 
-1. Bootstrap the iOS project with `./tool/bootstrap_platforms.sh`.
+1. Start from the current validated classic iOS host. Do not silently replace it with a generated UIScene manifest.
 2. Set the Runner deployment target as required by the app, and set the Live Activity Widget Extension deployment target to **iOS 16.1+**.
 3. Add a Widget Extension target named `MedWidgets` with Live Activity support.
 4. Enable the same App Group (planned: `group.med.reminder`) for Runner and `MedWidgets`.
 5. Add the App Group entitlement to both targets and ensure signing/provisioning includes it.
 6. Add the ActivityKit attributes/content state implementation to the extension target.
-7. Wire MethodChannel `med_reminder/live_activity` in `AppDelegate.swift` for `start`, `update`, and `end`.
+7. Wire MethodChannel `med_reminder/live_activity` in `AppDelegate.swift` for `start`, `update`, and `end` without breaking the validated application lifecycle.
 8. Validate start/update/end, lock-screen presentation, Dynamic Island presentation, app termination, and reboot behavior on a supported physical iPhone.
+9. If native changes require UIScene, validate scene-class runtime resolution and the Flutter first frame separately before testing Live Activity behavior.
 
 Do not mark Live Activity complete from a simulator-only run.
 
@@ -31,12 +48,16 @@ No server is required for the baseline watch sync.
 
 `flutter_local_notifications` owns alarm restoration. The Android manifest must contain:
 
-- `android.permission.RECEIVE_BOOT_COMPLETED`
-- `ScheduledNotificationReceiver`
-- `ScheduledNotificationBootReceiver`
-- boot/package-replaced/quick-boot intent filters
+- `android.permission.POST_NOTIFICATIONS` for Android 13+ runtime notification permission;
+- `android.permission.SCHEDULE_EXACT_ALARM` for the exact-alarm permission path;
+- `android.permission.RECEIVE_BOOT_COMPLETED`;
+- `ScheduledNotificationReceiver`;
+- `ScheduledNotificationBootReceiver`;
+- boot/package-replaced/quick-boot intent filters.
 
-`tool/bootstrap_platforms.sh` installs these declarations. A separate WorkManager task is intentionally not added while the plugin receiver is sufficient.
+`tool/bootstrap_platforms.sh` installs the plugin receiver declarations. A separate WorkManager task is intentionally not added while the plugin receiver is sufficient.
+
+The current app falls back to `AndroidScheduleMode.inexactAllowWhileIdle` if exact-alarm permission is not granted, so reminder functionality must not depend on exact alarms being available.
 
 ## Android ongoing notification / Live Activity fallback
 
@@ -54,10 +75,11 @@ Required native wiring:
 
 PR #2 must not mark native companion work complete until the following physical-device matrix has evidence:
 
-- Android 13: scheduled reminder, reboot restore, exact/inexact alarm behavior, ongoing fallback notification.
+- Android 13: notification permission, scheduled reminder, reboot restore, exact/inexact alarm behavior, ongoing fallback notification.
 - Android 14: notification permission, exact-alarm permission path, reboot restore, ongoing fallback notification.
 - iOS 17: local reminder, timezone-change reschedule, Live Activity start/update/end, lock screen and Dynamic Island where supported.
 - iOS 18: the same Live Activity and local-reminder lifecycle checks, including foreground/background/terminated transitions.
+- Current physical-iPhone toolchain: app first-frame launch remains healthy after any native host changes; no `SceneDelegate` resolution regression.
 
 A newer OS version may be added, but it does not replace the minimum matrix above unless this document is intentionally revised.
 
@@ -72,6 +94,7 @@ Create `docs/evidence/` and commit real-device evidence for each applicable item
 - `ios-17-live-activity.png` — lock-screen or Dynamic Island Live Activity from a physical iOS 17 device.
 - `ios-18-live-activity.png` — equivalent evidence on iOS 18.
 - `timezone-reschedule.md` — before/after IANA timezone, configured local dose time, and observed rescheduled delivery.
+- `ios-host-launch.md` — Flutter/toolchain version, device/OS, lifecycle configuration, first-frame result, and confirmation that the prior black-screen signature is absent.
 - `native-test-matrix.md` — device model, OS version, app commit SHA, pass/fail for every required scenario.
 
 Do **not** use design mocks, simulator-only screenshots, or screenshots from another app as validation evidence.
