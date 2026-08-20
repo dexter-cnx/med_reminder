@@ -127,6 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final languageCode = context.locale.languageCode == 'th' ? 'th' : 'en';
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
@@ -135,7 +136,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: DropdownButtonFormField<String>(
-              value: context.locale.languageCode == 'th' ? 'th' : 'en',
+              key: ValueKey<String>('language-$languageCode'),
+              initialValue: languageCode,
               decoration: InputDecoration(
                 labelText: 'settings_language'.tr(),
                 helperText: 'settings_language_desc'.tr(),
@@ -174,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _sex,
+                  initialValue: _sex,
                   decoration: InputDecoration(labelText: 'settings_sex'.tr()),
                   items: _sexValues
                       .map(
