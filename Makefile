@@ -2,13 +2,16 @@ FLUTTER ?= flutter
 DART ?= dart
 DEVICE ?=
 
-.PHONY: bootstrap pub-get ensure-pub l10n-generate l10n-validate l10n-check \
+.PHONY: bootstrap configure-identifiers pub-get ensure-pub l10n-generate l10n-validate l10n-check \
 	format format-check analyze test test-domain test-data test-presentation \
 	test-suites test-all check android-build android-test android ios-build \
 	ios-test ios ios-device-profile ios-device-release
 
 bootstrap:
 	./tool/bootstrap_platforms.sh
+
+configure-identifiers:
+	./tool/configure_identifiers.sh
 
 pub-get:
 	$(FLUTTER) pub get
