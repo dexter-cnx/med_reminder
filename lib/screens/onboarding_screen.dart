@@ -156,6 +156,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     switch (_step) {
       case 0:
         setState(() => _step = 1);
+        return;
       case 1:
         if (_notificationsGranted == true) {
           setState(() => _step = 2);
@@ -165,6 +166,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         if (mounted && _notificationsGranted == true) {
           setState(() => _step = 2);
         }
+        return;
       case 2:
         if (widget.showExactAlarmStep && _exactAlarmGranted != true) {
           await _requestExactAlarm();
@@ -173,6 +175,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           return;
         }
         await _finish();
+        return;
     }
   }
 
