@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cnxdev.beside_you"
+    namespace = "com.cnxdev.besyu"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,9 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.cnxdev.beside_you"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.cnxdev.besyu"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
