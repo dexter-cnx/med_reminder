@@ -20,10 +20,14 @@ Hive is therefore one storage implementation rather than a dependency of medicat
 - Hive boxes `meds` and `logs` for current local persistence.
 - One editable CSV localization source: `assets/translations.csv` (`key,en,th,...`). `make l10n-generate` validates it and generates compact per-locale JSON plus `generated_locales.dart`; only generated JSON is bundled and loaded at runtime.
 - Local scheduled notifications using timezone-aware `zonedSchedule`.
+- Finite `days` schedules are anchored to the medication `createdAt` date, so timezone refresh/rescheduling cannot extend the treatment course.
 - Independent dose state per scheduled time (`scheduledAt`), so 08:00 and 20:00 do not share one taken flag.
+- Taken-dose reconciliation runs only after the dose log is persisted successfully; a failed write rolls back presentation state and does not mutate stock/reminder side effects.
 - Medication modes: `forever`, finite `days`, and `untilEmpty`.
 - Package photos copied into application documents storage instead of retaining an image-picker cache path.
 - UI actions: Taken, Skip, Snooze 10 minutes with explicit semantics labels and a wrapping action layout for larger text.
+- Android 13+ notification permission and exact-alarm declarations are present in the app manifest.
+- The current iOS bootstrap uses the classic `FlutterAppDelegate` lifecycle after a physical-device UIScene/`SceneDelegate` resolution failure was reproduced with the Flutter 3.47 baseline. See `docs/iphone_black_screen_issue.md`.
 - Native Live Activity / Watch integration is kept as an explicit handoff and is not reported as complete until platform targets are wired and device-tested.
 
 ## Localization workflow
@@ -46,6 +50,8 @@ flutter run
 ```
 
 The bootstrap command creates Android and iOS folders using your installed Flutter SDK while preserving `lib/`, `assets/`, tests, and documentation.
+
+For the current iOS baseline, do not blindly restore a generated `UIApplicationSceneManifest` after bootstrap. The physical-device black-screen incident and the verified classic-lifecycle configuration are documented in `docs/iphone_black_screen_issue.md`.
 
 ## Validation and test suites
 
@@ -77,6 +83,13 @@ make ios-build
 make ios-test
 ```
 
+Physical-device iOS AOT validation helpers are available with an explicit device ID:
+
+```bash
+make ios-device-profile DEVICE=<device-id>
+make ios-device-release DEVICE=<device-id>
+```
+
 When using FVM, override the tool commands without changing the Makefile:
 
 ```bash
@@ -86,10 +99,22 @@ make ios FLUTTER="fvm flutter" DART="fvm dart"
 
 Accessibility regression tests include explicit Semantics labels for the dose actions and a 1.3x text-scale layout check.
 
+## iPhone black-screen troubleshooting
+
+If an iPhone builds successfully but displays a black screen, run from `ios/Runner.xcworkspace` and inspect the Xcode console before assuming a Dart bootstrap failure. In the reproduced incident, the decisive log was:
+
+```text
+could not load class with name "Runner.SceneDelegate"
+There is no scene delegate set.
+flutter: The Dart VM service is listening on ...
+```
+
+A running Dart VM service together with the native scene error showed that Dart had started but the iOS scene/window was not attached. The verified fix for this repository is documented in `docs/iphone_black_screen_issue.md`.
+
 ## Roadmap / release baseline
 
 - PR #2: native companion work from `handoff/NATIVE_HANDOFF.md`.
 - PR #3: offline ZIP export/import backup and restore. See `docs/BACKLOG.md` for the versioned archive contract and acceptance criteria.
 - After PR #1 is merged with required CI green, tag `main` as `v0.1.0-bootstrap-fixed` and use that tag as the baseline reference for PR #2.
 
-See `handoff/CODE_WALKTHROUGH.md` for architecture, `handoff/CSV_LOCALIZATION.md` for the CSV-to-JSON pipeline, `handoff/NATIVE_HANDOFF.md` for Live Activity / watch work, and `docs/BACKLOG.md` for planned offline backup/restore.
+See `handoff/CODE_WALKTHROUGH.md` for architecture, `handoff/CSV_LOCALIZATION.md` for the CSV-to-JSON pipeline, `handoff/NATIVE_HANDOFF.md` for Live Activity / watch work, `docs/iphone_black_screen_issue.md` for the physical-iPhone lifecycle incident, and `docs/BACKLOG.md` for planned offline backup/restore.
