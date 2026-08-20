@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -8,10 +10,14 @@ import '../models/medication.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  static bool _initialized = false;
+  static Future<void>? _initializing;
   static bool _timezoneReady = false;
   static String? _timezoneName;
   static AndroidScheduleMode _androidScheduleMode =
       AndroidScheduleMode.inexactAllowWhileIdle;
+
+  static const Duration _nativeTimeout = Duration(seconds: 5);
 
   static const NotificationDetails _doseDetails = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -24,32 +30,56 @@ class NotificationService {
     iOS: DarwinNotificationDetails(),
   );
 
-  static Future<void> init() async {
+  static Future<void> init() {
+    if (_initialized) return Future<void>.value();
+    final inFlight = _initializing;
+    if (inFlight != null) return inFlight;
+
+    final future = _initialize();
+    _initializing = future;
+    return future.whenComplete(() {
+      if (!_initialized) {
+        _initializing = null;
+      }
+    });
+  }
+
+  static Future<void> _initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
-    );
+    await _plugin
+        .initialize(
+          const InitializationSettings(android: android, iOS: ios),
+        )
+        .timeout(_nativeTimeout);
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.requestNotificationsPermission();
-    final exactAlarmGranted =
-        await androidPlugin?.requestExactAlarmsPermission();
-    _androidScheduleMode = exactAlarmGranted == true
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
+    if (androidPlugin != null) {
+      await androidPlugin
+          .requestNotificationsPermission()
+          .timeout(_nativeTimeout);
+      final exactAlarmGranted =
+          await androidPlugin.requestExactAlarmsPermission().timeout(
+                _nativeTimeout,
+              );
+      _androidScheduleMode = exactAlarmGranted == true
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+    }
 
-    await _initTimezone();
+    await _initTimezone().timeout(_nativeTimeout);
+    _initialized = true;
   }
 
   static Future<String> _readTimezoneName() async {
     try {
-      final timezone = await FlutterTimezone.getLocalTimezone();
+      final timezone =
+          await FlutterTimezone.getLocalTimezone().timeout(_nativeTimeout);
       return timezone.identifier;
     } catch (_) {
       return 'UTC';
@@ -70,7 +100,7 @@ class NotificationService {
   }
 
   static Future<bool> refreshTimezoneIfChanged() async {
-    await _initTimezone();
+    await init();
     final next = await _readTimezoneName();
     if (next == _timezoneName) return false;
     try {
@@ -83,8 +113,8 @@ class NotificationService {
   }
 
   static Future<List<int>> scheduleForMed(Medication medication) async {
+    await init();
     await cancelIds(medication.notificationIds);
-    await _initTimezone();
 
     if (medication.mode == MedicationMode.untilEmpty &&
         medication.initialAmount == 0) {
@@ -165,7 +195,7 @@ class NotificationService {
     required int dosage,
     required DateTime scheduledDose,
   }) async {
-    await _initTimezone();
+    await init();
     final id = snoozeId(medId, scheduledDose);
     await _plugin.cancel(id);
     await _plugin.zonedSchedule(
@@ -183,28 +213,34 @@ class NotificationService {
   static int snoozeId(String medId, DateTime scheduledDose) =>
       _stableNotificationId('$medId:${scheduledDose.toIso8601String()}:snooze');
 
-  static Future<void> cancelSnooze(String medId, DateTime scheduledDose) =>
-      _plugin.cancel(snoozeId(medId, scheduledDose));
+  static Future<void> cancelSnooze(String medId, DateTime scheduledDose) async {
+    await init();
+    await _plugin.cancel(snoozeId(medId, scheduledDose));
+  }
 
   static Future<void> cancelIds(Iterable<int> ids) async {
+    await init();
     for (final id in ids.toSet()) {
       await _plugin.cancel(id);
     }
   }
 
-  static Future<void> showLowStock(String name, int remaining) => _plugin.show(
-        _stableNotificationId('low-stock:$name'),
-        'Low medication stock',
-        '$name: $remaining remaining',
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'low_stock',
-            'Low medication stock',
-            importance: Importance.high,
-          ),
-          iOS: DarwinNotificationDetails(),
+  static Future<void> showLowStock(String name, int remaining) async {
+    await init();
+    await _plugin.show(
+      _stableNotificationId('low-stock:$name'),
+      'Low medication stock',
+      '$name: $remaining remaining',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'low_stock',
+          'Low medication stock',
+          importance: Importance.high,
         ),
-      );
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
 
   static int _stableNotificationId(String input) {
     var hash = 0x811c9dc5;
