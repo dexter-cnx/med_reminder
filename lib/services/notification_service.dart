@@ -73,18 +73,17 @@ class NotificationService {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
-      return await androidPlugin
-              .requestNotificationsPermission()
-              .timeout(_nativeTimeout) ??
-          false;
+      return await androidPlugin.requestNotificationsPermission() ?? false;
     }
 
     final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
         IOSFlutterLocalNotificationsPlugin>();
     if (iosPlugin != null) {
-      return await iosPlugin
-              .requestPermissions(alert: true, badge: true, sound: true)
-              .timeout(_nativeTimeout) ??
+      return await iosPlugin.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
           false;
     }
 
@@ -97,8 +96,7 @@ class NotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin == null) return true;
 
-    final granted =
-        await androidPlugin.requestExactAlarmsPermission().timeout(_nativeTimeout);
+    final granted = await androidPlugin.requestExactAlarmsPermission();
     _androidScheduleMode = granted == true
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
