@@ -8,6 +8,18 @@ The final root cause was **not** Hive, EasyLocalization, `flutter_timezone`, `fl
 
 The stable fix for this bootstrap baseline was to remove the UIScene manifest and use the classic `FlutterAppDelegate` lifecycle with `UIMainStoryboardFile`.
 
+## Flutter 3.47 context
+
+This incident was reproduced while the project baseline was pinned to **Flutter 3.47.0**. That Flutter template uses the UIScene-style iOS host with `FlutterImplicitEngineDelegate`, `FlutterSceneDelegate`, and an `UIApplicationSceneManifest`.
+
+The incident is therefore related to the UIScene host configuration present in the Flutter 3.47 baseline, but the evidence in this repository is **not sufficient to claim that Flutter 3.47 itself has a unique regression**. Similar UIScene migration and physical-device lifecycle issues have existed across multiple recent Flutter releases.
+
+For this repository, the verified fact is narrower:
+
+> With the Flutter 3.47-generated UIScene host, UIKit failed to resolve the configured `SceneDelegate` on the tested physical device/toolchain. Reverting this app to the classic `FlutterAppDelegate` lifecycle removed the black screen.
+
+Do not automatically remove UIScene from unrelated Flutter 3.47 projects unless the same native evidence is present.
+
 ## User-visible symptoms
 
 Typical symptoms were:
@@ -154,10 +166,18 @@ Then run again on the target device.
 
 ## Validation result
 
-After removing the UIScene configuration and returning to the classic `FlutterAppDelegate` lifecycle, the application rendered normally on the physical iPhone.
+After removing the UIScene configuration and returning to the classic `FlutterAppDelegate` lifecycle, the application rendered normally on the physical iPhone in the tested environment.
 
 This incident should therefore be treated as an **iOS host lifecycle / SceneDelegate resolution issue**, not a medication-domain, storage, localization, notification, or timezone issue.
 
 ## Future consideration
 
-UIScene support may be reintroduced later if a future native feature requires it, but it must be treated as a deliberate migration and physically validated before merging. Reintroducing the generated scene template without verifying runtime class resolution risks restoring the black-screen failure.
+UIScene support may be reintroduced later if a future native feature requires it, or if a later Flutter/toolchain baseline makes the migration desirable. It must be treated as a deliberate migration and physically validated before merging.
+
+Before reintroducing UIScene:
+
+1. regenerate or review the iOS host against the selected Flutter version;
+2. verify `SceneDelegate` target membership and runtime resolution;
+3. test Debug and Profile on a physical iPhone;
+4. confirm a Flutter first frame, not merely successful compilation or a running Dart VM service;
+5. retain the classic lifecycle fallback until the new path is proven.
