@@ -1,13 +1,20 @@
+# App/editor generated
+.metadata
+.idea/
+.vscode/
+.DS_Store
+*.iml
+tool/.bootstrap_backup/
+
 # Miscellaneous
 *.class
 *.lock
+!pubspec.lock
 *.log
 *.pyc
 *.swp
 .buildlog/
 .history
-
-
 
 # Flutter repo-specific
 /bin/cache/

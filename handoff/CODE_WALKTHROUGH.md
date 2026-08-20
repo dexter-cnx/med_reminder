@@ -1,0 +1,143 @@
+# Code Walkthrough
+
+## Architecture
+
+The medication feature uses pragmatic Clean Architecture with MVVM and Riverpod as the dependency-injection/composition mechanism.
+
+```text
+features/medication/
+├── domain/
+│   ├── entities/
+│   ├── repositories/
+│   └── services/
+├── data/
+│   ├── datasources/
+│   ├── models/
+│   ├── repositories/
+│   └── services/
+└── presentation/
+    └── viewmodels/
+```
+
+Dependency direction is inward: domain has no Flutter, Riverpod, or Hive imports. Data implements domain contracts. Presentation depends on domain contracts and Riverpod. `main.dart` is the composition root and injects concrete Hive/local implementations through `ProviderScope.overrides`.
+
+Legacy paths under `lib/models`, `lib/providers`, and `lib/repositories` are compatibility exports while callers transition to the feature-first paths; new implementation logic belongs under `features/medication`.
+
+## Domain model
+
+`Medication` owns schedule configuration, `initialAmount`, duration mode, persistent photo path, and the exact notification IDs currently scheduled for it. All fields are final, and collection inputs such as `times` and `notificationIds` are defensively copied into unmodifiable lists.
+
+`DoseLog` is keyed semantically by `medId + scheduledAt`; a morning dose and evening dose therefore remain independent.
+
+Current stock is not a mutable persisted counter. `Medication.remaining(logs)` derives it as:
+
+`initialAmount - takenDoseCount * dosagePerTime`
+
+Only `DoseStatus.taken` consumes stock. Skipped and snoozed logs do not. `untilEmpty` therefore follows dose history rather than a separately decremented field. `Medication.isLowStock(logs)` is also derived from the same history rather than a stored mutable counter.
+
+`expiryDate`, `expiryExclusive`, and `isExpired()` keep finite-day schedule rules in the domain layer. The finite course is anchored to the calendar date of `createdAt`; rescheduling does not redefine the start date.
+
+Domain entities contain no Hive serialization. `MedicationRecord` and `DoseLogRecord` in the data layer own persistence mapping and backward migration from the earlier `totalAmount` and dose-log schemas.
+
+## Storage boundary and failures
+
+`MedicationRepository` and `DoseLogRepository` are domain contracts. Repository reads and writes return the small core `Result<T>` abstraction instead of leaking Hive/mapper exceptions upward. Data implementations map storage exceptions to `Failure` values; the presentation layer exposes the latest repository failure through Riverpod `repositoryFailureProvider`.
+
+`MedicationLocalDataSource` is the data-source boundary. `HiveMedicationLocalDataSource` is currently the concrete storage implementation, while `LocalMedicationRepository` and `LocalDoseLogRepository` map stored records to domain entities.
+
+`MedicationRepository.delete()` removes the stored medication record. The ViewModel orchestrates reminder cancellation and photo-file deletion through `MedicationPhotoStore` before deleting the repository record, keeping filesystem side effects outside the storage repository implementation.
+
+Because Riverpod injects the repository contracts, tests or future implementations can replace Hive with in-memory, SQLite, or another local store without changing the ViewModel or UI.
+
+## MVVM
+
+`MedicationViewModel` and `DoseLogViewModel` expose medication and dose-log state through Riverpod `StateNotifierProvider`s. They depend on repository and service ports rather than Hive or static notification/photo implementations.
+
+`MedicationReminderScheduler` and `MedicationPhotoStore` are domain-facing ports. Local adapters bridge them to the current notification and file-storage services.
+
+When `DoseLogViewModel.markTaken()` writes a taken log, the state update is optimistic only until repository persistence completes. If persistence fails, the ViewModel restores the previous log state and **does not** invoke medication reconciliation. Stock, low-stock notifications, and reminder cancellation therefore cannot be mutated from a dose action that was never persisted.
+
+After a successful taken-log commit, the medication ViewModel recomputes remaining stock from the complete log history, emits low-stock notification on threshold crossing, and cancels recurring `untilEmpty` reminders at zero.
+
+## Scheduling
+
+The local notification adapter uses `NotificationService.scheduleForMed()`. `forever` and `untilEmpty` use daily recurring notifications. `days` schedules finite one-shot notifications for each configured day.
+
+Finite schedules use `Medication.createdAt` as the stable start date. For example, a three-day medication created on August 19 always owns the August 19-21 course window. A timezone refresh or app restart on August 20 only recreates still-future notifications within that original window; it does not create an August 22 dose.
+
+Android reboot restoration uses the `flutter_local_notifications` scheduled notification receiver/boot receiver declarations generated by `tool/bootstrap_platforms.sh`; no duplicate WorkManager scheduler is added.
+
+Timezone is re-read when the app resumes. If the IANA timezone changed, `tz.local` is updated and `MedicationViewModel.rescheduleAll(logs)` iterates the current `Medication` state, filters with `isExpired(now)` and `isActiveOn(now, logs:)`, then rebuilds only active reminders. Expired and log-derived empty `untilEmpty` medications remain cancelled during this operation.
+
+IDs use a stable FNV-1a-style hash instead of Dart `String.hashCode`, so persisted cancellation IDs do not depend on a process-local hash implementation. Finite-day IDs include the original course day offset, so IDs remain stable across rescheduling.
+
+## Startup and onboarding
+
+`main()` submits a minimal Flutter frame immediately. Localization, Hive setup, box opens, and photo pruning then run through bounded bootstrap checkpoints so a stalled dependency produces a visible diagnostic state instead of a permanent black screen.
+
+Hive currently opens three boxes during composition:
+
+- `meds` — medication persistence;
+- `logs` — dose-log persistence;
+- `settings` — small local app flags such as `onboarding_completed`.
+
+If `onboarding_completed` is not true, `MedReminderApp` renders `OnboardingScreen` instead of `HomeScreen`. The onboarding flow explains the offline-first design and then asks for notification access only after the user presses **Enable notifications**. On Android, the third step optionally offers **Enable precise reminders** for exact-alarm access. On iOS, the third step is a ready screen.
+
+Completing onboarding writes `onboarding_completed = true` to the Hive `settings` box and transitions to Home. Camera/photo access remains just-in-time when the user actually captures a medication image.
+
+## Notification initialization and permissions
+
+`NotificationService.init()` is idempotent and bounded for non-interactive native initialization. It initializes `flutter_local_notifications`, initializes timezone data, and keeps Android scheduling on `AndroidScheduleMode.inexactAllowWhileIdle` by default.
+
+**Permission prompts are not part of `init()`.** This distinction is intentional. A physical Samsung Android 16 run showed the Flutter activity becoming non-visible while a startup notification permission request was active, followed by a five-second `TimeoutException`. Moving permission requests behind explicit onboarding actions prevents system permission UI from interfering with first-frame/debugger attach.
+
+`NotificationService.requestNotificationPermission()` is called only from the onboarding button. It requests Android notification access or iOS alert/badge/sound permission depending on the platform. Interactive permission calls do not use the five-second native timeout because the user may legitimately take longer than five seconds to answer a system dialog.
+
+`NotificationService.requestExactAlarmPermission()` is Android-only from the app's point of view and is also explicitly user-driven. When granted it switches scheduling to `exactAllowWhileIdle`; when denied/skipped the baseline remains on `inexactAllowWhileIdle`. Exact-alarm access is therefore an enhancement rather than a startup requirement.
+
+Android 13+ notification permission and exact-alarm permissions are declared in the manifest. Camera/photo-library permissions are not pre-requested during onboarding.
+
+## Snooze
+
+Snooze is an upsert on the original scheduled dose and creates a one-shot reminder ten minutes later with a deterministic snooze ID. Taking or skipping that scheduled dose cancels the outstanding snooze notification.
+
+## Photos
+
+`PhotoService.persistPhoto()` copies the image-picker source into `<ApplicationDocuments>/med_photos/<uuid>.<ext>`. Deletion is exposed to the ViewModel through the `MedicationPhotoStore` port and is executed when the medication is removed.
+
+At app startup, orphan cleanup runs only after a successful medication repository read. `MedicationPhotoStore.pruneOrphaned()` removes files in `med_photos/` that are not referenced by any stored medication. If storage cannot be read, pruning is skipped to avoid converting a recoverable database failure into permanent photo loss.
+
+## Localization
+
+`assets/translations.csv` is the single editable localization source, but it is build-time input only and is deliberately omitted from Flutter's asset manifest.
+
+`tool/generate_localizations.dart` validates the CSV, applies English fallback to empty non-English cells, and generates compact runtime files under `assets/translations/<locale>.json` plus `lib/l10n/generated_locales.dart`. `EasyLocalization` loads those JSON files directly; no CSV parser or CSV asset is used during app startup.
+
+`make l10n-check` regenerates the expected content in memory and fails when committed JSON or generated locale metadata is stale. The same validation also rejects duplicate keys, missing/empty English fallback values, rows with no translations, placeholder mismatches, and unexpected generated locale JSON files.
+
+## iOS host lifecycle
+
+The physical-iPhone bootstrap baseline currently uses the classic `FlutterAppDelegate` application lifecycle rather than UIScene.
+
+A Flutter 3.47-generated UIScene configuration built and started the Flutter engine, but UIKit could not resolve `Runner.SceneDelegate` at runtime. Xcode showed both `There is no scene delegate set` and a running Dart VM service, proving that the black screen was native scene/window attachment rather than Dart bootstrap failure.
+
+The verified baseline therefore has:
+
+- no `UIApplicationSceneManifest` in `Info.plist`;
+- `AppDelegate: FlutterAppDelegate`;
+- `GeneratedPluginRegistrant.register(with: self)` in `didFinishLaunchingWithOptions`;
+- `UIMainStoryboardFile = Main`.
+
+See `docs/iphone_black_screen_issue.md` for the incident timeline, diagnostic evidence, Flutter 3.47 context, and clean-build recovery procedure. UIScene must not be reintroduced casually; any future migration requires physical-device validation.
+
+## Accessibility
+
+Dose actions are rendered through `DoseActionButtons`. Taken, Skip, and Snooze each expose an explicit `Semantics` label with button semantics rather than relying only on icon recognition.
+
+The action group is placed below the dose `ListTile` and uses `Wrap`, so larger text can move actions onto another run instead of overflowing the constrained trailing slot. `test/accessibility_test.dart` exercises the component with a 1.3x text scale and checks all three semantic labels.
+
+## Roadmap baselines
+
+`docs/BACKLOG.md` records PR #3 as the offline backup/restore milestone. The planned export is a versioned ZIP containing medications, dose logs, photos, and manifest metadata; import validates the archive, restores through application/repository boundaries, and rebuilds reminders rather than trusting exported notification IDs.
+
+After PR #1 is merged and required CI is green, `main` should be tagged `v0.1.0-bootstrap-fixed`. PR #2 native companion work should reference that immutable baseline rather than an intermediate feature-branch commit.

@@ -1,0 +1,82 @@
+key,en,th
+app_title,Besyu,Besyu
+brand_tagline,Beside You.,อยู่ข้างกาย ในทุกวัน
+today,Today,วันนี้
+all_meds,Medications,ยา
+add_med,Add Medication,เพิ่มยา
+med_name,Medication Name,ชื่อยา
+med_desc,Description / Indication,สรรพคุณ
+total_amount,Stock (optional),จำนวนที่มี (เว้นได้)
+low_threshold,Low alert at,เตือนเมื่อเหลือ
+dosage,Dosage per time,จำนวนเม็ดต่อครั้ง
+times,Times per day,เวลากินต่อวัน
+mode,Duration Mode,โหมดการกิน
+mode_forever,Forever,กินตลอด
+mode_days,For N days,กินตามจำนวนวัน
+mode_until_empty,Until empty,กินจนหมด
+save_offline,Save (Offline),บันทึก (ออฟไลน์)
+take,Taken,กินแล้ว
+snooze,Snooze 10m,เลื่อน 10 นาที
+skip,Skip,ข้าม
+low_stock_title,Low Stock,ยาใกล้หมด
+low_stock_body,{name} left {count},{name} เหลือ {count} เม็ดแล้ว
+taken_success,Took {name} left {count},กิน {name} แล้ว เหลือ {count} เม็ด
+live_activity,Time to take medication,ถึงเวลากินยา
+no_dose,No doses today,ไม่มีมื้อยาวันนี้
+add_time,Add time,เพิ่มเวลา
+camera_local,Take package photo (local only),ถ่ายรูปซองยา (เก็บในเครื่อง)
+remaining,Remaining {count},เหลือ {count} เม็ด
+next_dose,Next dose {time},มื้อต่อไป {time}
+snoozed,Snoozed until {time},เลื่อนไป {time}
+skipped,Skipped,ข้ามแล้ว
+onboarding_welcome_title,Welcome to Besyu,ยินดีต้อนรับสู่ Besyu
+onboarding_welcome_body,Beside You. Keep your medication schedule and records safely on this device,อยู่ข้างกาย ในทุกวัน จัดตารางยาและบันทึกการกินยาไว้บนเครื่องนี้อย่างเป็นส่วนตัว
+onboarding_feature_offline,Your medication data stays on this device,ข้อมูลยาของคุณเก็บอยู่บนเครื่องนี้
+onboarding_feature_reminders,Get reminders when it is time to take medicine,รับการแจ้งเตือนเมื่อถึงเวลากินยา
+onboarding_feature_stock,Track doses and remaining medication stock,ติดตามมื้อยาและจำนวนยาคงเหลือ
+onboarding_continue,Continue,ต่อไป
+onboarding_notifications_title,Never miss a dose,ไม่พลาดเวลากินยา
+onboarding_notifications_body,Allow notifications so Besyu can stay beside you and remind you when it is time to take medicine,อนุญาตการแจ้งเตือนเพื่อให้ Besyu อยู่ข้างกายและเตือนเมื่อถึงเวลากินยา
+onboarding_enable_notifications,Enable notifications,เปิดการแจ้งเตือน
+onboarding_not_now,Not now,ไว้ทีหลัง
+onboarding_permission_enabled,Permission enabled,เปิดสิทธิ์แล้ว
+onboarding_permission_not_enabled,Permission is not enabled. You can enable it later in system settings.,ยังไม่ได้เปิดสิทธิ์ คุณสามารถเปิดภายหลังได้จากการตั้งค่าระบบ
+onboarding_precise_title,More precise reminders,เตือนเวลาได้แม่นยำขึ้น
+onboarding_precise_body,On Android you can optionally allow Alarms & reminders for more precise delivery. Without it the app uses battery-friendly inexact reminders.,บน Android คุณสามารถอนุญาตการปลุกและการช่วยเตือนเพื่อให้แจ้งเตือนได้แม่นยำขึ้น หากไม่เปิดแอปจะใช้การเตือนแบบไม่ตรงเวลาระดับวินาทีแทน
+onboarding_precise_optional,Optional. The app still works without this permission.,ไม่บังคับ แอปยังทำงานได้แม้ไม่เปิดสิทธิ์นี้
+onboarding_enable_precise_reminders,Enable precise reminders,เปิดการเตือนแบบแม่นยำ
+onboarding_ready_title,You are ready,พร้อมใช้งานแล้ว
+onboarding_ready_body,Besyu is ready to stay beside you. Add your medication and choose the times you want to be reminded,Besyu พร้อมอยู่ข้างกาย เพิ่มยาและกำหนดเวลาที่ต้องการให้เตือนได้เลย
+onboarding_get_started,Get started,เริ่มใช้งาน
+settings_title,Settings,ตั้งค่า
+settings_language,Language,ภาษา
+settings_language_desc,Choose English or Thai. Before you choose a language Besyu follows the device locale.,เลือก English หรือ ไทย ก่อนเลือกภาษา Besyu จะใช้ภาษาตามเครื่อง
+settings_language_english,English,English
+settings_language_thai,Thai,ไทย
+settings_profile,Profile,ข้อมูลผู้ใช้
+settings_age,Age,อายุ
+settings_age_optional,Optional 1-120 years,ไม่บังคับ อายุ 1-120 ปี
+settings_age_invalid,Enter an age from 1 to 120,กรุณากรอกอายุ 1 ถึง 120 ปี
+settings_sex,Sex,เพศ
+settings_sex_not_specified,Not specified,ไม่ระบุ
+settings_sex_female,Female,หญิง
+settings_sex_male,Male,ชาย
+settings_sex_other,Other,อื่น ๆ
+settings_save_profile,Save profile,บันทึกข้อมูล
+settings_profile_saved,Profile saved on this device,บันทึกข้อมูลไว้บนเครื่องแล้ว
+settings_profile_local,Profile data stays on this device and is optional.,ข้อมูลผู้ใช้เป็นข้อมูลไม่บังคับและเก็บไว้บนเครื่องนี้เท่านั้น
+settings_permissions,Permissions,สิทธิ์การใช้งาน
+settings_notifications,Notifications,การแจ้งเตือน
+settings_notifications_desc,Allow medication reminder notifications,อนุญาตการแจ้งเตือนเวลากินยา
+settings_precise_reminders,Precise reminders,การเตือนแบบแม่นยำ
+settings_precise_reminders_desc,Manage Android Alarms & reminders access,จัดการสิทธิ์การปลุกและการช่วยเตือนบน Android
+settings_camera_photos,Camera and photos,กล้องและรูปภาพ
+settings_camera_photos_desc,Requested only when you capture or select a medication photo,ขอสิทธิ์เมื่อถ่ายหรือเลือกรูปยาเท่านั้น
+settings_system_permissions,System app permissions,สิทธิ์แอปในระบบ
+settings_system_permissions_desc,Open device settings to review or change permissions,เปิดการตั้งค่าของเครื่องเพื่อตรวจสอบหรือเปลี่ยนสิทธิ์
+settings_open_failed,Unable to open system settings,ไม่สามารถเปิดการตั้งค่าระบบได้
+settings_about,About,เกี่ยวกับ
+settings_about_desc,Beside You. An offline medication companion with no application server.,Beside You. อยู่ข้างกาย ในทุกวัน แอปช่วยดูแลเรื่องยาแบบออฟไลน์และไม่มีเซิร์ฟเวอร์ของแอป
+settings_version,Version,เวอร์ชัน
+settings_offline_title,Offline first,ทำงานแบบออฟไลน์
+settings_offline_desc,Medication records and profile data stay on this device,ข้อมูลยาและข้อมูลผู้ใช้เก็บอยู่บนเครื่องนี้
