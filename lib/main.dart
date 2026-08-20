@@ -15,6 +15,7 @@ import 'l10n/generated_locales.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/notification_service.dart';
+import 'theme/app_theme.dart';
 
 const _onboardingCompletedKey = 'onboarding_completed';
 const _languageCodeKey = 'language_code';
@@ -79,6 +80,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       const photoStore = LocalMedicationPhotoStore();
+      final themeController = AppThemeController(settingsBox);
 
       _checkpoint('Checking medication photos');
       await medicationRepository.readAll().fold(
@@ -115,6 +117,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
               reminderScheduler,
             ),
             medicationPhotoStoreProvider.overrideWithValue(photoStore),
+            appThemeProvider.overrideWith((ref) => themeController),
           ],
           child: BesyuApp(
             initialOnboardingCompleted: onboardingCompleted,
@@ -284,16 +287,14 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
 
   @override
   Widget build(BuildContext context) {
+    final themeId = ref.watch(appThemeProvider);
     return MaterialApp(
       title: 'Besyu',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF4A90D9),
-      ),
+      theme: AppThemeCatalog.themeFor(themeId),
       home: _onboardingCompleted
           ? const HomeScreen()
           : OnboardingScreen(
