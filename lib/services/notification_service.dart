@@ -47,9 +47,9 @@ class NotificationService {
   static Future<void> _initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     await _plugin
         .initialize(
@@ -57,22 +57,52 @@ class NotificationService {
         )
         .timeout(_nativeTimeout);
 
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    if (androidPlugin != null) {
-      await androidPlugin
-          .requestNotificationsPermission()
-          .timeout(_nativeTimeout);
-    }
-
-    // Exact-alarm permission must be user-driven on modern Android. Requesting
-    // it during startup can open system settings while Flutter is still
-    // attaching to the process. Keep the baseline on inexact scheduling until
-    // a dedicated exact-alarm permission flow is triggered by the user.
+    // Permission prompts are deliberately not part of startup. On modern
+    // Android they can background the Flutter activity while the debugger is
+    // still attaching; on iOS they also provide a better UX after an explicit
+    // explanation. The onboarding flow calls the methods below instead.
     _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
     await _initTimezone().timeout(_nativeTimeout);
     _initialized = true;
+  }
+
+  static Future<bool> requestNotificationPermission() async {
+    await init();
+
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      return await androidPlugin
+              .requestNotificationsPermission()
+              .timeout(_nativeTimeout) ??
+          false;
+    }
+
+    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    if (iosPlugin != null) {
+      return await iosPlugin
+              .requestPermissions(alert: true, badge: true, sound: true)
+              .timeout(_nativeTimeout) ??
+          false;
+    }
+
+    return true;
+  }
+
+  static Future<bool> requestExactAlarmPermission() async {
+    await init();
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true;
+
+    final granted =
+        await androidPlugin.requestExactAlarmsPermission().timeout(_nativeTimeout);
+    _androidScheduleMode = granted == true
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    return granted == true;
   }
 
   static Future<String> _readTimezoneName() async {
