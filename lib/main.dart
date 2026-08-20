@@ -116,8 +116,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
             ),
             medicationPhotoStoreProvider.overrideWithValue(photoStore),
           ],
-          child: MedReminderApp(
+          child: BesyuApp(
             initialOnboardingCompleted: onboardingCompleted,
+            onLanguageSelected: (languageCode) =>
+                settingsBox.put(_languageCodeKey, languageCode),
             onCompleteOnboarding: () async {
               await settingsBox
                   .put(_onboardingCompletedKey, true)
@@ -221,21 +223,23 @@ Future<void> _initializeNotificationsAfterLaunch() async {
   }
 }
 
-class MedReminderApp extends ConsumerStatefulWidget {
-  const MedReminderApp({
+class BesyuApp extends ConsumerStatefulWidget {
+  const BesyuApp({
     required this.initialOnboardingCompleted,
     required this.onCompleteOnboarding,
+    required this.onLanguageSelected,
     super.key,
   });
 
   final bool initialOnboardingCompleted;
   final Future<void> Function() onCompleteOnboarding;
+  final Future<void> Function(String languageCode) onLanguageSelected;
 
   @override
-  ConsumerState<MedReminderApp> createState() => _MedReminderAppState();
+  ConsumerState<BesyuApp> createState() => _BesyuAppState();
 }
 
-class _MedReminderAppState extends ConsumerState<MedReminderApp>
+class _BesyuAppState extends ConsumerState<BesyuApp>
     with WidgetsBindingObserver {
   late bool _onboardingCompleted;
 
@@ -293,6 +297,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
       home: _onboardingCompleted
           ? const HomeScreen()
           : OnboardingScreen(
+              onLanguageSelected: widget.onLanguageSelected,
               onRequestNotifications:
                   NotificationService.requestNotificationPermission,
               onRequestExactAlarm: Platform.isAndroid
