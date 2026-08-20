@@ -91,7 +91,7 @@ if '<key>NSCameraUsageDescription</key>' not in text:
 plist.write_text(text)
 PY
 
-./tool/configure_identifiers.sh
+bash tool/configure_identifiers.sh
 
 echo "Android/iOS scaffolding created."
 echo "Source backup retained at: $backup_root"
