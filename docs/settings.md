@@ -1,14 +1,28 @@
-# Settings
+# Besyu Settings
 
 ## Overview
 
-The Settings screen is available from the Home screen and contains three sections:
+Settings is a top-level destination in the bottom navigation alongside Today and Medications. It contains four sections:
 
-1. Profile
-2. Permissions
-3. About
+1. Language
+2. Profile
+3. Permissions
+4. About
 
-All profile/settings data remains local to the device. The current baseline has no application server and does not upload the profile.
+All profile/settings data remains local to the device. Besyu has no application server in the current baseline.
+
+## Language
+
+Besyu currently supports English (`en`) and Thai (`th`).
+
+Startup policy:
+
+- if `language_code` has never been stored, Besyu follows the device locale;
+- if the device locale is unsupported, Besyu falls back to English;
+- once the user explicitly chooses English or Thai in Settings, that language code is stored in the Hive `settings` box and becomes the startup override;
+- there is intentionally no visible `System default` choice in Settings.
+
+`EasyLocalization` internal locale persistence is disabled (`saveLocale: false`) so Hive remains the single persistence source for the explicit language choice.
 
 ## Profile
 
@@ -19,15 +33,15 @@ The optional profile stores:
 
 Both values are stored in the existing Hive `settings` box.
 
-These values are **not used to calculate medication dose, diagnose a condition, or change a medication schedule automatically** in the current baseline. They are profile metadata only. Any future clinical logic that depends on age or sex requires a separately specified and validated medication-safety design.
+These values are **not used to calculate medication dose, diagnose a condition, or change a medication schedule automatically** in the current baseline. They are profile metadata only.
 
 ## Permissions
 
-The Settings screen gives the user a repeatable place to manage permission-related flows after onboarding.
+Settings gives the user a repeatable place to manage permission-related flows after onboarding.
 
 ### Notifications
 
-`NotificationService.requestNotificationPermission()` is invoked only after the user taps the notification row. Permission prompts are never part of startup initialization.
+`NotificationService.requestNotificationPermission()` is invoked only after an explicit user action. Permission prompts are never part of startup initialization.
 
 ### Precise reminders on Android
 
@@ -46,10 +60,12 @@ Camera/photo access remains just-in-time: the app asks only when the user captur
 - Android: `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for the current package;
 - iOS: `UIApplication.openSettingsURLString`.
 
-This allows a user who previously denied a permission to review or change it later without reinstalling the app.
-
 ## About
 
-The About section states the application name/version and the offline/no-application-server baseline.
+The product identity is:
 
-The displayed baseline version is currently `1.0.0`, matching `pubspec.yaml` `version: 1.0.0+1` at the time this document was written.
+- **Besyu**
+- **Beside You.**
+- **อยู่ข้างกาย ในทุกวัน**
+
+The About section also states the application version and offline/no-application-server baseline.
