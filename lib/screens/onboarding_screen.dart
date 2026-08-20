@@ -32,6 +32,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final granted = await widget.onRequestNotifications();
       if (!mounted) return;
       setState(() => _notificationsGranted = granted);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _notificationsGranted = false);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -45,6 +48,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final granted = await request();
       if (!mounted) return;
       setState(() => _exactAlarmGranted = granted);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _exactAlarmGranted = false);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
