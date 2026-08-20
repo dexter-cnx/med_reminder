@@ -12,11 +12,12 @@ import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'l10n/generated_locales.dart';
-import 'screens/home_shell.dart';
+import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/notification_service.dart';
 
 const _onboardingCompletedKey = 'onboarding_completed';
+const _languageCodeKey = 'language_code';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,11 +94,17 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
       final onboardingCompleted =
           settingsBox.get(_onboardingCompletedKey) == true;
+      final explicitLanguageCode = settingsBox.get(_languageCodeKey);
+      final startupLocale = _resolveStartupLocale(
+        explicitLanguageCode is String ? explicitLanguageCode : null,
+      );
 
       final app = EasyLocalization(
         supportedLocales: supportedLocales,
         path: 'assets/translations',
         fallbackLocale: const Locale('en'),
+        startLocale: startupLocale,
+        saveLocale: false,
         child: ProviderScope(
           overrides: [
             medicationRepositoryProvider.overrideWithValue(
@@ -135,6 +142,20 @@ class _BootstrapAppState extends State<BootstrapApp> {
     }
   }
 
+  Locale _resolveStartupLocale(String? explicitLanguageCode) {
+    if (explicitLanguageCode != null) {
+      for (final locale in supportedLocales) {
+        if (locale.languageCode == explicitLanguageCode) return locale;
+      }
+    }
+
+    final deviceLanguageCode = PlatformDispatcher.instance.locale.languageCode;
+    for (final locale in supportedLocales) {
+      if (locale.languageCode == deviceLanguageCode) return locale;
+    }
+    return const Locale('en');
+  }
+
   void _checkpoint(String stage) {
     debugPrint('BOOTSTRAP: $stage');
     if (!mounted) return;
@@ -157,9 +178,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Med Reminder',
+                    'Besyu',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 8),
+                  const Text('Beside You.'),
                   const SizedBox(height: 16),
                   if (_error == null) ...[
                     const CircularProgressIndicator(),
@@ -258,7 +281,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Med Reminder',
+      title: 'Besyu',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
@@ -268,7 +291,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
         colorSchemeSeed: const Color(0xFF4A90D9),
       ),
       home: _onboardingCompleted
-          ? const HomeShell()
+          ? const HomeScreen()
           : OnboardingScreen(
               onRequestNotifications:
                   NotificationService.requestNotificationPermission,
