@@ -100,6 +100,7 @@ If an iPhone builds successfully but displays a black screen, inspect the Xcode 
 
 ## Roadmap / release baseline
 
+- Next UI milestone: App Theme System with five selectable themes — Besyu Blue, Warm Sand, Sage Care, Lavender Calm, and Midnight. Theme selection will live in Settings and persist locally. See `docs/BACKLOG.md`.
 - PR #2: native companion work from `handoff/NATIVE_HANDOFF.md`.
 - PR #3: offline ZIP export/import backup and restore from `docs/BACKLOG.md`.
 - After PR #1 is merged with required CI green, tag merged `main` as `v0.1.0-bootstrap-fixed` and use that tag as the baseline for PR #2.
