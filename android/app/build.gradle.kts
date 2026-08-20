@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.med_reminder_offline"
+    namespace = "com.cnxdev.beside_you"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,8 +16,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.med_reminder_offline"
+        applicationId = "com.cnxdev.beside_you"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -1,4 +1,4 @@
-package com.example.med_reminder_offline
+package com.cnxdev.beside_you
 
 import android.content.Intent
 import android.net.Uri
