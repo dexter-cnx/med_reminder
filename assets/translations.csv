@@ -49,6 +49,14 @@ onboarding_ready_title,You are ready,พร้อมใช้งานแล้�
 onboarding_ready_body,Besyu is ready to stay beside you. Add your medication and choose the times you want to be reminded,Besyu พร้อมอยู่ข้างกาย เพิ่มยาและกำหนดเวลาที่ต้องการให้เตือนได้เลย
 onboarding_get_started,Get started,เริ่มใช้งาน
 settings_title,Settings,ตั้งค่า
+settings_appearance,Appearance,รูปแบบแอป
+settings_theme,App theme,ธีมแอป
+settings_theme_desc,Choose a look that feels comfortable. Changes apply immediately.,เลือกบรรยากาศที่สบายตา การเปลี่ยนแปลงมีผลทันที
+theme_besyu_blue,Besyu Blue,Besyu Blue
+theme_warm_sand,Warm Sand,Warm Sand
+theme_sage_care,Sage Care,Sage Care
+theme_lavender_calm,Lavender Calm,Lavender Calm
+theme_midnight,Midnight,Midnight
 settings_language,Language,ภาษา
 settings_language_desc,Choose English or Thai. Before you choose a language Besyu follows the device locale.,เลือก English หรือ ไทย ก่อนเลือกภาษา Besyu จะใช้ภาษาตามเครื่อง
 settings_language_english,English,English
