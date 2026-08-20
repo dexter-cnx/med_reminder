@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -41,16 +42,6 @@ Future<void> _bootstrapApplication() async {
   final medsBox = await Hive.openBox<dynamic>('meds');
   final logsBox = await Hive.openBox<dynamic>('logs');
 
-  // Notification/timezone setup must not prevent the application UI from
-  // starting. Native permission/plugin failures are recoverable and can be
-  // retried after launch.
-  try {
-    await NotificationService.init();
-  } catch (error, stackTrace) {
-    debugPrint('Notification initialization failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
-  }
-
   final localDataSource = HiveMedicationLocalDataSource(
     medicationBox: medsBox,
     doseLogBox: logsBox,
@@ -72,6 +63,9 @@ Future<void> _bootstrapApplication() async {
         onFailure: (_) async => 0,
       );
 
+  // Render the application before touching notification/timezone plugins.
+  // Some iOS plugin calls can wait on native state or permissions. They must
+  // never hold the first Flutter frame hostage.
   runApp(
     EasyLocalization(
       supportedLocales: supportedLocales,
@@ -90,6 +84,20 @@ Future<void> _bootstrapApplication() async {
       ),
     ),
   );
+
+  unawaited(_initializeNotificationsAfterLaunch());
+}
+
+Future<void> _initializeNotificationsAfterLaunch() async {
+  // Give Flutter an opportunity to submit the first frame before invoking
+  // native notification/timezone channels.
+  await Future<void>.delayed(Duration.zero);
+  try {
+    await NotificationService.init();
+  } catch (error, stackTrace) {
+    debugPrint('Notification initialization failed after launch: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 class StartupFailureApp extends StatelessWidget {
@@ -148,7 +156,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _refreshTimezone();
+      unawaited(_refreshTimezone());
     }
   }
 
