@@ -47,3 +47,31 @@ onboarding_enable_precise_reminders,Enable precise reminders,เปิดกา�
 onboarding_ready_title,You are ready,พร้อมใช้งานแล้ว
 onboarding_ready_body,Add your medication and choose the times you want to be reminded,เพิ่มยาและกำหนดเวลาที่ต้องการให้แอปเตือนได้เลย
 onboarding_get_started,Get started,เริ่มใช้งาน
+settings_title,Settings,การตั้งค่า
+settings_profile,Profile,ข้อมูลผู้ใช้
+settings_age,Age,อายุ
+settings_age_optional,Optional 1-120 years,ไม่บังคับ อายุ 1-120 ปี
+settings_age_invalid,Enter an age from 1 to 120,กรุณากรอกอายุ 1 ถึง 120 ปี
+settings_sex,Sex,เพศ
+settings_sex_not_specified,Not specified,ไม่ระบุ
+settings_sex_female,Female,หญิง
+settings_sex_male,Male,ชาย
+settings_sex_other,Other,อื่น ๆ
+settings_save_profile,Save profile,บันทึกข้อมูล
+settings_profile_saved,Profile saved on this device,บันทึกข้อมูลไว้บนเครื่องแล้ว
+settings_profile_local,Profile data stays on this device and is optional.,ข้อมูลผู้ใช้เป็นข้อมูลไม่บังคับและเก็บไว้บนเครื่องนี้เท่านั้น
+settings_permissions,Permissions,สิทธิ์การใช้งาน
+settings_notifications,Notifications,การแจ้งเตือน
+settings_notifications_desc,Allow medication reminder notifications,อนุญาตการแจ้งเตือนเวลากินยา
+settings_precise_reminders,Precise reminders,การเตือนแบบแม่นยำ
+settings_precise_reminders_desc,Manage Android Alarms & reminders access,จัดการสิทธิ์การปลุกและการช่วยเตือนบน Android
+settings_camera_photos,Camera and photos,กล้องและรูปภาพ
+settings_camera_photos_desc,Requested only when you capture or select a medication photo,ขอสิทธิ์เมื่อถ่ายหรือเลือกรูปยาเท่านั้น
+settings_system_permissions,System app permissions,สิทธิ์แอปในระบบ
+settings_system_permissions_desc,Open device settings to review or change permissions,เปิดการตั้งค่าของเครื่องเพื่อตรวจสอบหรือเปลี่ยนสิทธิ์
+settings_open_failed,Unable to open system settings,ไม่สามารถเปิดการตั้งค่าระบบได้
+settings_about,About,เกี่ยวกับ
+settings_about_desc,Offline medication reminder with no application server,แอปเตือนกินยาแบบออฟไลน์และไม่มีเซิร์ฟเวอร์ของแอป
+settings_version,Version,เวอร์ชัน
+settings_offline_title,Offline first,ทำงานแบบออฟไลน์
+settings_offline_desc,Medication records and profile data stay on this device,ข้อมูลยาและข้อมูลผู้ใช้เก็บอยู่บนเครื่องนี้
