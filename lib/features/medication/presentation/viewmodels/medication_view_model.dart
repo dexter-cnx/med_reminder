@@ -228,7 +228,9 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
 }
 
 typedef DoseTakenCallback = Future<void> Function(
-    String medId, List<DoseLog> logs);
+  String medId,
+  List<DoseLog> logs,
+);
 
 class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
   DoseLogViewModel(
@@ -255,22 +257,25 @@ class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
   }
 
   Future<void> markTaken(String medId, DateTime scheduledAt) async {
-    await _upsert(
+    final persisted = await _upsert(
       medId,
       scheduledAt,
       DoseStatus.taken,
       takenAt: DateTime.now(),
     );
+    if (!persisted) return;
     await onTaken?.call(medId, state);
   }
 
-  Future<void> markSkipped(String medId, DateTime scheduledAt) =>
-      _upsert(medId, scheduledAt, DoseStatus.skipped);
+  Future<void> markSkipped(String medId, DateTime scheduledAt) async {
+    await _upsert(medId, scheduledAt, DoseStatus.skipped);
+  }
 
-  Future<void> markSnoozed(String medId, DateTime scheduledAt) =>
-      _upsert(medId, scheduledAt, DoseStatus.snoozed);
+  Future<void> markSnoozed(String medId, DateTime scheduledAt) async {
+    await _upsert(medId, scheduledAt, DoseStatus.snoozed);
+  }
 
-  Future<void> _upsert(
+  Future<bool> _upsert(
     String medId,
     DateTime scheduledAt,
     DoseStatus status, {
@@ -290,7 +295,9 @@ class DoseLogViewModel extends StateNotifier<List<DoseLog>> {
     ];
     if (!await _persist()) {
       state = previous;
+      return false;
     }
+    return true;
   }
 }
 
