@@ -8,6 +8,10 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    let launched = super.application(
+      application,
+      didFinishLaunchingWithOptions: launchOptions
+    )
 
     if let controller = window?.rootViewController as? FlutterViewController {
       let channel = FlutterMethodChannel(
@@ -30,6 +34,6 @@ import UIKit
       }
     }
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    return launched
   }
 }
