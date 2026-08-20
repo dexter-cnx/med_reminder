@@ -1,6 +1,9 @@
-enum MedicationMode { forever, days, untilEmpty }
+import 'dose_log.dart';
 
-enum DoseStatus { pending, taken, skipped, snoozed }
+export 'dose_log.dart';
+export 'scheduled_dose.dart';
+
+enum MedicationMode { forever, days, untilEmpty }
 
 class Medication {
   Medication({
@@ -89,40 +92,4 @@ class Medication {
         createdAt: createdAt,
         notificationIds: notificationIds ?? this.notificationIds,
       );
-}
-
-class DoseLog {
-  const DoseLog({
-    required this.id,
-    required this.medId,
-    required this.scheduledAt,
-    this.takenAt,
-    this.status = DoseStatus.pending,
-  });
-
-  final String id;
-  final String medId;
-  final DateTime scheduledAt;
-  final DateTime? takenAt;
-  final DoseStatus status;
-
-  bool get isTaken => status == DoseStatus.taken;
-}
-
-class ScheduledDose {
-  const ScheduledDose({
-    required this.medication,
-    required this.scheduledAt,
-    this.log,
-    this.remaining,
-  });
-
-  final Medication medication;
-  final DateTime scheduledAt;
-  final DoseLog? log;
-  final int? remaining;
-
-  bool get isTaken => log?.status == DoseStatus.taken;
-  bool get isSkipped => log?.status == DoseStatus.skipped;
-  bool get isSnoozed => log?.status == DoseStatus.snoozed;
 }
