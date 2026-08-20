@@ -1,4 +1,3 @@
-import 'dose_log.dart';
 import 'medication.dart';
 
 /// Read model for one scheduled dose shown by presentation/application flows.
