@@ -1,5 +1,68 @@
 # Backlog
 
+## Next UI milestone — App Theme System
+
+Goal: let the user personalize Besyu without changing medication behavior, storage semantics, reminder timing, or medical data.
+
+This should be implemented as a dedicated UI milestone rather than being mixed into the native companion work. Theme selection belongs in the existing Settings tab and persists locally in the Hive `settings` box.
+
+### Theme architecture
+
+- Introduce a typed theme identifier such as `BesyuThemeId` rather than storing arbitrary colors.
+- Store only the selected theme ID, for example `app_theme_id`, in the local `settings` box.
+- Build each theme from centralized Material 3 tokens / `ColorScheme`; screens and components must not hard-code theme-specific colors.
+- Apply theme changes live without requiring an app restart.
+- The selected theme must survive app restart.
+- Theme state must remain independent from language preference and profile data.
+- Theme choice must never affect medication dose, reminder scheduling, stock calculations, or any domain/data behavior.
+
+### Initial five themes
+
+1. **Besyu Blue** — default brand theme; calm blue, clean clinical-neutral surfaces.
+2. **Warm Sand** — warm beige / amber family; softer and more personal than the default.
+3. **Sage Care** — muted green family; calm wellness-oriented appearance without implying medical status.
+4. **Lavender Calm** — lavender / violet family; softer, more expressive appearance.
+5. **Midnight** — dark-first navy / charcoal family with high-contrast text and controls.
+
+The five themes must feel materially different through coordinated primary/secondary/surface/container colors, not merely by changing one seed color.
+
+### Settings UX
+
+- Add an **Appearance / Theme** section to Settings.
+- Show all five themes as visual preview cards or swatches with localized names.
+- Tapping a theme should preview/apply it immediately.
+- Clearly indicate the currently selected theme.
+- Do not add a separate onboarding step for themes; theme selection is optional personalization.
+- Besyu Blue remains the default when `app_theme_id` has never been stored or contains an unknown value.
+
+### Theme tokens
+
+Each theme should define at least:
+
+- Material 3 `ColorScheme`
+- scaffold/surface/container treatment
+- AppBar and navigation colors
+- cards
+- buttons / FAB
+- input fields
+- success / warning / error semantic colors where app-specific tokens are needed
+- selected/unselected navigation states
+
+Typography, spacing, radius, and component behavior should stay shared unless a concrete design requirement justifies a theme-specific override.
+
+### Accessibility / quality gates
+
+- Maintain readable Material contrast for body text, buttons, navigation, disabled states, and warning/error states.
+- Verify large-text layouts remain usable across all themes.
+- Add tests for theme ID persistence and unknown-value fallback.
+- Add widget/golden coverage for representative screens under all five themes, at minimum Home and Settings.
+- Switching theme must not recreate/clear medication, dose-log, language, profile, or onboarding state.
+- `make analyze`, tests, and platform build gates must remain green.
+
+### Deferred theme extensions
+
+Do not expand the first theme milestone into an unrestricted theme editor. Custom user colors, downloadable themes, per-theme typography packs, and cloud synchronization are separate future work.
+
 ## PR #2 — Native companion features
 
 Scope remains the native handoff described in `handoff/NATIVE_HANDOFF.md`: iOS Live Activity / Dynamic Island, watchOS, Android ongoing notification fallback, Wear OS, and real-device evidence.
