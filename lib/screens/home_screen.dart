@@ -13,6 +13,7 @@ import '../services/live_activity_service.dart';
 import '../services/notification_service.dart';
 import '../services/photo_service.dart';
 import '../services/watch_sync_service.dart';
+import 'settings_screen.dart';
 import 'widgets/dose_action_buttons.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -29,44 +30,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final doses = ref.watch(todayDosesProvider);
     final meds = ref.watch(medsProvider);
+
+    final body = switch (_tab) {
+      0 => _TodayList(
+          doses: doses,
+          onTake: _take,
+          onSkip: _skip,
+          onSnooze: _snooze,
+        ),
+      1 => _MedicationList(meds: meds),
+      _ => const SettingsScreen(embedded: true),
+    };
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app_title'.tr()),
-        actions: <Widget>[
-          IconButton(
-            onPressed: () => context.setLocale(
-              context.locale.languageCode == 'th'
-                  ? const Locale('en')
-                  : const Locale('th'),
+      appBar: AppBar(title: Text('app_title'.tr())),
+      body: body,
+      floatingActionButton: _tab == 2
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _addMedication,
+              icon: const Icon(Icons.add),
+              label: Text('add_med'.tr()),
             ),
-            icon: const Icon(Icons.language),
-          ),
-        ],
-      ),
-      body: _tab == 0
-          ? _TodayList(
-              doses: doses,
-              onTake: _take,
-              onSkip: _skip,
-              onSnooze: _snooze,
-            )
-          : _MedicationList(meds: meds),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addMedication,
-        icon: const Icon(Icons.add),
-        label: Text('add_med'.tr()),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _tab,
-        onTap: (value) => setState(() => _tab = value),
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.today),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (value) => setState(() => _tab = value),
+        destinations: <NavigationDestination>[
+          NavigationDestination(
+            icon: const Icon(Icons.today_outlined),
+            selectedIcon: const Icon(Icons.today),
             label: 'today'.tr(),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.medication),
+          NavigationDestination(
+            icon: const Icon(Icons.medication_outlined),
+            selectedIcon: const Icon(Icons.medication),
             label: 'all_meds'.tr(),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: 'settings_title'.tr(),
           ),
         ],
       ),
