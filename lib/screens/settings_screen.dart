@@ -9,6 +9,7 @@ import '../services/notification_service.dart';
 
 const _profileAgeKey = 'profile_age';
 const _profileSexKey = 'profile_sex';
+const _languageCodeKey = 'language_code';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({this.embedded = false, super.key});
@@ -65,6 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _setLanguage(String languageCode) async {
+    if (languageCode == context.locale.languageCode) {
+      await _settings.put(_languageCodeKey, languageCode);
+      return;
+    }
+    await _settings.put(_languageCodeKey, languageCode);
+    if (!mounted) return;
+    await context.setLocale(Locale(languageCode));
+  }
+
   Future<void> _requestNotifications() async {
     await _runPermissionAction(() async {
       final granted = await NotificationService.requestNotificationPermission();
@@ -119,6 +130,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        _SectionTitle('settings_language'.tr()),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: DropdownButtonFormField<String>(
+              value: context.locale.languageCode == 'th' ? 'th' : 'en',
+              decoration: InputDecoration(
+                labelText: 'settings_language'.tr(),
+                helperText: 'settings_language_desc'.tr(),
+              ),
+              items: <DropdownMenuItem<String>>[
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text('settings_language_english'.tr()),
+                ),
+                DropdownMenuItem(
+                  value: 'th',
+                  child: Text('settings_language_thai'.tr()),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) _setLanguage(value);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
         _SectionTitle('settings_profile'.tr()),
         Card(
           child: Padding(
@@ -136,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: _sex,
+                  value: _sex,
                   decoration: InputDecoration(labelText: 'settings_sex'.tr()),
                   items: _sexValues
                       .map(
@@ -213,8 +251,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.medication_outlined),
-                title: const Text('Med Reminder'),
+                leading: const Icon(Icons.favorite_outline),
+                title: const Text('Besyu'),
                 subtitle: Text('settings_about_desc'.tr()),
               ),
               const Divider(height: 1),
