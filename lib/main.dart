@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -12,7 +13,10 @@ import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'l10n/generated_locales.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/notification_service.dart';
+
+const _onboardingCompletedKey = 'onboarding_completed';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +66,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final logsBox = await Hive.openBox<dynamic>('logs')
           .timeout(const Duration(seconds: 5));
 
+      _checkpoint('Opening app settings');
+      final settingsBox = await Hive.openBox<dynamic>('settings')
+          .timeout(const Duration(seconds: 5));
+
       final localDataSource = HiveMedicationLocalDataSource(
         medicationBox: medsBox,
         doseLogBox: logsBox,
@@ -83,6 +91,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
             onFailure: (_) async => 0,
           );
 
+      final onboardingCompleted =
+          settingsBox.get(_onboardingCompletedKey) == true;
+
       final app = EasyLocalization(
         supportedLocales: supportedLocales,
         path: 'assets/translations',
@@ -98,7 +109,14 @@ class _BootstrapAppState extends State<BootstrapApp> {
             ),
             medicationPhotoStoreProvider.overrideWithValue(photoStore),
           ],
-          child: const MedReminderApp(),
+          child: MedReminderApp(
+            initialOnboardingCompleted: onboardingCompleted,
+            onCompleteOnboarding: () async {
+              await settingsBox
+                  .put(_onboardingCompletedKey, true)
+                  .timeout(const Duration(seconds: 5));
+            },
+          ),
         ),
       );
 
@@ -181,7 +199,14 @@ Future<void> _initializeNotificationsAfterLaunch() async {
 }
 
 class MedReminderApp extends ConsumerStatefulWidget {
-  const MedReminderApp({super.key});
+  const MedReminderApp({
+    required this.initialOnboardingCompleted,
+    required this.onCompleteOnboarding,
+    super.key,
+  });
+
+  final bool initialOnboardingCompleted;
+  final Future<void> Function() onCompleteOnboarding;
 
   @override
   ConsumerState<MedReminderApp> createState() => _MedReminderAppState();
@@ -189,9 +214,12 @@ class MedReminderApp extends ConsumerStatefulWidget {
 
 class _MedReminderAppState extends ConsumerState<MedReminderApp>
     with WidgetsBindingObserver {
+  late bool _onboardingCompleted;
+
   @override
   void initState() {
     super.initState();
+    _onboardingCompleted = widget.initialOnboardingCompleted;
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -221,6 +249,12 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
     }
   }
 
+  Future<void> _completeOnboarding() async {
+    await widget.onCompleteOnboarding();
+    if (!mounted) return;
+    setState(() => _onboardingCompleted = true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -233,7 +267,17 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF4A90D9),
       ),
-      home: const HomeScreen(),
+      home: _onboardingCompleted
+          ? const HomeScreen()
+          : OnboardingScreen(
+              onRequestNotifications:
+                  NotificationService.requestNotificationPermission,
+              onRequestExactAlarm: Platform.isAndroid
+                  ? NotificationService.requestExactAlarmPermission
+                  : null,
+              showExactAlarmStep: Platform.isAndroid,
+              onComplete: _completeOnboarding,
+            ),
     );
   }
 }
