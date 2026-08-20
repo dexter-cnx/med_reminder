@@ -338,8 +338,8 @@ class _ThemePickerSheet extends ConsumerWidget {
                   Text(
                     'settings_theme'.tr(),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -413,8 +413,8 @@ class _ThemePreviewChoice extends StatelessWidget {
                     child: Text(
                       _themeLabel(themeId).tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   if (selected)
@@ -616,8 +616,8 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
