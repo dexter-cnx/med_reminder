@@ -11,7 +11,9 @@ const _profileAgeKey = 'profile_age';
 const _profileSexKey = 'profile_sex';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({this.embedded = false, super.key});
+
+  final bool embedded;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -114,126 +116,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('settings_title'.tr())),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        children: [
-          _SectionTitle('settings_profile'.tr()),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _ageController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'settings_age'.tr(),
-                      helperText: 'settings_age_optional'.tr(),
-                    ),
+    final content = ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      children: [
+        _SectionTitle('settings_profile'.tr()),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'settings_age'.tr(),
+                    helperText: 'settings_age_optional'.tr(),
                   ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _sex,
-                    decoration: InputDecoration(labelText: 'settings_sex'.tr()),
-                    items: _sexValues
-                        .map(
-                          (value) => DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(_sexLabel(value).tr()),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: (value) {
-                      if (value != null) setState(() => _sex = value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _savingProfile ? null : _saveProfile,
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text('settings_save_profile'.tr()),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'settings_profile_local'.tr(),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: _sex,
+                  decoration: InputDecoration(labelText: 'settings_sex'.tr()),
+                  items: _sexValues
+                      .map(
+                        (value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(_sexLabel(value).tr()),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) {
+                    if (value != null) setState(() => _sex = value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _savingProfile ? null : _saveProfile,
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text('settings_save_profile'.tr()),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'settings_profile_local'.tr(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          _SectionTitle('settings_permissions'.tr()),
-          Card(
-            child: Column(
-              children: [
+        ),
+        const SizedBox(height: 20),
+        _SectionTitle('settings_permissions'.tr()),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: Text('settings_notifications'.tr()),
+                subtitle: Text('settings_notifications_desc'.tr()),
+                trailing: const Icon(Icons.chevron_right),
+                enabled: !_permissionBusy,
+                onTap: _requestNotifications,
+              ),
+              if (Platform.isAndroid) ...[
+                const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.notifications_outlined),
-                  title: Text('settings_notifications'.tr()),
-                  subtitle: Text('settings_notifications_desc'.tr()),
+                  leading: const Icon(Icons.alarm_outlined),
+                  title: Text('settings_precise_reminders'.tr()),
+                  subtitle: Text('settings_precise_reminders_desc'.tr()),
                   trailing: const Icon(Icons.chevron_right),
                   enabled: !_permissionBusy,
-                  onTap: _requestNotifications,
-                ),
-                if (Platform.isAndroid) ...[
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.alarm_outlined),
-                    title: Text('settings_precise_reminders'.tr()),
-                    subtitle: Text('settings_precise_reminders_desc'.tr()),
-                    trailing: const Icon(Icons.chevron_right),
-                    enabled: !_permissionBusy,
-                    onTap: _requestExactAlarm,
-                  ),
-                ],
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt_outlined),
-                  title: Text('settings_camera_photos'.tr()),
-                  subtitle: Text('settings_camera_photos_desc'.tr()),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: Text('settings_system_permissions'.tr()),
-                  subtitle: Text('settings_system_permissions_desc'.tr()),
-                  trailing: const Icon(Icons.open_in_new),
-                  enabled: !_permissionBusy,
-                  onTap: _openAppSettings,
+                  onTap: _requestExactAlarm,
                 ),
               ],
-            ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: Text('settings_camera_photos'.tr()),
+                subtitle: Text('settings_camera_photos_desc'.tr()),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: Text('settings_system_permissions'.tr()),
+                subtitle: Text('settings_system_permissions_desc'.tr()),
+                trailing: const Icon(Icons.open_in_new),
+                enabled: !_permissionBusy,
+                onTap: _openAppSettings,
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          _SectionTitle('settings_about'.tr()),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.medication_outlined),
-                  title: const Text('Med Reminder'),
-                  subtitle: Text('settings_about_desc'.tr()),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: Text('settings_version'.tr()),
-                  trailing: const Text('1.0.0'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.cloud_off_outlined),
-                  title: Text('settings_offline_title'.tr()),
-                  subtitle: Text('settings_offline_desc'.tr()),
-                ),
-              ],
-            ),
+        ),
+        const SizedBox(height: 20),
+        _SectionTitle('settings_about'.tr()),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.medication_outlined),
+                title: const Text('Med Reminder'),
+                subtitle: Text('settings_about_desc'.tr()),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text('settings_version'.tr()),
+                trailing: const Text('1.0.0'),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.cloud_off_outlined),
+                title: Text('settings_offline_title'.tr()),
+                subtitle: Text('settings_offline_desc'.tr()),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    if (widget.embedded) return content;
+    return Scaffold(
+      appBar: AppBar(title: Text('settings_title'.tr())),
+      body: content,
     );
   }
 
