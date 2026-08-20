@@ -11,7 +11,7 @@ bootstrap:
 	./tool/bootstrap_platforms.sh
 
 configure-identifiers:
-	./tool/configure_identifiers.sh
+	bash tool/configure_identifiers.sh
 
 pub-get:
 	$(FLUTTER) pub get
