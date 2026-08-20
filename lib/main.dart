@@ -12,7 +12,7 @@ import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'l10n/generated_locales.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_shell.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/notification_service.dart';
 
@@ -268,7 +268,7 @@ class _MedReminderAppState extends ConsumerState<MedReminderApp>
         colorSchemeSeed: const Color(0xFF4A90D9),
       ),
       home: _onboardingCompleted
-          ? const HomeScreen()
+          ? const HomeShell()
           : OnboardingScreen(
               onRequestNotifications:
                   NotificationService.requestNotificationPermission,
