@@ -17,9 +17,12 @@ Hive is therefore one storage implementation rather than a dependency of medicat
 
 - Riverpod `StateNotifier` ViewModels for medications and dose logs.
 - Abstract `MedicationRepository` / `DoseLogRepository` contracts with Hive-backed local implementation.
-- Hive boxes `meds` and `logs` for current local persistence.
+- Hive boxes `meds` and `logs` for medication state plus a small `settings` box for local app flags such as first-run onboarding completion.
 - One editable CSV localization source: `assets/translations.csv` (`key,en,th,...`). `make l10n-generate` validates it and generates compact per-locale JSON plus `generated_locales.dart`; only generated JSON is bundled and loaded at runtime.
 - Local scheduled notifications using timezone-aware `zonedSchedule`.
+- First-run onboarding explains offline storage, medication reminders, and stock tracking before any permission prompt is shown.
+- Notification permission is user-driven from onboarding on both Android and iOS; startup initializes the plugin without displaying permission UI.
+- Android exact-alarm access is an optional onboarding action. Without it the app uses `inexactAllowWhileIdle` rather than blocking startup or forcing the system settings screen.
 - Finite `days` schedules are anchored to the medication `createdAt` date, so timezone refresh/rescheduling cannot extend the treatment course.
 - Independent dose state per scheduled time (`scheduledAt`), so 08:00 and 20:00 do not share one taken flag.
 - Taken-dose reconciliation runs only after the dose log is persisted successfully; a failed write rolls back presentation state and does not mutate stock/reminder side effects.
@@ -29,6 +32,18 @@ Hive is therefore one storage implementation rather than a dependency of medicat
 - Android 13+ notification permission and exact-alarm declarations are present in the app manifest.
 - The current iOS bootstrap uses the classic `FlutterAppDelegate` lifecycle after a physical-device UIScene/`SceneDelegate` resolution failure was reproduced with the Flutter 3.47 baseline. See `docs/iphone_black_screen_issue.md`.
 - Native Live Activity / Watch integration is kept as an explicit handoff and is not reported as complete until platform targets are wired and device-tested.
+
+## First-run onboarding and permissions
+
+The first launch uses a three-step onboarding flow:
+
+1. Welcome and offline-first feature summary.
+2. Notification explanation with an explicit **Enable notifications** action and **Not now** fallback.
+3. On Android, an optional **Enable precise reminders** action for the system Alarms & reminders permission. On iOS, the third step is a normal ready screen.
+
+Completing onboarding stores `onboarding_completed = true` in the local Hive `settings` box, so subsequent launches go directly to Home. Camera/photo-library permissions are intentionally not requested during onboarding; they remain just-in-time permissions when the user chooses to capture/select medication packaging.
+
+Permission prompts must not be moved back into `NotificationService.init()`. A physical Samsung Android 16 run demonstrated that requesting notification/exact-alarm permission during startup can background the Flutter activity and interfere with the launch/debug-attach path. Interactive permission calls are therefore allowed to wait for the user's decision instead of using the five-second native startup timeout.
 
 ## Localization workflow
 
