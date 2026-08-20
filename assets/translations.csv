@@ -28,3 +28,22 @@ remaining,Remaining {count},เหลือ {count} เม็ด
 next_dose,Next dose {time},มื้อต่อไป {time}
 snoozed,Snoozed until {time},เลื่อนไป {time}
 skipped,Skipped,ข้ามแล้ว
+onboarding_welcome_title,Welcome to Med Reminder,ยินดีต้อนรับสู่ Med Reminder
+onboarding_welcome_body,Keep your medication schedule and records safely on this device,จัดตารางยาและบันทึกการกินยาไว้บนเครื่องนี้อย่างเป็นส่วนตัว
+onboarding_feature_offline,Your medication data stays on this device,ข้อมูลยาของคุณเก็บอยู่บนเครื่องนี้
+onboarding_feature_reminders,Get reminders when it is time to take medicine,รับการแจ้งเตือนเมื่อถึงเวลากินยา
+onboarding_feature_stock,Track doses and remaining medication stock,ติดตามมื้อยาและจำนวนยาคงเหลือ
+onboarding_continue,Continue,ต่อไป
+onboarding_notifications_title,Never miss a dose,ไม่พลาดเวลากินยา
+onboarding_notifications_body,Allow notifications so Med Reminder can alert you when it is time to take medicine,อนุญาตการแจ้งเตือนเพื่อให้ Med Reminder เตือนเมื่อถึงเวลากินยา
+onboarding_enable_notifications,Enable notifications,เปิดการแจ้งเตือน
+onboarding_not_now,Not now,ไว้ทีหลัง
+onboarding_permission_enabled,Permission enabled,เปิดสิทธิ์แล้ว
+onboarding_permission_not_enabled,Permission is not enabled. You can enable it later in system settings.,ยังไม่ได้เปิดสิทธิ์ คุณสามารถเปิดภายหลังได้จากการตั้งค่าระบบ
+onboarding_precise_title,More precise reminders,เตือนเวลาได้แม่นยำขึ้น
+onboarding_precise_body,On Android you can optionally allow Alarms & reminders for more precise delivery. Without it the app uses battery-friendly inexact reminders.,บน Android คุณสามารถอนุญาตการปลุกและการช่วยเตือนเพื่อให้แจ้งเตือนได้แม่นยำขึ้น หากไม่เปิดแอปจะใช้การเตือนแบบไม่ตรงเวลาระดับวินาทีแทน
+onboarding_precise_optional,Optional. The app still works without this permission.,ไม่บังคับ แอปยังทำงานได้แม้ไม่เปิดสิทธิ์นี้
+onboarding_enable_precise_reminders,Enable precise reminders,เปิดการเตือนแบบแม่นยำ
+onboarding_ready_title,You are ready,พร้อมใช้งานแล้ว
+onboarding_ready_body,Add your medication and choose the times you want to be reminded,เพิ่มยาและกำหนดเวลาที่ต้องการให้แอปเตือนได้เลย
+onboarding_get_started,Get started,เริ่มใช้งาน
