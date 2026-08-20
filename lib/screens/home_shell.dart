@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'home_screen.dart';
@@ -18,7 +19,7 @@ class HomeShell extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: IconButton(
-                tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                tooltip: 'settings_title'.tr(),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => const SettingsScreen(),
