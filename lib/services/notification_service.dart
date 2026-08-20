@@ -131,9 +131,16 @@ class NotificationService {
 
       if (medication.mode == MedicationMode.days) {
         final count = medication.daysCount ?? 0;
+        final startDate = tz.TZDateTime(
+          tz.local,
+          medication.createdAt.year,
+          medication.createdAt.month,
+          medication.createdAt.day,
+        );
+        final now = tz.TZDateTime.now(tz.local);
+
         for (var dayOffset = 0; dayOffset < count; dayOffset++) {
-          final now = tz.TZDateTime.now(tz.local);
-          final date = now.add(Duration(days: dayOffset));
+          final date = startDate.add(Duration(days: dayOffset));
           final scheduled = tz.TZDateTime(
             tz.local,
             date.year,
