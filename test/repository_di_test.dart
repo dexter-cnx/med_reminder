@@ -104,6 +104,27 @@ void main() {
       );
     },
   );
+
+  test(
+    'markTaken rolls back and skips reconciliation when persistence fails',
+    () async {
+      var reconciliationCalls = 0;
+      Failure? reportedFailure;
+      final viewModel = DoseLogViewModel(
+        _FailingDoseLogRepository(),
+        onFailure: (failure) => reportedFailure = failure,
+        onTaken: (_, __) async {
+          reconciliationCalls++;
+        },
+      );
+
+      await viewModel.markTaken('med-1', DateTime(2026, 8, 20, 8));
+
+      expect(viewModel.state, isEmpty);
+      expect(reconciliationCalls, 0);
+      expect(reportedFailure?.code, 'test_write_failed');
+    },
+  );
 }
 
 class _FailingMedicationRepository implements MedicationRepository {
@@ -118,4 +139,15 @@ class _FailingMedicationRepository implements MedicationRepository {
 
   @override
   Future<Result<void>> delete(String id) async => const Success<void>(null);
+}
+
+class _FailingDoseLogRepository implements DoseLogRepository {
+  @override
+  Result<List<DoseLog>> readAll() => const Success<List<DoseLog>>(<DoseLog>[]);
+
+  @override
+  Future<Result<void>> replaceAll(List<DoseLog> logs) async =>
+      const Failed<void>(
+        Failure(code: 'test_write_failed', message: 'cannot persist log'),
+      );
 }
