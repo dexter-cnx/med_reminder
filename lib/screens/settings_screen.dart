@@ -2,25 +2,27 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
+import '../theme/app_theme.dart';
 
 const _profileAgeKey = 'profile_age';
 const _profileSexKey = 'profile_sex';
 const _languageCodeKey = 'language_code';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.embedded = false, super.key});
 
   final bool embedded;
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _ageController = TextEditingController();
   String _sex = 'not_specified';
   bool _savingProfile = false;
@@ -67,12 +69,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _setLanguage(String languageCode) async {
-    if (languageCode == context.locale.languageCode) {
-      await _settings.put(_languageCodeKey, languageCode);
-      return;
-    }
     await _settings.put(_languageCodeKey, languageCode);
-    if (!mounted) return;
+    if (!mounted || languageCode == context.locale.languageCode) return;
     await context.setLocale(Locale(languageCode));
   }
 
@@ -128,9 +126,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final languageCode = context.locale.languageCode == 'th' ? 'th' : 'en';
+    final selectedTheme = ref.watch(appThemeProvider);
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        _SectionTitle('settings_appearance'.tr()),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'settings_theme'.tr(),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'settings_theme_desc'.tr(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                ...AppThemeId.values.map(
+                  (themeId) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ThemeChoice(
+                      themeId: themeId,
+                      selected: selectedTheme == themeId,
+                      onTap: () =>
+                          ref.read(appThemeProvider.notifier).select(themeId),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
         _SectionTitle('settings_language'.tr()),
         Card(
           child: Padding(
@@ -292,6 +324,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'settings_sex_other';
       default:
         return 'settings_sex_not_specified';
+    }
+  }
+}
+
+class _ThemeChoice extends StatelessWidget {
+  const _ThemeChoice({
+    required this.themeId,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppThemeId themeId;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewTheme = AppThemeCatalog.themeFor(themeId);
+    final scheme = previewTheme.colorScheme;
+    return Material(
+      color: selected
+          ? Theme.of(context).colorScheme.secondaryContainer
+          : Theme.of(context).colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(_themeLabel(themeId).tr())),
+              if (selected) const Icon(Icons.check_circle),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _themeLabel(AppThemeId id) {
+    switch (id) {
+      case AppThemeId.besyuBlue:
+        return 'theme_besyu_blue';
+      case AppThemeId.warmSand:
+        return 'theme_warm_sand';
+      case AppThemeId.sageCare:
+        return 'theme_sage_care';
+      case AppThemeId.lavenderCalm:
+        return 'theme_lavender_calm';
+      case AppThemeId.midnight:
+        return 'theme_midnight';
     }
   }
 }
