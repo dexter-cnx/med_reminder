@@ -122,28 +122,32 @@ Users should also be able to disable cycle-related projections/reminders without
 
 ## 6. Privacy and data handling
 
-Menstrual-cycle records are sensitive health data. Privacy constraints should be designed before implementation rather than added afterward.
+Menstrual-cycle records are **sensitive health data**. Privacy constraints are part of the feature's baseline product policy and must be designed before implementation rather than added afterward.
 
-Recommended baseline:
+### Baseline privacy policy
 
-- Local-first storage by default.
-- Feature is opt-in.
-- User can delete individual records.
-- User can delete all cycle-tracking data.
-- Backup/export behavior must be explicit and user-controlled.
-- Future cloud sync must require a separate privacy/security decision.
+- **Local-first:** cycle records remain on-device by default.
+- **Opt-in:** the feature must not silently create or infer cycle records for users who have not enabled or used it.
+- **Full deletion:** the user must be able to delete individual records and erase **all cycle-tracking data** owned by Besyu.
+- **Exportable:** the user must be able to export their cycle data in a user-controlled manner. Export must never require uploading the data to a Besyu server.
+- **No detailed cycle analytics by default:** analytics must not transmit reproductive-health details such as dates, cycle length, symptoms, flow, or notes.
+
+Additional rules:
+
+- Future cloud sync requires a separate privacy/security decision and must not be implied by the initial implementation.
 - Do not expose detailed cycle data to unrelated features by default.
+- Backup/export behavior must be explicit, user-initiated, and clearly identify when sensitive cycle data is included.
 - AI/MCP access, if ever introduced, must use explicit bounded tools and permission-aware behavior rather than direct storage access.
 
-If an application lock or protected local-storage capability is introduced in Besyu later, cycle records should be considered a candidate for that protection.
+If an application lock or protected local-storage capability is introduced in Besyu later, cycle records should be considered a high-priority candidate for that protection.
 
 ---
 
 ## 7. Analytics boundary
 
-Analytics must not collect the user's actual reproductive-health timeline by default.
+Analytics may measure **feature usage**, but must not measure or transmit the user's actual reproductive-health timeline by default.
 
-Acceptable product analytics may include coarse interaction events such as:
+Acceptable examples:
 
 ```text
 cycle_feature_opened
@@ -152,14 +156,18 @@ cycle_record_saved
 cycle_reminder_enabled
 ```
 
-Analytics should **not** contain values such as:
+For example, analytics may know that `cycle_feature_opened` occurred, but must **not** know information such as:
 
+- “the user's period started on 2026-08-21”
+- “the user's cycle length is 29 days”
 - exact period start/end dates
 - exact cycle length
 - flow level
 - symptom selections or symptom text
 - free-text notes
 - inferred fertility/ovulation information
+
+Analytics event properties must not contain these values indirectly either, including timestamps or derived metrics that could reconstruct the reproductive-health timeline.
 
 Event schemas should be reviewed against the observability/privacy policy before implementation.
 
@@ -234,12 +242,13 @@ Before implementation can be considered complete:
 - Cycle data is stored independently from medication models.
 - User can create/edit/delete cycle records.
 - User can erase all cycle-tracking data.
+- User can export cycle data through an explicit user-controlled flow without requiring Besyu cloud storage.
 - Estimated next period is clearly labeled as an estimate.
 - Estimation logic is deterministic and unit-tested.
 - Timeline/calendar integration does not duplicate source-of-truth state.
 - Notification scheduling is opt-in and rebuildable from domain state.
-- Analytics contain no exact cycle dates, symptom values, or notes.
-- Backup/export behavior has an explicit privacy decision.
+- Analytics contain no exact cycle dates, cycle length, symptom values, flow values, or notes.
+- Analytics contain no derived event properties capable of reconstructing the user's cycle timeline.
 - Feature remains functional offline.
 - Medication and reminder behavior is unchanged when cycle tracking is disabled or unused.
 
@@ -254,7 +263,7 @@ Before moving this feature from proposal to roadmap, decide at least:
 3. Whether symptoms and flow levels belong in v1 or should be deferred.
 4. Whether cycle items appear in the Daily Timeline by default or only when enabled.
 5. Whether notifications are part of the first release.
-6. Whether backup/export includes cycle data by default, separately, or only after explicit confirmation.
+6. Which export formats are provided and whether general Besyu backup requires explicit confirmation before including cycle data.
 7. Whether platform HealthKit / Health Connect integration is worth pursuing later.
 8. Whether any fertility/ovulation functionality should remain permanently out of scope or be evaluated as a separate product.
 
