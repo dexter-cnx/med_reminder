@@ -11,6 +11,7 @@ class Medication {
     required this.name,
     required List<String> times,
     required this.createdAt,
+    this.genericName = '',
     this.description = '',
     this.initialAmount,
     this.lowThreshold,
@@ -23,7 +24,15 @@ class Medication {
         notificationIds = List<int>.unmodifiable(notificationIds);
 
   final String id;
+
+  /// User-facing medication name, typically a trade/brand name or label name.
   final String name;
+
+  /// Generic/medical drug name, for example "paracetamol".
+  ///
+  /// Kept separate from [name] so Besyu can display both the familiar label
+  /// name and the medically meaningful generic name without conflating them.
+  final String genericName;
   final String description;
   final List<String> times;
   final DateTime createdAt;
@@ -74,6 +83,7 @@ class Medication {
   }
 
   Medication copyWith({
+    String? genericName,
     int? initialAmount,
     List<int>? notificationIds,
     String? imagePath,
@@ -81,6 +91,7 @@ class Medication {
       Medication(
         id: id,
         name: name,
+        genericName: genericName ?? this.genericName,
         description: description,
         initialAmount: initialAmount ?? this.initialAmount,
         lowThreshold: lowThreshold,
