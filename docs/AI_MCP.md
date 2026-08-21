@@ -101,6 +101,216 @@ This follows the same dependency direction used by Besyu's Analytics and Crash a
 
 ---
 
+## Local AI / On-device LLM Strategy
+
+Besyu should treat an on-device LLM as a **language-understanding and orchestration layer**, not as a medical knowledge source of truth.
+
+High-value local AI responsibilities include:
+
+- Natural-language intent classification
+- Structured extraction from user-entered text
+- OCR post-processing and normalization
+- Semantic search/query interpretation
+- Summarization of data already stored in Besyu
+- Function/tool selection against the approved `AiToolRegistry`
+- Future multimodal understanding when supported by the selected device/model stack
+
+The LLM must not become authoritative for:
+
+- Drug identity when a reference/database match is required
+- Dosage correctness
+- Drug interactions
+- Contraindications
+- Diagnosis
+- Personalized treatment decisions
+
+The application should prefer an "invisible AI" model where AI improves normal Besyu workflows rather than forcing users into a chatbot-first UI.
+
+Example:
+
+```text
+"ยาตัวนี้กินเช้าเย็น เหลือประมาณ 20 เม็ด"
+                 |
+                 v
+          Local AI extraction
+                 |
+                 v
+{
+  schedule: [morning, evening],
+  inventory: 20
+}
+                 |
+                 v
+      Besyu validation/use case
+                 |
+                 v
+        User confirmation UI
+```
+
+The model interprets language; Besyu validates and performs the action.
+
+---
+
+## Local AI Engine Abstraction
+
+Do not let feature code depend directly on `flutter_gemma` or a particular Gemma model.
+
+Reserve a provider-independent boundary such as:
+
+```dart
+abstract interface class LocalAiEngine {
+  Future<AiGenerationResult> generate(AiGenerationRequest request);
+
+  Future<AiStructuredResult<T>> extractStructured<T>(
+    AiStructuredRequest<T> request,
+  );
+
+  Future<AiIntentResult> classifyIntent(AiIntentRequest request);
+
+  Future<AiEmbeddingResult> embed(AiEmbeddingRequest request);
+}
+```
+
+Conceptual implementation layout:
+
+```text
+AI
+|
++-- LocalAiEngine
+|    +-- generate()
+|    +-- extractStructured()
+|    +-- classifyIntent()
+|    +-- embed()
+|
++-- LocalAiProvider
+|    +-- FlutterGemmaLocalAiProvider   # candidate, not yet committed
+|    +-- OsBuiltInLocalAiProvider      # future candidate
+|    +-- OtherLocalModelProvider       # future candidate
+|
++-- AiCapabilities
+     +-- medicationParsing
+     +-- reminderIntent
+     +-- appointmentIntent
+     +-- semanticSearch
+     +-- summarization
+```
+
+This boundary allows the app to change runtime/model strategy without changing domain/application logic.
+
+Potential future runtime selection:
+
+```text
+                 Besyu AI Layer
+                      |
+                LocalAiEngine
+                      |
+        +-------------+-------------+
+        |             |             |
+        v             v             v
+ flutter_gemma    OS built-in    Cloud AI
+ local model      local model    optional
+```
+
+Cloud AI remains optional and should not be required for sensitive core workflows.
+
+---
+
+## `flutter_gemma` Evaluation Direction
+
+`flutter_gemma` is a **candidate implementation adapter**, not a committed production dependency at this stage.
+
+If evaluated, the preferred starting point is a small current-generation on-device model rather than the older Gemma 2B line.
+
+Recommended evaluation order:
+
+### Baseline — Gemma 3 1B class
+
+Candidate use cases:
+
+- Intent classification
+- Structured text extraction
+- Reminder/appointment language parsing
+- OCR cleanup/normalization
+- Small summarization tasks
+- Tool/function selection
+
+Why it is the preferred baseline:
+
+- Lower storage/RAM/runtime cost than larger multimodal models
+- Sufficient target capability for text-first Besyu workflows
+- Allows real-device latency, thermal, and memory testing before committing to a larger model
+
+### Later — Gemma 3n E2B class or equivalent multimodal model
+
+Evaluate only when Besyu needs capabilities that justify the additional runtime cost, for example:
+
+- Image + text understanding
+- Voice/audio-assisted workflows
+- Direct multimodal medicine-package assistance
+- More capable local reasoning where device performance remains acceptable
+
+Do not adopt a larger model solely because it is more capable. The selected model must meet device performance, storage, memory, battery, privacy, and safety requirements.
+
+Gemma 2B should therefore be treated as a historical/compatibility option, not the default target for a new Besyu implementation.
+
+---
+
+## OCR + Local AI Pipeline
+
+Local AI can add significant value after OCR, especially with noisy medicine labels, packaging, or abbreviated instructions.
+
+Target flow:
+
+```text
+Camera / Gallery
+       |
+       v
+      OCR
+       |
+       v
+   Raw OCR text
+       |
+       v
+Local AI normalization
+       |
+       v
+Structured medicine candidate
+       |
+       v
+Fuzzy / deterministic matching
+       |
+       v
+Local drug/reference database
+       |
+       v
+User confirmation
+```
+
+Example raw OCR:
+
+```text
+AMOXlCILLlN
+500 MG
+CAP
+1 CAP TID PC
+```
+
+Possible AI-normalized candidate:
+
+```json
+{
+  "generic_name": "amoxicillin",
+  "strength": "500 mg",
+  "form": "capsule",
+  "frequency": "3 times daily",
+  "timing": "after meals"
+}
+```
+
+Safety rule: the normalized result is a **candidate**. It must not overwrite reference-backed medication data or become a dosage instruction without deterministic matching, provenance, and appropriate user confirmation.
+
+---
+
 ## Candidate Tool Surface
 
 Read-oriented tools are the safest initial MCP surface.
@@ -268,6 +478,8 @@ External transmission must be limited to the data required for the requested ope
 
 Analytics and crash-reporting adapters must not log MCP arguments or results containing health data.
 
+For on-device inference, prompts/results that include health data must remain outside analytics and crash payloads by default. Model input/output logging must be disabled unless a specific diagnostic mode is explicitly designed with appropriate privacy controls.
+
 ---
 
 ## Audit Trail
@@ -319,6 +531,23 @@ AI
   -> appointment.list
   -> select next upcoming appointment
 ```
+
+### Natural-language appointment creation
+
+```text
+"พรุ่งนี้ผมต้องไปหาหมอตอนบ่ายสอง"
+        |
+        v
+ Local AI intent extraction
+        |
+        v
+ appointment.create proposal
+        |
+        v
+ Besyu validation/confirmation
+```
+
+The model extracts the requested date/time. Calendar/domain integration remains responsible for validation and persistence.
 
 ### Drug interaction question
 
@@ -374,13 +603,31 @@ Implement or reserve interfaces for:
 - `AiToolContext`
 - `AiToolResult`
 - `AiToolRegistry`
+- `LocalAiEngine`
+- Provider-neutral local AI request/result contracts
+- AI capability declarations
 - Tool risk classification
 - Capability/permission policy
 - Confirmation policy
 - Local AI-action audit abstraction
 - `McpAdapter` boundary
 
-No production AI provider and no production MCP SDK are required in this phase.
+No production AI provider, model bundle, or production MCP SDK is required in this phase.
+
+### Phase AI-0.5 — Local AI feasibility spike
+
+Before committing a model/runtime to production:
+
+- Evaluate `flutter_gemma` behind `LocalAiEngine`
+- Use a Gemma 3 1B-class model as the initial text baseline
+- Test Thai + English intent classification and structured extraction
+- Test OCR normalization against realistic medicine-label samples
+- Benchmark startup/load time, first-token latency, sustained latency, RAM, model size, battery/thermal behavior, and failure handling on representative Android/iOS devices
+- Verify that model download/storage lifecycle can be managed without blocking normal medication/reminder functionality
+- Verify that core Besyu features work when the local model is missing, unsupported, unloaded, or fails
+- Do not ship AI-0.5 results as authoritative medical behavior
+
+A larger Gemma 3n E2B-class model should be evaluated only if multimodal/voice requirements justify it.
 
 ### Phase AI-1 — Read-only in-app assistant
 
@@ -391,8 +638,20 @@ Candidate scope:
 - Remaining inventory queries
 - Appointment queries
 - Reference-backed drug lookup
+- Natural-language query interpretation
 
 Prefer local execution where possible.
+
+### Phase AI-1.5 — Assisted structured input
+
+Candidate scope:
+
+- OCR medicine-text normalization
+- User-text-to-reminder proposal
+- User-text-to-appointment proposal
+- Semantic search over local records/reference indexes
+
+All clinically meaningful extracted fields remain proposals until validated by deterministic application logic and required confirmation.
 
 ### Phase AI-2 — Low-risk actions
 
@@ -404,7 +663,18 @@ Candidate scope:
 
 Require clear user intent and normal domain validation.
 
-### Phase AI-3 — External MCP integration
+### Phase AI-3 — Multimodal/local capability expansion
+
+Only if product value and real-device evidence justify the runtime cost:
+
+- Gemma 3n E2B-class or equivalent multimodal local model
+- Image-assisted medicine/package understanding
+- Voice/audio-assisted workflows
+- Capability-based model selection by device
+
+The text baseline should remain available when multimodal capability is unavailable.
+
+### Phase AI-4 — External MCP integration
 
 Only after permissions, privacy controls, confirmation UX, and audit behavior are validated:
 
@@ -421,11 +691,15 @@ Only after permissions, privacy controls, confirmation UX, and audit behavior ar
 Do not currently:
 
 - Select an AI vendor as a hard dependency
+- Add `flutter_gemma` as a production dependency solely because it is the current evaluation candidate
+- Bundle or download a production Gemma model yet
+- Treat Gemma 2B as the default new implementation target
 - Add OpenAI / Anthropic / Gemini SDKs to core packages
 - Implement an MCP SDK directly inside domain or data layers
 - Expose Hive boxes or repository internals to AI
 - Upload the local medication database to a model provider
 - Implement autonomous medication decisions
 - Allow external AI clients unrestricted write access
+- Treat LLM output as authoritative drug, dose, interaction, contraindication, or diagnostic data
 
-The current objective is to establish a stable integration seam so future AI/MCP functionality can be added without restructuring Besyu's core architecture.
+The current objective is to establish a stable integration seam so future local AI/MCP functionality can be added without restructuring Besyu's core architecture.
