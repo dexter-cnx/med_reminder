@@ -12,6 +12,10 @@ Product identity:
 
 The product should evolve as a **personal medication companion**, not only a reminder app. The core experience should connect medication schedules, dose history, stock/refill awareness, doctor appointments, emergency information, and eventually a bounded AI assistant.
 
+The current roadmap remains medication/health focused. However, the **Besyu / Beside You** identity is intentionally broader than medication, so architecture and shared product surfaces should not prevent future non-medical companion features from being added beside the medical features.
+
+This does **not** commit Besyu to becoming a generic productivity/lifestyle app. Any future non-medical feature requires a separate product decision and must fit the “beside you in daily life” identity without weakening the primary medication experience.
+
 This document is a product/architecture handoff only. Features listed here are **not implied to be implemented yet** unless another status document explicitly marks them complete.
 
 ---
@@ -144,6 +148,8 @@ Product goal:
 
 The timeline should remain operational and calm rather than becoming a generic health feed.
 
+Architecturally, Timeline is allowed to become a cross-feature composition surface in the future. If Besyu later gains an approved non-medical companion feature, that feature may project appropriate items into Timeline without making Timeline own or duplicate the feature's source data.
+
 ---
 
 ## 6. Medication check-in / side-effect notes
@@ -266,6 +272,8 @@ Besyu Assistant may retrieve, organize, summarize, and help the user operate the
 
 Medication facts shown through AI should come from a defined trusted-data layer whenever possible, with provenance retained by the application rather than relying solely on model memory.
 
+The Assistant/tool architecture should remain capable of adding future non-medical tools without weakening these medical safety boundaries. A non-medical tool must still operate through its owning feature's application service rather than directly through storage or Flutter presentation state.
+
 ---
 
 ## 10. Explicitly deferred: Caregiver / Family mode
@@ -303,7 +311,9 @@ Do not expand Besyu into these areas without a separate product/regulatory decis
 - Autonomous dose changes
 - Broad cloud sync platform
 
-These may dramatically increase privacy, operational, and regulatory scope and would dilute the current product identity.
+Also do not pre-build generic productivity domains such as tasks, routines, personal notes, household workflows, or similar companion features merely because the architecture can support them. They remain **future possibilities, not current roadmap commitments**.
+
+These may dramatically increase privacy, operational, and regulatory scope or dilute the current product identity if introduced without a clear product rationale.
 
 ---
 
@@ -348,6 +358,7 @@ These may dramatically increase privacy, operational, and regulatory scope and w
 - Caregiver / Family mode
 - Multi-profile support
 - Cloud synchronization required by multi-person workflows
+- Non-medical companion features that fit the Besyu identity, subject to a separate product decision
 
 ---
 
@@ -372,20 +383,31 @@ TimelineItem (presentation/read-model concept)
 
 Guidelines:
 
+- Treat medication as a bounded feature/domain rather than the application-wide root model.
 - Do not make `Medication` a giant mutable object containing every future feature.
 - Prefer separate aggregates/events where lifecycle and history differ.
 - Keep derived values (remaining stock, adherence summaries, estimated days left) deterministic and testable.
 - Keep persistence abstract behind repository/data-source contracts.
+- New features should own their data/repositories rather than adding fields into a global Besyu or Medication record.
+- Home, Timeline, Search, and Assistant may compose cross-feature read models but must not become the source of truth.
+- Keep shared infrastructure such as storage, notification delivery, time, permissions, calendar access, observability, and results domain-neutral where practical.
 - Keep notification scheduling behind ports/adapters.
 - Keep AI/MCP above the domain/application services rather than directly exposing Hive or another storage engine.
 - Preserve offline-first behavior as the baseline unless a future feature explicitly requires network/cloud capability.
+- Generalize shared abstractions only when a real second consumer exists; avoid speculative architecture for hypothetical features.
+
+See `handoff/ARCHITECTURE_EVOLUTION.md` for the concrete feature/core/composition guardrails.
 
 ---
 
 ## 14. Product principle
 
-The working product principle is:
+The current working product principle is:
 
 > **Besyu should help the user remember, understand, record, and communicate their medication routine — while staying clearly on the user-assistance side of the boundary rather than making medical decisions.**
 
 The combination of **Daily Timeline + refill awareness + Doctor Visit Summary + Emergency Medical Card** should become a central differentiator from a generic medication reminder.
+
+Longer-term identity principle:
+
+> **Besyu means “Beside You.” Medication is the current primary domain, but future features may support other parts of daily life when they clearly belong beside the user, integrate cleanly through independent feature boundaries, and do not compromise the medication experience.**
