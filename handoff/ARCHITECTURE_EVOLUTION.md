@@ -6,6 +6,8 @@ Architecture foundation work for the expanded Besyu product roadmap has started 
 
 This is an incremental refactor. It intentionally preserves existing reminder behavior and storage compatibility while introducing boundaries needed by refill history, Daily Timeline, doctor summaries, emergency data, appointments, and the future MCP/assistant layer.
 
+The current product focus remains medication/health assistance, but the architecture must not make medication the root domain of the entire Besyu application. The name and product identity may support non-medical companion features later, so current boundaries should keep that option open without pre-building speculative features.
+
 ## Implemented foundation
 
 ### Medication domain split
@@ -78,6 +80,122 @@ The first timeline item is `MedicationDoseTimelineItem`. Future appointment, ref
 
 Timeline items are not a second source of truth and should not be persisted as copies of medication/appointment/refill data.
 
+## Besyu-wide extensibility boundary
+
+Besyu should be structured as a feature-oriented companion application rather than a medication application with unrelated features attached underneath it.
+
+Conceptually:
+
+```text
+Besyu
+├── Medication
+├── Timeline
+├── Appointment
+├── Refill
+├── Check-in
+├── Doctor Summary
+├── Emergency
+├── Assistant
+└── future independent companion features
+```
+
+Medication is therefore a **bounded feature/domain**, not an application-wide core dependency.
+
+A future non-medical feature such as tasks, routines, personal notes, household reminders, or another companion workflow must be able to live beside medication without importing medication domain objects merely to participate in Home, Timeline, notifications, search, or the Assistant.
+
+Do not create those future features now. This section defines architectural compatibility, not a committed product roadmap.
+
+### Core must remain domain-neutral
+
+Infrastructure shared across features belongs in `core` only when its contract is not specific to medication or health.
+
+Preferred direction:
+
+```text
+lib/
+├── app/
+│   ├── bootstrap/
+│   ├── router/
+│   └── di/
+├── core/
+│   ├── error/
+│   ├── result/
+│   ├── storage/
+│   ├── notifications/
+│   ├── time/
+│   ├── permissions/
+│   └── observability/
+├── features/
+│   ├── medication/
+│   ├── timeline/
+│   ├── appointment/
+│   ├── refill/
+│   ├── medication_checkin/
+│   ├── doctor_summary/
+│   ├── emergency/
+│   └── assistant/
+└── shared/
+    ├── theme/
+    ├── widgets/
+    └── l10n/
+```
+
+Examples of acceptable shared abstractions include generic notification/reminder delivery, storage primitives/adapters, time, permissions, calendar access, observability, and result/error types.
+
+Medication-specific orchestration may wrap generic infrastructure, for example a medication reminder service can use a domain-neutral notification/reminder port without making that port medication-aware.
+
+### Composition features must not become sources of truth
+
+Home, Daily Timeline, Search, dashboards, and Assistant are composition surfaces. They may combine read models from multiple feature domains, but they must not own the canonical data for those features.
+
+Architecture rule:
+
+> New features must own their data, lifecycle, repositories, and application services. Cross-feature surfaces may compose read models but must not become the source of truth.
+
+Future Timeline item types may include, when real features require them:
+
+```text
+MedicationDoseTimelineItem
+AppointmentTimelineItem
+RefillTimelineItem
+CheckInTimelineItem
+TaskTimelineItem
+RoutineTimelineItem
+PersonalNoteTimelineItem
+```
+
+Only implement item types backed by actual product features. Do not create empty abstractions solely for hypothetical future use.
+
+### Data ownership rule
+
+Avoid a global database object or record schema that tries to represent every Besyu feature.
+
+Each feature should own persistence behind its repository/data-source contracts. Examples may eventually include separate medication, dose-log, refill, appointment, task, routine, or note records.
+
+A feature may change its storage adapter later without forcing unrelated features to migrate. Hive remains an implementation detail, not the application domain model.
+
+Likewise, avoid a giant global `UserProfile` object containing health, emergency, task, routine, assistant, and future feature state. Use feature-specific aggregates unless data is genuinely application-global identity or preference data.
+
+### Assistant/tool boundary
+
+The Assistant/MCP layer should depend on application-service capabilities, not directly on medication, Flutter ViewModels, or Hive.
+
+That allows the future tool surface to expand naturally, for example:
+
+```text
+get_today_medications
+get_low_stock_medications
+get_next_appointment
+get_today_timeline
+
+# future only when corresponding features exist
+get_today_tasks
+get_daily_routine
+add_personal_note
+```
+
+Medical safety restrictions continue to apply to medical tools even if the Assistant later also supports non-medical domains.
+
 ## Compatibility decisions
 
 - Existing Hive medication and dose-log schemas remain untouched in this refactor.
@@ -85,6 +203,7 @@ Timeline items are not a second source of truth and should not be persisted as c
 - Existing imports through `medication_repository.dart` continue to expose `DoseLogRepository`.
 - `MedicationMode` remains unchanged for now; PRN and staged/taper modeling will be introduced only with explicit domain semantics rather than growing this enum indiscriminately.
 - `lib/screens` and other root compatibility paths remain temporarily available. UI migration should happen incrementally rather than through a broad path-only rewrite.
+- No non-medical feature is introduced by these extensibility rules.
 
 ## Next structural steps
 
@@ -99,11 +218,17 @@ Before implementing the corresponding product features, continue in this order:
 7. Add Emergency Profile as a separate aggregate; derive current medication lists when rendering the card.
 8. Introduce an application-service facade for MCP/assistant reads and confirmation-gated writes.
 9. Gradually migrate root-level UI paths into feature presentation folders, preserving compatibility exports while callers transition.
+10. Generalize shared infrastructure only when a second real feature demonstrates the need; avoid speculative abstraction work.
 
 ## Guardrails
 
-- Do not turn `Medication` into a container for refill history, symptoms, appointment state, emergency data, or AI state.
+- Medication is a feature/domain, not the root dependency of the Besyu application.
+- Do not turn `Medication` into a container for refill history, symptoms, appointment state, emergency data, AI state, or unrelated future companion features.
+- Shared `core` contracts must remain domain-neutral; medication-specific behavior stays inside medication/application layers.
+- New features own their own data and repositories.
+- Home, Timeline, Search, and Assistant may compose feature read models but must not become sources of truth.
 - Do not persist Daily Timeline projections as another source of truth.
+- Do not create speculative task/routine/note domains before a real product feature requires them.
 - Do not give MCP/AI direct Hive access or make it call Flutter ViewModels.
 - Keep medical/safety calculations deterministic and testable outside model prompts.
 - Preserve offline-first operation unless a later feature explicitly requires a network boundary.
