@@ -196,6 +196,237 @@ add_personal_note
 
 Medical safety restrictions continue to apply to medical tools even if the Assistant later also supports non-medical domains.
 
+## Feature Plugin Architecture direction
+
+Besyu should evolve toward a **compile-time Feature Plugin Architecture**. The goal is modular feature composition and explicit boundaries, not runtime code downloading or dynamic executable plugins.
+
+This direction fits the expanding roadmap because medication, appointments, emergency/SOS, cycle tracking, local AI, and future companion features should be independently composable without turning the application shell into a dependency hub for every domain.
+
+### Plugin model
+
+Use three architectural levels:
+
+1. **Core services/adapters** — storage, notifications, analytics, crash reporting, permissions, localization, calendar/platform integrations, AI runtime abstractions.
+2. **Feature plugins** — user-visible capabilities such as Medication, Appointments, Emergency/SOS, Cycle Tracking, Health Journal, or Local AI Assistant.
+3. **Shared UI** — theme, reusable widgets, spacing, typography, and visual primitives. Shared UI is not a feature plugin.
+
+Do not pluginize everything. A component should become a feature plugin only when the user can reasonably perceive it as an application capability with its own routes, lifecycle, data ownership, or optional enablement.
+
+### Application shell and registry
+
+The application shell should compose features through a registry rather than manually importing feature internals throughout routing, navigation, startup, or settings code.
+
+Preferred direction:
+
+```text
+lib/
+├── app/
+│   ├── bootstrap/
+│   ├── routing/
+│   ├── theme/
+│   └── feature_registry/
+├── core/
+│   ├── analytics/
+│   ├── crash_reporting/
+│   ├── storage/
+│   ├── notifications/
+│   ├── permissions/
+│   ├── localization/
+│   ├── ai/
+│   └── platform/
+└── features/
+    ├── medication/
+    ├── appointments/
+    ├── emergency/
+    ├── cycle/
+    └── ...
+```
+
+A minimal compile-time feature contract may expose identity, routes, navigation contributions, capabilities, and initialization hooks:
+
+```dart
+abstract interface class AppFeature {
+  String get id;
+
+  List<RouteBase> get routes;
+
+  List<FeatureNavigationItem> get navigationItems;
+
+  Set<AppCapability> get capabilities;
+
+  Future<void> initialize(FeatureContext context);
+}
+```
+
+The exact API can evolve, but the dependency direction must remain stable: **the app shell knows feature contracts; it does not depend on feature implementation details**.
+
+A `FeatureRegistry` should aggregate registered features and expose composition data to router/navigation/settings code.
+
+```dart
+class FeatureRegistry {
+  FeatureRegistry(this.features);
+
+  final List<AppFeature> features;
+
+  List<RouteBase> get routes =>
+      features.expand((feature) => feature.routes).toList();
+
+  List<FeatureNavigationItem> get navigationItems =>
+      features.expand((feature) => feature.navigationItems).toList();
+}
+```
+
+Initial registration remains compile-time, for example:
+
+```dart
+final features = <AppFeature>[
+  MedicationFeature(),
+  AppointmentFeature(),
+  EmergencyFeature(),
+];
+```
+
+This is intentionally simpler and safer than runtime plugin loading on Flutter/mobile while preserving modularity and future package extraction.
+
+### Feature manifest and enablement
+
+Each feature should eventually expose lightweight metadata through a manifest or equivalent contract.
+
+```dart
+class FeatureManifest {
+  const FeatureManifest({
+    required this.id,
+    required this.version,
+    required this.displayNameKey,
+    this.enabledByDefault = true,
+    this.capabilities = const {},
+  });
+
+  final String id;
+  final String version;
+  final String displayNameKey;
+  final bool enabledByDefault;
+  final Set<AppCapability> capabilities;
+}
+```
+
+This provides a clean foundation for optional features, feature flags, settings-driven enablement, staged rollout, or product variants without hard-wiring those decisions into individual screens.
+
+Potential enablement semantics include:
+
+```text
+Medication        enabled
+Appointments      enabled
+Emergency         enabled
+Cycle Tracking    opt-in
+Local AI          optional
+Wellness          optional
+Caregiver         future
+```
+
+Do not implement speculative remote configuration solely for this architecture. The registry/manifest boundary should simply keep that option available.
+
+### Capability and permission boundary
+
+Feature plugins should declare required platform capabilities rather than requesting permissions ad hoc from arbitrary screens.
+
+Example capability model:
+
+```dart
+enum AppCapability {
+  camera,
+  notifications,
+  calendar,
+  contacts,
+  location,
+  localAi,
+  healthData,
+}
+```
+
+A feature may declare:
+
+```dart
+Set<AppCapability> get capabilities => {
+  AppCapability.notifications,
+  AppCapability.healthData,
+};
+```
+
+The app/core capability layer should coordinate platform availability, permission state, user consent, and capability failure behavior. This is especially important for sensitive health-related features.
+
+Feature declarations must not imply blanket permission requests at startup. Permissions should still be requested contextually and only when the user invokes a capability that needs them.
+
+### Cross-feature dependencies
+
+Feature implementation folders must not import another feature's internal data source, repository implementation, ViewModel, or presentation layer.
+
+When a real cross-feature use case exists, expose a narrow public feature API/application contract.
+
+Example:
+
+```dart
+abstract interface class MedicationFeatureApi {
+  Future<List<MedicationSummary>> getActiveMedications();
+}
+```
+
+An Appointment feature may depend on `MedicationFeatureApi` when it genuinely needs medication summaries, but it must not import `MedicationRepositoryImpl`, Hive models, or medication UI state.
+
+Prefer composition/read-model services when features only need to appear together on Home, Timeline, Search, or Assistant surfaces. Direct feature-to-feature contracts should remain narrow and intentional.
+
+Avoid cyclic feature dependencies. If Feature A and Feature B both require the same capability, extract a domain-neutral core contract or a dedicated composition/application service rather than making them depend on each other bidirectionally.
+
+### Infrastructure adapters remain outside feature plugins
+
+The existing adapter strategy for analytics and crash reporting fits this model and should be extended consistently.
+
+Feature code should call contracts such as:
+
+```dart
+abstract interface class AnalyticsService {
+  Future<void> logEvent(
+    String name, {
+    Map<String, Object?> parameters = const {},
+  });
+}
+```
+
+Feature code should not call Firebase Analytics, Crashlytics, Sentry, Hive, or another vendor SDK directly unless that SDK is itself fully encapsulated behind a feature-local implementation detail with no application-wide coupling.
+
+The same rule applies to notifications, storage, calendar access, permissions, and future local-AI runtimes.
+
+### Package extraction path
+
+Do **not** convert every feature into a separate Dart package immediately. Keep features as modules in the main repository first, but enforce package-like boundaries now.
+
+Once build isolation, reuse, ownership, testing, or independent release cadence justifies the overhead, a feature can move toward:
+
+```text
+packages/
+├── besyu_core/
+├── besyu_feature_medication/
+├── besyu_feature_appointments/
+├── besyu_feature_cycle/
+└── besyu_feature_emergency/
+```
+
+If public contracts and dependency direction are respected from the beginning, this later extraction should be primarily structural rather than an architectural rewrite.
+
+### Plugin architecture guardrails
+
+- Use **compile-time registration** first; do not introduce runtime executable plugin loading.
+- The app shell must depend on feature contracts/registry contributions, not feature internals.
+- Feature plugins own their domain data, repositories, application services, and lifecycle.
+- Cross-feature surfaces compose read models; they do not absorb feature ownership.
+- Cross-feature dependencies use narrow public APIs/application contracts only when necessary.
+- Never import another feature's repository implementation, storage model, ViewModel, or UI internals.
+- Avoid cyclic feature dependencies.
+- Platform permissions are coordinated through declared capabilities and a domain-neutral capability layer.
+- Analytics, crash reporting, storage, notifications, and AI providers remain adapters, not feature plugins.
+- Theme and reusable widgets remain shared UI, not feature plugins.
+- Design module boundaries so they can become Dart packages later, but avoid multi-package overhead until there is a concrete benefit.
+
 ## Compatibility decisions
 
 - Existing Hive medication and dose-log schemas remain untouched in this refactor.
@@ -217,8 +448,10 @@ Before implementing the corresponding product features, continue in this order:
 6. Build Doctor Visit Summary as a query/read model over source repositories rather than its own duplicated database.
 7. Add Emergency Profile as a separate aggregate; derive current medication lists when rendering the card.
 8. Introduce an application-service facade for MCP/assistant reads and confirmation-gated writes.
-9. Gradually migrate root-level UI paths into feature presentation folders, preserving compatibility exports while callers transition.
-10. Generalize shared infrastructure only when a second real feature demonstrates the need; avoid speculative abstraction work.
+9. Introduce the compile-time `AppFeature`/`FeatureRegistry` boundary before feature count grows substantially; start with routing/navigation/manifest contributions and avoid over-engineering lifecycle hooks until required.
+10. Add the capability declaration boundary when the second feature requires shared platform permissions or integrations.
+11. Gradually migrate root-level UI paths into feature presentation folders, preserving compatibility exports while callers transition.
+12. Generalize shared infrastructure only when a second real feature demonstrates the need; avoid speculative abstraction work.
 
 ## Guardrails
 
@@ -232,3 +465,5 @@ Before implementing the corresponding product features, continue in this order:
 - Do not give MCP/AI direct Hive access or make it call Flutter ViewModels.
 - Keep medical/safety calculations deterministic and testable outside model prompts.
 - Preserve offline-first operation unless a later feature explicitly requires a network boundary.
+- Treat feature plugins as compile-time modules first; runtime code/plugin loading is out of scope.
+- Keep feature-to-feature APIs narrow, explicit, acyclic, and independent of storage/UI implementations.
