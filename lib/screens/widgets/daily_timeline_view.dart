@@ -38,6 +38,7 @@ class DailyTimelineView extends StatelessWidget {
     }
 
     final refillCount = items.whereType<RefillTimelineItem>().length;
+    final appointmentCount = items.whereType<AppointmentTimelineItem>().length;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -76,6 +77,12 @@ class DailyTimelineView extends StatelessWidget {
                   icon: Icons.add_box_outlined,
                   label: 'refill_history'.tr(),
                   value: refillCount,
+                ),
+                SizedBox(height: size.height * 0.015),
+                _OverviewMetric(
+                  icon: Icons.event_outlined,
+                  label: 'Appointments',
+                  value: appointmentCount,
                 ),
               ],
             ),
@@ -119,6 +126,7 @@ class _TimelineList extends StatelessWidget {
               onSnooze: onSnooze,
             ),
           RefillTimelineItem() => _RefillTimelineCard(item: item),
+          AppointmentTimelineItem() => _AppointmentTimelineCard(item: item),
         };
       },
     );
@@ -219,6 +227,33 @@ class _RefillTimelineCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.add_box_outlined),
         title: Text('$hour:$minute · $quantityLabel'),
+        subtitle:
+            subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
+      ),
+    );
+  }
+}
+
+class _AppointmentTimelineCard extends StatelessWidget {
+  const _AppointmentTimelineCard({required this.item});
+
+  final AppointmentTimelineItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final appointment = item.appointment;
+    final hour = appointment.startsAt.hour.toString().padLeft(2, '0');
+    final minute = appointment.startsAt.minute.toString().padLeft(2, '0');
+    final subtitleParts = <String>[
+      if (appointment.location case final location? when location.isNotEmpty)
+        location,
+      if (appointment.note case final note? when note.isNotEmpty) note,
+    ];
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.event_outlined),
+        title: Text('$hour:$minute · ${appointment.title}'),
         subtitle:
             subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
       ),
