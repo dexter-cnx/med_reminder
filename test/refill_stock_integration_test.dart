@@ -118,6 +118,29 @@ void main() {
     await viewModel.reconcileFromLogs('m1', const <DoseLog>[]);
     expect(scheduler.lowStockCalls, <String>['Test:5', 'Test:5']);
   });
+
+  test('deleted medication leaves state when alert cleanup fails', () async {
+    final medication = Medication(
+      id: 'm1',
+      name: 'Test',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 22),
+    );
+    final repository = _MemoryMedicationRepository(<Medication>[medication]);
+    final viewModel = MedicationViewModel(
+      repository: repository,
+      reminderScheduler: _RecordingReminderScheduler(),
+      lowStockAlertStateStore: _ThrowingLowStockAlertStateStore(),
+      photoStore: _FakePhotoStore(),
+      stockResolver: (_, __) => 10,
+      onFailure: (_) {},
+    );
+
+    await viewModel.remove('m1');
+
+    expect(repository.values, isEmpty);
+    expect(viewModel.state, isEmpty);
+  });
 }
 
 class _MemoryMedicationRepository implements MedicationRepository {
@@ -186,6 +209,19 @@ class _MemoryLowStockAlertStateStore implements LowStockAlertStateStore {
   @override
   Future<void> clear(String medicationId) async {
     _thresholds.remove(medicationId);
+  }
+}
+
+class _ThrowingLowStockAlertStateStore implements LowStockAlertStateStore {
+  @override
+  int? alertedThreshold(String medicationId) => null;
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {}
+
+  @override
+  Future<void> clear(String medicationId) async {
+    throw StateError('settings unavailable');
   }
 }
 
