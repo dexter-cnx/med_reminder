@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+format_paths=(lib test tool)
+
+# Never auto-stage unrelated unstaged Dart changes. The hook only reformats
+# content that is already ready to be committed.
+if ! git diff --quiet -- "${format_paths[@]}"; then
+  cat <<'EOF'
+
+[pre-commit] Unstaged Dart changes detected under lib/test/tool.
+Stage or stash them before committing so automatic formatting cannot mix
+unrelated work into this commit.
+EOF
+  git status --short -- "${format_paths[@]}"
+  exit 1
+fi
+
+printf '\n[pre-commit] Running make format before commit...\n'
+make format
+
+# Formatting may have changed files already staged for this commit. Re-stage
+# the guarded Dart trees so the commit contains exactly the formatted output.
+git add -- "${format_paths[@]}"
+
+printf '[pre-commit] Dart formatting applied and staged.\n'
