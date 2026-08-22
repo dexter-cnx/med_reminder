@@ -2,44 +2,108 @@
 
 ## Scope
 
-Besyu provides five selectable Material 3 themes. Theme selection is presentation-only and does not alter medication, reminder, stock, dose-log, or notification semantics.
+Theme selection is presentation-only and does not alter medication, reminder, stock, dose-log, or notification semantics.
 
-## Presets
+The catalog is now **asset-driven**. Besyu Blue is the only theme that is permanently defined in Dart code; all additional themes are data entries loaded from `assets/themes/themes.json`.
 
-1. `besyu_blue` — Besyu Blue, the default light theme.
-2. `warm_sand` — Warm Sand, a warm neutral light theme.
-3. `sage_care` — Sage Care, a calm green light theme.
-4. `lavender_calm` — Lavender Calm, a soft violet light theme.
-5. `midnight` — Midnight, a dark-first theme.
+## Fixed fallback
 
-Each preset owns a complete `ThemeData` generated from a dedicated Material 3 color scheme plus shared component tokens for cards, navigation, text fields, buttons, and floating actions.
+`besyu_blue` is intentionally fixed in code and cannot be overridden or deleted by the asset catalog.
+
+It is used when:
+
+- no theme has been selected yet;
+- the persisted `app_theme_id` no longer exists in the catalog;
+- `themes.json` is missing, malformed, or cannot be loaded;
+- an individual asset theme entry is invalid.
+
+This guarantees that theme data can never prevent the application from starting.
+
+## Asset catalog
+
+Additional themes live in:
+
+```text
+assets/themes/themes.json
+```
+
+Example entry:
+
+```json
+{
+  "id": "warm_sand",
+  "name": {
+    "en": "Warm Sand",
+    "th": "Warm Sand"
+  },
+  "seed": "#B47B45",
+  "brightness": "light",
+  "surfaceTintStrength": 0.02
+}
+```
+
+Supported fields:
+
+- `id` — stable persisted theme identifier. It must be unique and must not be `besyu_blue`.
+- `name` — locale-to-display-name map. `en` is the preferred fallback when the current locale is absent.
+- `seed` — `#RRGGBB` or `#AARRGGBB` Material seed color.
+- `brightness` — `light` or `dark`.
+- `surfaceTintStrength` — optional value from `0.0` to `1.0`.
+
+The first asset catalog contains Warm Sand, Sage Care, Lavender Calm, and Midnight. Together with the fixed Besyu Blue fallback, the UI still exposes the original five themes.
+
+## Adding, editing, and removing themes
+
+No Dart theme enum or switch statement is required for additional themes.
+
+- **Add:** append a valid entry with a new unique `id` to `themes.json`.
+- **Edit:** change the asset entry while keeping its `id` stable when existing selections should continue to resolve to that theme.
+- **Remove:** delete the entry. Users who previously selected the removed `id` automatically resolve to `besyu_blue` on the next startup.
+
+Changing an existing theme `id` is semantically equivalent to deleting the old theme and adding a new one, so existing users with the old persisted value will fall back to Besyu Blue.
 
 ## Persistence
 
-The selected preset is stored locally in the existing Hive `settings` box under:
+The selected theme ID is stored locally in the existing Hive `settings` box under:
 
 ```text
 app_theme_id
 ```
 
-Unknown or missing values fall back to `besyu_blue`.
+`AppThemeController` validates the persisted string against the currently loaded `AppThemeCatalog`. Unknown or missing values resolve to `besyu_blue`.
 
-`AppThemeController` is the single write boundary. Selecting a theme persists it before publishing the new Riverpod state.
+Theme IDs remain strings specifically so adding a new asset theme does not require adding a Dart enum member.
 
 ## Runtime behavior
 
-`BesyuApp` watches `appThemeProvider` and rebuilds `MaterialApp.theme` immediately when the selection changes. No restart is required.
+During bootstrap, Besyu loads `AppThemeCatalog` from assets before creating `AppThemeController`. The catalog is exposed through Riverpod and is shared by the application theme renderer and Settings theme picker.
 
-Settings > Appearance intentionally exposes theme selection as a single `Theme` row rather than expanding all presets inline. The row subtitle shows the currently selected theme. Tapping it opens a scrollable modal bottom sheet containing all five presets.
+`BesyuApp` watches the selected theme ID and renders:
 
-Each preset in the modal includes a code-rendered preview. The preview is not an image asset or screenshot: it is a Flutter widget tree wrapped in `Theme(data: AppThemeCatalog.themeFor(themeId))`. The miniature composition includes an app bar, medication card, primary action, surfaces, and bottom-navigation treatment so the user sees the actual Material tokens for that preset before selecting it.
+```text
+AppThemeCatalog.themeFor(themeId)
+```
 
-Selecting a preset applies it live and persists it while keeping the modal open, which makes side-by-side visual comparison practical before dismissing the sheet.
+Theme changes apply immediately without an app restart.
 
-## Accessibility / validation
+Settings > Appearance reads the theme list directly from `AppThemeCatalog.themes`, so newly added asset themes automatically participate in the picker. Display names also come from the asset definition rather than a hard-coded theme-name switch.
 
-- All themes use Material 3 generated color schemes rather than isolated hard-coded foreground/background pairs.
-- Midnight uses `Brightness.dark`; the other four presets use `Brightness.light`.
-- Preview content derives foreground and background colors from each preset's `ColorScheme`.
-- Tests assert the five-preset contract, default fallback, brightness policy, and distinct primary colors.
-- Existing widget/accessibility tests continue to run under CI so theme changes cannot bypass the normal regression gate.
+## Safety and validation rules
+
+- Besyu Blue remains code-owned and always available.
+- Asset entries cannot override the `besyu_blue` ID.
+- Invalid entries are skipped individually.
+- Duplicate IDs are ignored after the first valid entry.
+- A broken or missing catalog produces a one-theme catalog containing only Besyu Blue.
+- Theme definitions control presentation tokens only; they cannot provide executable behavior.
+- `ThemeData` construction remains in Dart and uses Material 3 `ColorScheme.fromSeed` plus shared component tokens.
+
+## Tests
+
+Theme tests cover:
+
+- the fixed Besyu Blue fallback;
+- adding arbitrary new asset IDs without Dart enum changes;
+- prevention of `besyu_blue` override from assets;
+- invalid-entry fallback behavior;
+- light/dark theme construction from asset definitions.
