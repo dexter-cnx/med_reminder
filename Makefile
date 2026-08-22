@@ -4,7 +4,7 @@ DEVICE ?=
 
 .PHONY: bootstrap configure-identifiers pub-get ensure-pub l10n-generate l10n-validate l10n-check \
 	format format-check analyze test test-domain test-data test-presentation \
-	test-suites test-all check android-build android-test android ios-build \
+	test-suites test-all check pre-push android-build android-test android ios-build \
 	ios-test ios ios-device-profile ios-device-release
 
 bootstrap:
@@ -57,6 +57,11 @@ test-all: ensure-pub
 	$(FLUTTER) test
 
 check: l10n-check format-check analyze test-all
+
+# Run this before every push. It intentionally writes generated localization
+# files and Dart formatting first, then verifies the same quality gates as CI.
+pre-push: l10n-generate format l10n-check format-check analyze test-all
+	@echo "Pre-push checks passed. Commit any generated/formatted changes before pushing."
 
 android-build: ensure-pub
 	$(FLUTTER) build apk --debug
