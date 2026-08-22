@@ -61,6 +61,7 @@ void main() {
     final viewModel = MedicationViewModel(
       repository: repository,
       reminderScheduler: scheduler,
+      lowStockAlertStateStore: _MemoryLowStockAlertStateStore(),
       photoStore: _FakePhotoStore(),
       stockResolver: (_, __) => 10,
       onFailure: (_) {},
@@ -81,7 +82,7 @@ void main() {
     expect(viewModel.state.single.notificationIds, <int>[42]);
   });
 
-  test('low-stock warning uses refill-aware balance crossing', () async {
+  test('low-stock alert is deduplicated until refill rearms it', () async {
     final medication = Medication(
       id: 'm1',
       name: 'Test',
@@ -92,17 +93,53 @@ void main() {
       createdAt: DateTime(2026, 8, 22),
     );
     final scheduler = _RecordingReminderScheduler();
+    final alertState = _MemoryLowStockAlertStateStore();
+    var remaining = 5;
     final viewModel = MedicationViewModel(
       repository: _MemoryMedicationRepository(<Medication>[medication]),
       reminderScheduler: scheduler,
+      lowStockAlertStateStore: alertState,
       photoStore: _FakePhotoStore(),
-      stockResolver: (_, __) => 5,
+      stockResolver: (_, __) => remaining,
       onFailure: (_) {},
     );
 
     await viewModel.reconcileFromLogs('m1', const <DoseLog>[]);
+    await viewModel.reconcileFromLogs('m1', const <DoseLog>[]);
 
     expect(scheduler.lowStockCalls, <String>['Test:5']);
+    expect(alertState.alertedThreshold('m1'), 5);
+
+    remaining = 12;
+    await viewModel.refreshAfterRefill('m1', const <DoseLog>[]);
+    expect(alertState.alertedThreshold('m1'), isNull);
+
+    remaining = 5;
+    await viewModel.reconcileFromLogs('m1', const <DoseLog>[]);
+    expect(scheduler.lowStockCalls, <String>['Test:5', 'Test:5']);
+  });
+
+  test('deleted medication leaves state when alert cleanup fails', () async {
+    final medication = Medication(
+      id: 'm1',
+      name: 'Test',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 22),
+    );
+    final repository = _MemoryMedicationRepository(<Medication>[medication]);
+    final viewModel = MedicationViewModel(
+      repository: repository,
+      reminderScheduler: _RecordingReminderScheduler(),
+      lowStockAlertStateStore: _ThrowingLowStockAlertStateStore(),
+      photoStore: _FakePhotoStore(),
+      stockResolver: (_, __) => 10,
+      onFailure: (_) {},
+    );
+
+    await viewModel.remove('m1');
+
+    expect(repository.values, isEmpty);
+    expect(viewModel.state, isEmpty);
   });
 }
 
@@ -155,6 +192,36 @@ class _RecordingReminderScheduler implements MedicationReminderScheduler {
   @override
   Future<void> showLowStock(String name, int remaining) async {
     lowStockCalls.add('$name:$remaining');
+  }
+}
+
+class _MemoryLowStockAlertStateStore implements LowStockAlertStateStore {
+  final Map<String, int> _thresholds = <String, int>{};
+
+  @override
+  int? alertedThreshold(String medicationId) => _thresholds[medicationId];
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {
+    _thresholds[medicationId] = threshold;
+  }
+
+  @override
+  Future<void> clear(String medicationId) async {
+    _thresholds.remove(medicationId);
+  }
+}
+
+class _ThrowingLowStockAlertStateStore implements LowStockAlertStateStore {
+  @override
+  int? alertedThreshold(String medicationId) => null;
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {}
+
+  @override
+  Future<void> clear(String medicationId) async {
+    throw StateError('settings unavailable');
   }
 }
 

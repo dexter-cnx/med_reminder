@@ -29,6 +29,12 @@ final medicationReminderSchedulerProvider =
   ),
 );
 
+final lowStockAlertStateStoreProvider = Provider<LowStockAlertStateStore>(
+  (ref) => throw UnimplementedError(
+    'LowStockAlertStateStore must be provided by app DI.',
+  ),
+);
+
 final medicationPhotoStoreProvider = Provider<MedicationPhotoStore>(
   (ref) => throw UnimplementedError(
     'MedicationPhotoStore must be provided by app DI.',
@@ -48,6 +54,7 @@ final medsProvider =
   (ref) => MedicationViewModel(
     repository: ref.watch(medicationRepositoryProvider),
     reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+    lowStockAlertStateStore: ref.watch(lowStockAlertStateStoreProvider),
     photoStore: ref.watch(medicationPhotoStoreProvider),
     stockResolver: ref.watch(medicationStockResolverProvider),
     onFailure: (failure) => _reportFailure(ref, failure),
@@ -102,11 +109,13 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
   MedicationViewModel({
     required MedicationRepository repository,
     required MedicationReminderScheduler reminderScheduler,
+    required LowStockAlertStateStore lowStockAlertStateStore,
     required MedicationPhotoStore photoStore,
     required MedicationStockResolver stockResolver,
     required void Function(Failure failure) onFailure,
   })  : _repository = repository,
         _reminderScheduler = reminderScheduler,
+        _lowStockAlertStateStore = lowStockAlertStateStore,
         _photoStore = photoStore,
         _stockResolver = stockResolver,
         _onFailure = onFailure,
@@ -114,6 +123,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
 
   final MedicationRepository _repository;
   final MedicationReminderScheduler _reminderScheduler;
+  final LowStockAlertStateStore _lowStockAlertStateStore;
   final MedicationPhotoStore _photoStore;
   final MedicationStockResolver _stockResolver;
   final void Function(Failure failure) _onFailure;
@@ -151,10 +161,17 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
 
     final threshold = old.lowThreshold;
-    if (threshold != null && remaining != null && remaining <= threshold) {
-      final before = remaining + old.dosagePerTime;
-      if (before > threshold) {
-        await _reminderScheduler.showLowStock(old.name, remaining);
+    if (threshold != null && remaining != null) {
+      if (remaining > threshold) {
+        await _lowStockAlertStateStore.clear(old.id);
+      } else {
+        final before = remaining + old.dosagePerTime;
+        final alreadyAlerted =
+            _lowStockAlertStateStore.alertedThreshold(old.id) == threshold;
+        if (before > threshold && !alreadyAlerted) {
+          await _reminderScheduler.showLowStock(old.name, remaining);
+          await _lowStockAlertStateStore.markAlerted(old.id, threshold);
+        }
       }
     }
 
@@ -171,12 +188,17 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     if (index < 0) return;
 
     final old = state[index];
+    final remaining = _stockResolver(old, logs);
+    final threshold = old.lowThreshold;
+    if (threshold != null && remaining != null && remaining > threshold) {
+      await _lowStockAlertStateStore.clear(old.id);
+    }
+
     if (old.mode != MedicationMode.untilEmpty ||
         old.isExpired(DateTime.now())) {
       return;
     }
 
-    final remaining = _stockResolver(old, logs);
     if (remaining == null || remaining == 0 || old.notificationIds.isNotEmpty) {
       return;
     }
@@ -227,7 +249,17 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
       },
     );
     if (!deleted) return;
+
     state = state.where((item) => item.id != id).toList(growable: false);
+
+    // Alert deduplication is operational delivery state. Once the medication
+    // repository delete succeeds, cleanup must not keep a deleted medication
+    // visible or actionable if the settings store is temporarily unavailable.
+    try {
+      await _lowStockAlertStateStore.clear(id);
+    } catch (_) {
+      // Best-effort cleanup; stale state is harmless and cannot resurrect data.
+    }
   }
 }
 

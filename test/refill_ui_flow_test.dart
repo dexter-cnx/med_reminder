@@ -75,6 +75,7 @@ void main() {
       final viewModel = MedicationViewModel(
         repository: repository,
         reminderScheduler: scheduler,
+        lowStockAlertStateStore: _MemoryLowStockAlertStateStore(),
         photoStore: _FakePhotoStore(),
         stockResolver: (_, __) => 12,
         onFailure: (_) {},
@@ -169,6 +170,23 @@ class _TrackingReminderScheduler implements MedicationReminderScheduler {
 
   @override
   Future<void> showLowStock(String name, int remaining) async {}
+}
+
+class _MemoryLowStockAlertStateStore implements LowStockAlertStateStore {
+  final Map<String, int> _thresholds = <String, int>{};
+
+  @override
+  int? alertedThreshold(String medicationId) => _thresholds[medicationId];
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {
+    _thresholds[medicationId] = threshold;
+  }
+
+  @override
+  Future<void> clear(String medicationId) async {
+    _thresholds.remove(medicationId);
+  }
 }
 
 class _FakePhotoStore implements MedicationPhotoStore {

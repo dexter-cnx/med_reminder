@@ -60,6 +60,17 @@ class _Scheduler implements MedicationReminderScheduler {
   Future<void> showLowStock(String name, int remaining) async {}
 }
 
+class _LowStockAlertStateStore implements LowStockAlertStateStore {
+  @override
+  int? alertedThreshold(String medicationId) => null;
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {}
+
+  @override
+  Future<void> clear(String medicationId) async {}
+}
+
 class _PhotoStore implements MedicationPhotoStore {
   @override
   Future<void> delete(String? path) async {}
@@ -95,6 +106,9 @@ void main() {
           _LogRepository(<DoseLog>[takenMorning]),
         ),
         medicationReminderSchedulerProvider.overrideWithValue(_Scheduler()),
+        lowStockAlertStateStoreProvider.overrideWithValue(
+          _LowStockAlertStateStore(),
+        ),
         medicationPhotoStoreProvider.overrideWithValue(_PhotoStore()),
       ],
     );
