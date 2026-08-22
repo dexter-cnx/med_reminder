@@ -48,6 +48,26 @@ void main() {
     expect(refillItem.medicationName, 'Vitamin C');
   });
 
+  test('omitted day preserves caller-prefiltered timeline inputs', () {
+    final medication = Medication(
+      id: 'med-1',
+      name: 'Vitamin C',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 20),
+    );
+    final historicalDose = ScheduledDose(
+      medication: medication,
+      scheduledAt: DateTime(2026, 8, 21, 8),
+    );
+
+    final items = buildDailyTimeline(
+      scheduledDoses: <ScheduledDose>[historicalDose],
+    );
+
+    expect(items, hasLength(1));
+    expect(items.single, isA<MedicationDoseTimelineItem>());
+  });
+
   test('ratio-first classifier separates phone and tablet shapes', () {
     final phonePortrait = ResponsiveLayoutInfo.fromSize(
       const Size(390, 844),
