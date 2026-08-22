@@ -10,12 +10,13 @@ import 'package:uuid/uuid.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
 import '../providers/meds_provider.dart';
+import '../providers/timeline_provider.dart';
 import '../services/live_activity_service.dart';
 import '../services/notification_service.dart';
 import '../services/photo_service.dart';
 import '../services/watch_sync_service.dart';
 import 'settings_screen.dart';
-import 'widgets/dose_action_buttons.dart';
+import 'widgets/daily_timeline_view.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -29,12 +30,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final doses = ref.watch(todayDosesProvider);
+    final timeline = ref.watch(dailyTimelineProvider);
     final meds = ref.watch(medsProvider);
 
     final body = switch (_tab) {
-      0 => _TodayList(
-          doses: doses,
+      0 => DailyTimelineView(
+          items: timeline,
           onTake: _take,
           onSkip: _skip,
           onSnooze: _snooze,
@@ -137,86 +138,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } on MissingPluginException {
       // Native Live Activity support is an optional handoff.
     }
-  }
-}
-
-class _TodayList extends StatelessWidget {
-  const _TodayList({
-    required this.doses,
-    required this.onTake,
-    required this.onSkip,
-    required this.onSnooze,
-  });
-
-  final List<ScheduledDose> doses;
-  final Future<void> Function(ScheduledDose) onTake;
-  final Future<void> Function(ScheduledDose) onSkip;
-  final Future<void> Function(ScheduledDose) onSnooze;
-
-  @override
-  Widget build(BuildContext context) {
-    if (doses.isEmpty) return Center(child: Text('no_dose'.tr()));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: doses.length,
-      itemBuilder: (_, index) {
-        final dose = doses[index];
-        final med = dose.medication;
-        final hour = dose.scheduledAt.hour.toString().padLeft(2, '0');
-        final minute = dose.scheduledAt.minute.toString().padLeft(2, '0');
-        final hasActions = !dose.isTaken && !dose.isSkipped;
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              ListTile(
-                leading: med.imagePath == null
-                    ? const Icon(Icons.medication)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(med.imagePath!),
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                title: Text(
-                  '$hour:$minute · ${med.name} × ${med.dosagePerTime}',
-                ),
-                subtitle: Text(
-                  'remaining'.tr(
-                    namedArgs: <String, String>{
-                      'count': '${dose.remaining ?? '-'}',
-                    },
-                  ),
-                ),
-                trailing: dose.isTaken
-                    ? const Icon(Icons.check_circle)
-                    : dose.isSkipped
-                        ? Text('skipped'.tr())
-                        : null,
-              ),
-              if (hasActions)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: DoseActionButtons(
-                      takeLabel: 'take'.tr(),
-                      skipLabel: 'skip'.tr(),
-                      snoozeLabel: 'snooze'.tr(),
-                      onTake: () => onTake(dose),
-                      onSkip: () => onSkip(dose),
-                      onSnooze: () => onSnooze(dose),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
