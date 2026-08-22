@@ -4,20 +4,32 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-printf '\n[pre-push] Running Besyu quality gates...\n'
+paths=(
+  lib
+  test
+  tool
+  assets/translations.csv
+  assets/translations
+  lib/l10n/generated_locales.dart
+)
 
-make pre-push
+printf '\n[pre-push] Preparing generated files and Dart formatting...\n'
+before="$(git status --porcelain=v1 -- "${paths[@]}")"
 
-if ! git diff --quiet -- lib test tool assets/translations.csv assets/translations lib/l10n/generated_locales.dart; then
+make pre-push-prepare
+
+after="$(git status --porcelain=v1 -- "${paths[@]}")"
+if [[ "$before" != "$after" ]]; then
   cat <<'EOF'
 
-[pre-push] Generated or formatted files changed.
-Commit those changes before pushing, then run git push again.
+[pre-push] Formatter or localization generation changed files.
+Review and commit those changes before pushing, then run git push again.
 EOF
-  git status --short -- \
-    lib test tool assets/translations.csv assets/translations \
-    lib/l10n/generated_locales.dart
+  git status --short -- "${paths[@]}"
   exit 1
 fi
 
-printf '[pre-push] All checks passed and the working tree is format-clean.\n'
+printf '[pre-push] Generated/format state is unchanged. Running CI-equivalent checks...\n'
+make check
+
+printf '[pre-push] All checks passed.\n'
