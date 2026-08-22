@@ -28,7 +28,8 @@ List<ScheduledDose> buildTodayDoses({
   for (final medication in medications) {
     final remaining = stockResolver(medication, logs);
     if (medication.isExpired(current)) continue;
-    if (medication.mode == MedicationMode.untilEmpty && remaining == 0) continue;
+    if (medication.mode == MedicationMode.untilEmpty && remaining == 0)
+      continue;
 
     for (final time in medication.times) {
       final parts = time.split(':');
