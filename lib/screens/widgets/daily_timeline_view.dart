@@ -102,7 +102,7 @@ class _TimelineList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final horizontalPadding = (width * 0.04).clamp(16.0, 32.0);
+    final horizontalPadding = (width * 0.04).clamp(16.0, 32.0).toDouble();
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
