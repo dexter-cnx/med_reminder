@@ -50,6 +50,17 @@ class _FakeReminderScheduler implements MedicationReminderScheduler {
   Future<void> showLowStock(String name, int remaining) async {}
 }
 
+class _FakeLowStockAlertStateStore implements LowStockAlertStateStore {
+  @override
+  int? alertedThreshold(String medicationId) => null;
+
+  @override
+  Future<void> markAlerted(String medicationId, int threshold) async {}
+
+  @override
+  Future<void> clear(String medicationId) async {}
+}
+
 class _FakePhotoStore implements MedicationPhotoStore {
   @override
   Future<void> delete(String? path) async {}
@@ -73,6 +84,9 @@ void main() {
         medicationReminderSchedulerProvider.overrideWithValue(
           _FakeReminderScheduler(),
         ),
+        lowStockAlertStateStoreProvider.overrideWithValue(
+          _FakeLowStockAlertStateStore(),
+        ),
         medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
       ],
     );
@@ -90,6 +104,9 @@ void main() {
           medicationRepositoryProvider.overrideWithValue(repository),
           medicationReminderSchedulerProvider.overrideWithValue(
             _FakeReminderScheduler(),
+          ),
+          lowStockAlertStateStoreProvider.overrideWithValue(
+            _FakeLowStockAlertStateStore(),
           ),
           medicationPhotoStoreProvider.overrideWithValue(_FakePhotoStore()),
         ],
