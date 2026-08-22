@@ -166,6 +166,27 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
   }
 
+  Future<void> refreshAfterRefill(String id, Iterable<DoseLog> logs) async {
+    final index = state.indexWhere((med) => med.id == id);
+    if (index < 0) return;
+
+    final old = state[index];
+    if (old.mode != MedicationMode.untilEmpty || old.isExpired(DateTime.now())) {
+      return;
+    }
+
+    final remaining = _stockResolver(old, logs);
+    if (remaining == null || remaining == 0 || old.notificationIds.isNotEmpty) {
+      return;
+    }
+
+    final ids = await _reminderScheduler.schedule(old);
+    final next = <Medication>[...state];
+    next[index] = old.copyWith(notificationIds: ids);
+    state = next;
+    await _persist();
+  }
+
   Future<void> rescheduleAll(Iterable<DoseLog> logs) async {
     final now = DateTime.now();
     final next = <Medication>[];
