@@ -56,13 +56,13 @@ void main() {
     expect(failure?.code, 'refill_write_failed');
   });
 
-  test('refill can restore reminders for an until-empty medication', () async {
+  test('refill can restore reminders for zero-initial until-empty stock', () async {
     final medication = Medication(
       id: 'med-1',
       name: 'Vitamin C',
       times: const <String>['08:00'],
       createdAt: DateTime(2026, 8, 20),
-      initialAmount: 1,
+      initialAmount: 0,
       mode: MedicationMode.untilEmpty,
       notificationIds: const <int>[],
     );
@@ -79,7 +79,10 @@ void main() {
     await viewModel.refreshAfterRefill('med-1', const <DoseLog>[]);
 
     expect(scheduler.scheduleCalls, 1);
+    expect(scheduler.lastScheduledInitialAmount, 12);
+    expect(viewModel.state.single.initialAmount, 0);
     expect(viewModel.state.single.notificationIds, <int>[101]);
+    expect(repository.values.single.initialAmount, 0);
     expect(repository.values.single.notificationIds, <int>[101]);
   });
 }
@@ -136,10 +139,12 @@ class _MemoryMedicationRepository implements MedicationRepository {
 
 class _TrackingReminderScheduler implements MedicationReminderScheduler {
   var scheduleCalls = 0;
+  int? lastScheduledInitialAmount;
 
   @override
   Future<List<int>> schedule(Medication medication) async {
     scheduleCalls++;
+    lastScheduledInitialAmount = medication.initialAmount;
     return const <int>[101];
   }
 
