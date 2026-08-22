@@ -143,6 +143,13 @@ class NotificationService {
     await init();
     await cancelIds(medication.notificationIds);
 
+    // PRN / as-needed medications must never generate time-based reminders.
+    // Cancelling first also clears any persisted legacy notification IDs when
+    // an existing scheduled medication is converted to PRN.
+    if (!medication.hasScheduledDoses) {
+      return const <int>[];
+    }
+
     if (medication.mode == MedicationMode.untilEmpty &&
         medication.initialAmount == 0) {
       return const <int>[];

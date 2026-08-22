@@ -18,6 +18,7 @@ class MedicationRecord {
         'times': medication.times,
         'dosagePerTime': medication.dosagePerTime,
         'mode': medication.mode.name,
+        'dosePlan': medication.dosePlan.name,
         'daysCount': medication.daysCount,
         'createdAt': medication.createdAt.toIso8601String(),
         'notificationIds': medication.notificationIds,
@@ -30,6 +31,11 @@ class MedicationRecord {
       'days' => MedicationMode.days,
       _ => MedicationMode.forever,
     };
+    final rawDosePlan = value['dosePlan']?.toString() ?? 'scheduled';
+    final dosePlan = switch (rawDosePlan) {
+      'as_needed' || 'asNeeded' || 'prn' => MedicationDosePlan.asNeeded,
+      _ => MedicationDosePlan.scheduled,
+    };
     return Medication(
       id: value['id'] as String,
       name: value['name'] as String,
@@ -41,6 +47,7 @@ class MedicationRecord {
       times: List<String>.from(value['times'] as List? ?? const <String>[]),
       dosagePerTime: (value['dosagePerTime'] as int?) ?? 1,
       mode: mode,
+      dosePlan: dosePlan,
       daysCount: value['daysCount'] as int?,
       createdAt: DateTime.parse(value['createdAt'] as String),
       notificationIds: List<int>.from(

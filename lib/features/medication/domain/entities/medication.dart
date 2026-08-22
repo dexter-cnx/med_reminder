@@ -5,6 +5,14 @@ export 'scheduled_dose.dart';
 
 enum MedicationMode { forever, days, untilEmpty }
 
+/// Describes how a medication dose is initiated.
+///
+/// This is intentionally separate from [MedicationMode]. [MedicationMode]
+/// controls how long a medication course remains active, while [dosePlan]
+/// controls whether doses are scheduled ahead of time or taken only when
+/// needed (PRN / pro re nata).
+enum MedicationDosePlan { scheduled, asNeeded }
+
 class Medication {
   Medication({
     required this.id,
@@ -18,6 +26,7 @@ class Medication {
     this.imagePath,
     this.dosagePerTime = 1,
     this.mode = MedicationMode.forever,
+    this.dosePlan = MedicationDosePlan.scheduled,
     this.daysCount,
     List<int> notificationIds = const <int>[],
   })  : times = List<String>.unmodifiable(times),
@@ -41,8 +50,13 @@ class Medication {
   final String? imagePath;
   final int dosagePerTime;
   final MedicationMode mode;
+  final MedicationDosePlan dosePlan;
   final int? daysCount;
   final List<int> notificationIds;
+
+  bool get isAsNeeded => dosePlan == MedicationDosePlan.asNeeded;
+
+  bool get hasScheduledDoses => dosePlan == MedicationDosePlan.scheduled;
 
   DateTime? get expiryExclusive {
     if (mode != MedicationMode.days || daysCount == null) return null;
@@ -87,6 +101,7 @@ class Medication {
     int? initialAmount,
     List<int>? notificationIds,
     String? imagePath,
+    MedicationDosePlan? dosePlan,
   }) =>
       Medication(
         id: id,
@@ -99,6 +114,7 @@ class Medication {
         times: times,
         dosagePerTime: dosagePerTime,
         mode: mode,
+        dosePlan: dosePlan ?? this.dosePlan,
         daysCount: daysCount,
         createdAt: createdAt,
         notificationIds: notificationIds ?? this.notificationIds,
