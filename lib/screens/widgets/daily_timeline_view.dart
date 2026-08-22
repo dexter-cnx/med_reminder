@@ -206,20 +206,21 @@ class _RefillTimelineCard extends StatelessWidget {
     final event = item.event;
     final hour = event.createdAt.hour.toString().padLeft(2, '0');
     final minute = event.createdAt.minute.toString().padLeft(2, '0');
-    final quantityLabel = 'refill_history_quantity'.tr(
-      namedArgs: <String, String>{'count': event.quantity.toString()},
-    );
     final note = event.note;
     final subtitleParts = <String>[
       if (item.medicationName.isNotEmpty) item.medicationName,
       if (note != null && note.isNotEmpty) note,
     ];
+    final quantityLabel = 'refill_history_quantity'.tr(
+      namedArgs: <String, String>{'count': event.quantity.toString()},
+    );
 
     return Card(
       child: ListTile(
         leading: const Icon(Icons.add_box_outlined),
         title: Text('$hour:$minute · $quantityLabel'),
-        subtitle: subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
+        subtitle:
+            subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
       ),
     );
   }
