@@ -19,8 +19,9 @@ class ResponsiveLayoutInfo {
     final tabletShaped = shapeRatio >= 0.60 && shortSide >= 600;
 
     return ResponsiveLayoutInfo(
-      formFactor:
-          tabletShaped ? ResponsiveFormFactor.tablet : ResponsiveFormFactor.mobile,
+      formFactor: tabletShaped
+          ? ResponsiveFormFactor.tablet
+          : ResponsiveFormFactor.mobile,
       shapeRatio: shapeRatio,
       isLandscape: size.width > size.height,
     );
