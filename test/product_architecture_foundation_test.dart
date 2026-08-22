@@ -71,6 +71,33 @@ void main() {
     );
   });
 
+  test('zero dosage preserves stock when a taken log exists', () {
+    final medication = Medication(
+      id: 'm1',
+      name: 'Test',
+      times: const <String>['08:00'],
+      initialAmount: 10,
+      dosagePerTime: 0,
+      createdAt: DateTime(2026, 8, 21),
+    );
+    final logs = <DoseLog>[
+      DoseLog(
+        id: 'l1',
+        medId: 'm1',
+        scheduledAt: DateTime(2026, 8, 21, 8),
+        status: DoseStatus.taken,
+      ),
+    ];
+
+    expect(
+      calculateRemainingStock(
+        medication: medication,
+        doseLogs: logs,
+      ),
+      10,
+    );
+  });
+
   test('daily timeline is an ordered projection of feature read models', () {
     final medication = Medication(
       id: 'm1',
