@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
 import '../providers/meds_provider.dart';
 import '../services/live_activity_service.dart';
@@ -234,9 +235,24 @@ class _MedicationList extends ConsumerWidget {
           child: ListTile(
             title: Text(med.name),
             subtitle: Text('${med.times.join(', ')} · ${med.mode.name}'),
-            trailing: IconButton(
-              onPressed: () => ref.read(medsProvider.notifier).remove(med.id),
-              icon: const Icon(Icons.delete_outline),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                IconButton(
+                  tooltip: 'refill_action'.tr(),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => RefillPanel(medication: med),
+                  ),
+                  icon: const Icon(Icons.add_box_outlined),
+                ),
+                IconButton(
+                  onPressed: () =>
+                      ref.read(medsProvider.notifier).remove(med.id),
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
             ),
           ),
         );
