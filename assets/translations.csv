@@ -88,3 +88,14 @@ settings_about_desc,Beside You. An offline medication companion with no applicat
 settings_version,Version,เวอร์ชัน
 settings_offline_title,Offline first,ทำงานแบบออฟไลน์
 settings_offline_desc,Medication records and profile data stay on this device,ข้อมูลยาและข้อมูลผู้ใช้เก็บอยู่บนเครื่องนี้
+refill_action,Refill,เติมยา
+refill_title,Refill {name},เติม {name}
+refill_quantity,Quantity added,จำนวนที่เติม
+refill_quantity_invalid,Enter a quantity greater than zero,กรุณากรอกจำนวนมากกว่า 0
+refill_note,Note (optional),หมายเหตุ (เว้นได้)
+refill_save,Save refill,บันทึกการเติมยา
+refill_saved,Refill saved,บันทึกการเติมยาแล้ว
+refill_save_failed,Unable to save refill,ไม่สามารถบันทึกการเติมยาได้
+refill_history,Refill history,ประวัติการเติมยา
+refill_history_empty,No refill history yet,ยังไม่มีประวัติการเติมยา
+refill_history_quantity,Added {count},เติม {count} เม็ด
