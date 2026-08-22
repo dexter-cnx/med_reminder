@@ -241,12 +241,13 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
     final title = _title.text.trim();
     if (title.isEmpty) return;
     final existing = widget.appointment;
+    final duration = existing?.endsAt?.difference(existing.startsAt);
     Navigator.of(context).pop(
       DoctorAppointment(
         id: existing?.id ?? const Uuid().v4(),
         title: title,
         startsAt: _startsAt,
-        endsAt: existing?.endsAt,
+        endsAt: duration == null ? null : _startsAt.add(duration),
         location: _nullableText(_location.text),
         note: _nullableText(_note.text),
         externalCalendarEventId: existing?.externalCalendarEventId,
