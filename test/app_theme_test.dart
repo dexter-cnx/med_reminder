@@ -3,38 +3,77 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/theme/app_theme.dart';
 
 void main() {
-  test('unknown stored theme falls back to Besyu Blue', () {
-    expect(AppThemeId.fromStorage('unknown'), AppThemeId.besyuBlue);
-    expect(AppThemeId.fromStorage(null), AppThemeId.besyuBlue);
+  test('Besyu Blue is always the fixed fallback theme', () {
+    final catalog = AppThemeCatalog.fromJson('{"themes": []}');
+
+    expect(catalog.themes, hasLength(1));
+    expect(catalog.themes.single.id, defaultAppThemeId);
+    expect(catalog.definitionFor('unknown').id, defaultAppThemeId);
+    expect(catalog.themeFor('unknown').useMaterial3, isTrue);
   });
 
-  test('all five themes produce Material 3 themes', () {
-    expect(AppThemeId.values, hasLength(5));
+  test('asset themes can be added without changing Dart theme ids', () {
+    final catalog = AppThemeCatalog.fromJson('''
+      {
+        "themes": [
+          {
+            "id": "ocean",
+            "name": {"en": "Ocean", "th": "Ocean"},
+            "seed": "#006699",
+            "brightness": "light",
+            "surfaceTintStrength": 0.03
+          },
+          {
+            "id": "night_ocean",
+            "name": {"en": "Night Ocean"},
+            "seed": "#6688FF",
+            "brightness": "dark",
+            "surfaceTintStrength": 0.08
+          }
+        ]
+      }
+    ''');
 
-    for (final id in AppThemeId.values) {
-      final theme = AppThemeCatalog.themeFor(id);
-      expect(theme.useMaterial3, isTrue);
-    }
+    expect(catalog.themes.map((theme) => theme.id), [
+      defaultAppThemeId,
+      'ocean',
+      'night_ocean',
+    ]);
+    expect(catalog.themeFor('ocean').brightness, Brightness.light);
+    expect(catalog.themeFor('night_ocean').brightness, Brightness.dark);
   });
 
-  test('Midnight is dark while the other presets are light', () {
-    expect(
-      AppThemeCatalog.themeFor(AppThemeId.midnight).brightness,
-      Brightness.dark,
-    );
+  test('asset catalog cannot replace the fixed Besyu Blue fallback', () {
+    final catalog = AppThemeCatalog.fromJson('''
+      {
+        "themes": [
+          {
+            "id": "besyu_blue",
+            "name": {"en": "Override"},
+            "seed": "#FF0000",
+            "brightness": "dark"
+          }
+        ]
+      }
+    ''');
 
-    for (final id in AppThemeId.values.where(
-      (theme) => theme != AppThemeId.midnight,
-    )) {
-      expect(AppThemeCatalog.themeFor(id).brightness, Brightness.light);
-    }
+    expect(catalog.themes, hasLength(1));
+    expect(catalog.themes.single.id, defaultAppThemeId);
+    expect(catalog.themes.single.brightness, Brightness.light);
+    expect(catalog.themes.single.seedColor, const Color(0xFF4A90D9));
   });
 
-  test('theme presets have distinct primary colors', () {
-    final primaryColors = AppThemeId.values
-        .map((id) => AppThemeCatalog.themeFor(id).colorScheme.primary)
-        .toSet();
+  test('invalid catalog entries are ignored instead of breaking fallback', () {
+    final catalog = AppThemeCatalog.fromJson('''
+      {
+        "themes": [
+          {"id": "bad-color", "name": {"en": "Bad"}, "seed": "nope", "brightness": "light"},
+          {"id": "bad-mode", "name": {"en": "Bad"}, "seed": "#112233", "brightness": "sepia"}
+        ]
+      }
+    ''');
 
-    expect(primaryColors, hasLength(AppThemeId.values.length));
+    expect(catalog.themes, hasLength(1));
+    expect(catalog.themeFor('bad-color').brightness, Brightness.light);
   });
 }
