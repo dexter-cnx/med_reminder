@@ -326,6 +326,45 @@ Caregiver         future
 
 Do not implement speculative remote configuration solely for this architecture. The registry/manifest boundary should simply keep that option available.
 
+### Feature enablement is a first-class user preference
+
+Feature registration and feature enablement are different concepts. A feature may be compiled into the app and registered in `FeatureRegistry` while still being disabled for a particular user.
+
+The architecture should support persisted per-feature enablement, for example:
+
+```text
+feature.medication.enabled = true
+feature.appointments.enabled = false
+feature.emergency.enabled = true
+feature.cycle.enabled = false
+feature.local_ai.enabled = false
+```
+
+The exact storage representation can evolve, but feature IDs must remain stable enough to preserve user preference across app upgrades.
+
+When a feature is disabled:
+
+- it must not initialize background work that exists only for that feature;
+- it must not schedule feature-specific notifications, alarms, sync jobs, or observers;
+- it must not proactively request permissions or platform capabilities used only by that feature;
+- feature-specific navigation may be hidden, disabled, or represented as an enable call-to-action according to product UX;
+- existing user-owned data should normally remain intact so re-enabling the feature restores the previous state, unless the user explicitly chooses deletion;
+- disabling a feature is **not** equivalent to deleting its data;
+- cross-feature composition surfaces must tolerate the feature being unavailable and must not assume every registered feature is enabled.
+
+The registry should therefore expose both the compiled/registered feature set and the effective enabled feature set.
+
+Conceptually:
+
+```dart
+abstract interface class FeatureEnablementStore {
+  bool isEnabled(String featureId);
+  Future<void> setEnabled(String featureId, bool enabled);
+}
+```
+
+Do not make individual screens read Hive keys directly. Feature enablement should be coordinated through an application/core boundary so Settings, onboarding, routing, and capabilities all observe the same state.
+
 ### Capability and permission boundary
 
 Feature plugins should declare required platform capabilities rather than requesting permissions ad hoc from arbitrary screens.
@@ -355,7 +394,85 @@ Set<AppCapability> get capabilities => {
 
 The app/core capability layer should coordinate platform availability, permission state, user consent, and capability failure behavior. This is especially important for sensitive health-related features.
 
-Feature declarations must not imply blanket permission requests at startup. Permissions should still be requested contextually and only when the user invokes a capability that needs them.
+Feature declarations must not imply blanket permission requests at startup. Permissions should still be requested contextually and only when the user enables or invokes a capability that needs them.
+
+A disabled feature must not cause a permission prompt. For example, if medication reminders are not enabled, Besyu should not request notification or exact-alarm permission merely because the medication/reminder feature is compiled into the application.
+
+Preferred flow:
+
+```text
+Feature disabled
+    ↓
+No feature-specific permission request
+    ↓
+User chooses Enable
+    ↓
+Explain value / capability needed
+    ↓
+Request only the permission required for that capability
+    ↓
+Permission granted   → enable capability / feature path
+Permission denied    → preserve a recoverable disabled or limited state
+```
+
+Where possible, distinguish feature enablement from individual capability enablement. A feature may remain useful in a limited mode even if one optional permission is denied. For example, medication records may remain usable while reminder notifications stay disabled.
+
+Permission denial must not silently convert into destructive feature disablement or data deletion.
+
+### Onboarding becomes feature discovery and opt-in
+
+The onboarding/boarding experience should move away from being primarily a sequence of startup permission prompts.
+
+Its primary purpose should be:
+
+1. introduce Besyu and the product promise;
+2. present a concise set of **Key Features** that are actually available in the current build;
+3. explain the user benefit of each feature in plain language;
+4. invite the user to enable the features they want;
+5. request platform permissions only as a consequence of enabling or using the corresponding feature/capability.
+
+Example conceptual flow:
+
+```text
+Welcome to Besyu
+    ↓
+Key Features
+    ├── Medication tracking
+    ├── Medication reminders      [Enable]
+    ├── Appointments              [Enable]
+    ├── Emergency / SOS           [Enable]
+    └── other shipped features
+    ↓
+Optional feature-specific setup
+    ↓
+Permission prompts only where required
+    ↓
+Home
+```
+
+Onboarding must not present features that are only speculative or not shipped in the current build.
+
+The user should be able to skip optional features and continue into the app. The same features must remain discoverable and enable-able later from Settings or another appropriate feature-management surface.
+
+Feature enablement performed during onboarding and feature enablement performed later in Settings must use the same application service/state, not separate onboarding-only flags.
+
+For permissions, onboarding should explain **why** a permission is needed before invoking the OS prompt. Avoid requesting notification, calendar, contacts, camera, health-data, location, or similar access simply because onboarding is running.
+
+This also makes onboarding resilient as the product grows: adding a new feature should contribute onboarding/discovery metadata rather than expanding a hard-coded permission wizard.
+
+A future feature manifest may therefore expose optional discovery metadata, for example:
+
+```dart
+class FeatureManifest {
+  // existing fields...
+  final String? onboardingTitleKey;
+  final String? onboardingDescriptionKey;
+  final String? onboardingIconKey;
+  final bool showInOnboarding;
+}
+```
+
+Treat this as presentation metadata only. The feature still owns the actual enablement and capability requirements.
 
 ### Cross-feature dependencies
 
@@ -416,13 +533,18 @@ If public contracts and dependency direction are respected from the beginning, t
 ### Plugin architecture guardrails
 
 - Use **compile-time registration** first; do not introduce runtime executable plugin loading.
+- Registration does not imply enablement; compiled features may remain disabled per user.
 - The app shell must depend on feature contracts/registry contributions, not feature internals.
 - Feature plugins own their domain data, repositories, application services, and lifecycle.
+- Disabled features must not initialize feature-only background work or request feature-only permissions.
+- Disabling a feature should preserve its data by default; deletion is a separate explicit user action.
 - Cross-feature surfaces compose read models; they do not absorb feature ownership.
 - Cross-feature dependencies use narrow public APIs/application contracts only when necessary.
 - Never import another feature's repository implementation, storage model, ViewModel, or UI internals.
 - Avoid cyclic feature dependencies.
 - Platform permissions are coordinated through declared capabilities and a domain-neutral capability layer.
+- Permission prompts must follow user intent to enable/use the relevant feature or capability; avoid startup permission sweeps.
+- Onboarding should discover and invite activation of shipped Key Features, not act as a hard-coded permission wizard.
 - Analytics, crash reporting, storage, notifications, and AI providers remain adapters, not feature plugins.
 - Theme and reusable widgets remain shared UI, not feature plugins.
 - Design module boundaries so they can become Dart packages later, but avoid multi-package overhead until there is a concrete benefit.
@@ -449,9 +571,11 @@ Before implementing the corresponding product features, continue in this order:
 7. Add Emergency Profile as a separate aggregate; derive current medication lists when rendering the card.
 8. Introduce an application-service facade for MCP/assistant reads and confirmation-gated writes.
 9. Introduce the compile-time `AppFeature`/`FeatureRegistry` boundary before feature count grows substantially; start with routing/navigation/manifest contributions and avoid over-engineering lifecycle hooks until required.
-10. Add the capability declaration boundary when the second feature requires shared platform permissions or integrations.
-11. Gradually migrate root-level UI paths into feature presentation folders, preserving compatibility exports while callers transition.
-12. Generalize shared infrastructure only when a second real feature demonstrates the need; avoid speculative abstraction work.
+10. Add persisted per-feature enablement and a shared `FeatureEnablementStore`; ensure routing, Settings, onboarding, background initialization, and capability requests all consume the same state.
+11. Refactor onboarding into shipped-feature discovery/opt-in; move permission requests behind explicit feature/capability enable actions.
+12. Add the capability declaration boundary when the second feature requires shared platform permissions or integrations.
+13. Gradually migrate root-level UI paths into feature presentation folders, preserving compatibility exports while callers transition.
+14. Generalize shared infrastructure only when a second real feature demonstrates the need; avoid speculative abstraction work.
 
 ## Guardrails
 
@@ -461,9 +585,8 @@ Before implementing the corresponding product features, continue in this order:
 - New features own their own data and repositories.
 - Home, Timeline, Search, and Assistant may compose feature read models but must not become sources of truth.
 - Do not persist Daily Timeline projections as another source of truth.
-- Do not create speculative task/routine/note domains before a real product feature requires them.
-- Do not give MCP/AI direct Hive access or make it call Flutter ViewModels.
-- Keep medical/safety calculations deterministic and testable outside model prompts.
-- Preserve offline-first operation unless a later feature explicitly requires a network boundary.
+- Do not create speculative task/routine/note domains before a real product requirement exists.
 - Treat feature plugins as compile-time modules first; runtime code/plugin loading is out of scope.
 - Keep feature-to-feature APIs narrow, explicit, acyclic, and independent of storage/UI implementations.
+- Feature availability is user-controlled where the product marks a feature optional; disabled features must remain operationally quiet.
+- Never request feature-specific platform permissions before the user has chosen to enable or use the corresponding capability.
