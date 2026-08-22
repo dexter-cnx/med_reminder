@@ -6,19 +6,22 @@ import '../domain/entities/timeline_item.dart';
 ///
 /// Timeline remains a projection only. Source features continue to own their
 /// persistence and lifecycle.
+///
+/// When [day] is omitted, inputs are treated as already scoped by their caller
+/// and are not filtered against the wall clock. Supplying [day] explicitly
+/// applies same-day filtering to both dose and refill inputs.
 List<TimelineItem> buildDailyTimeline({
   Iterable<ScheduledDose> scheduledDoses = const <ScheduledDose>[],
   Iterable<RefillEvent> refillEvents = const <RefillEvent>[],
   Map<String, String> medicationNames = const <String, String>{},
   DateTime? day,
 }) {
-  final targetDay = day ?? DateTime.now();
   final items = <TimelineItem>[
     for (final dose in scheduledDoses)
-      if (_isSameDay(dose.scheduledAt, targetDay))
+      if (day == null || _isSameDay(dose.scheduledAt, day))
         MedicationDoseTimelineItem(dose: dose),
     for (final event in refillEvents)
-      if (_isSameDay(event.createdAt, targetDay))
+      if (day == null || _isSameDay(event.createdAt, day))
         RefillTimelineItem(
           event: event,
           medicationName: medicationNames[event.medicationId] ?? '',
@@ -29,6 +32,4 @@ List<TimelineItem> buildDailyTimeline({
 }
 
 bool _isSameDay(DateTime value, DateTime day) =>
-    value.year == day.year &&
-    value.month == day.month &&
-    value.day == day.day;
+    value.year == day.year && value.month == day.month && value.day == day.day;
