@@ -4,7 +4,7 @@ DEVICE ?=
 
 .PHONY: bootstrap setup-hooks configure-identifiers pub-get ensure-pub l10n-generate l10n-validate l10n-check \
 	format format-check analyze test test-domain test-data test-presentation \
-	test-suites test-all check pre-push android-build android-test android ios-build \
+	test-suites test-all check pre-push-prepare pre-push android-build android-test android ios-build \
 	ios-test ios ios-device-profile ios-device-release
 
 bootstrap: setup-hooks
@@ -61,10 +61,11 @@ test-all: ensure-pub
 
 check: l10n-check format-check analyze test-all
 
-# Called automatically by .githooks/pre-push after `make setup-hooks`.
-# It intentionally writes generated localization and Dart formatting first,
-# then verifies the same quality gates as CI.
-pre-push: l10n-generate format l10n-check format-check analyze test-all
+# Writable preparation step used by the tracked Git pre-push hook.
+pre-push-prepare: l10n-generate format
+
+# Manual equivalent of the hook's preparation + CI-equivalent checks.
+pre-push: pre-push-prepare check
 	@echo "Pre-push checks passed. Commit any generated/formatted changes before pushing."
 
 android-build: ensure-pub
