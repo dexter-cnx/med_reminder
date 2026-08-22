@@ -1,101 +1,157 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 const appThemeSettingKey = 'app_theme_id';
+const defaultAppThemeId = 'besyu_blue';
+const _themeCatalogAsset = 'assets/themes/themes.json';
 
-enum AppThemeId {
-  besyuBlue('besyu_blue'),
-  warmSand('warm_sand'),
-  sageCare('sage_care'),
-  lavenderCalm('lavender_calm'),
-  midnight('midnight');
+final appThemeCatalogProvider = Provider<AppThemeCatalog>(
+  (ref) => throw UnimplementedError(
+    'appThemeCatalogProvider must be overridden during bootstrap',
+  ),
+);
 
-  const AppThemeId(this.storageValue);
-
-  final String storageValue;
-
-  static AppThemeId fromStorage(Object? value) {
-    if (value is String) {
-      for (final theme in values) {
-        if (theme.storageValue == value) return theme;
-      }
-    }
-    return AppThemeId.besyuBlue;
-  }
-}
-
-final appThemeProvider = StateNotifierProvider<AppThemeController, AppThemeId>(
+final appThemeProvider = StateNotifierProvider<AppThemeController, String>(
   (ref) => throw UnimplementedError('appThemeProvider must be overridden'),
 );
 
-class AppThemeController extends StateNotifier<AppThemeId> {
-  AppThemeController(this._settings)
-      : super(AppThemeId.fromStorage(_settings.get(appThemeSettingKey)));
+class AppThemeDefinition {
+  const AppThemeDefinition({
+    required this.id,
+    required this.names,
+    required this.seedColor,
+    required this.brightness,
+    required this.surfaceTintStrength,
+  });
 
-  final Box<dynamic> _settings;
+  final String id;
+  final Map<String, String> names;
+  final Color seedColor;
+  final Brightness brightness;
+  final double surfaceTintStrength;
 
-  Future<void> select(AppThemeId theme) async {
-    if (state == theme) return;
-    await _settings.put(appThemeSettingKey, theme.storageValue);
-    state = theme;
+  String displayName(Locale locale) {
+    return names[locale.languageCode] ?? names['en'] ?? id;
+  }
+
+  static AppThemeDefinition? tryParse(Object? value) {
+    if (value is! Map) return null;
+
+    final id = value['id'];
+    final seed = value['seed'];
+    final brightness = value['brightness'];
+    final rawNames = value['name'];
+    final rawTint = value['surfaceTintStrength'];
+
+    if (id is! String || id.trim().isEmpty || id == defaultAppThemeId) {
+      return null;
+    }
+    if (seed is! String || brightness is! String || rawNames is! Map) {
+      return null;
+    }
+
+    final parsedSeed = _parseHexColor(seed);
+    final parsedBrightness = switch (brightness) {
+      'light' => Brightness.light,
+      'dark' => Brightness.dark,
+      _ => null,
+    };
+    if (parsedSeed == null || parsedBrightness == null) return null;
+
+    final names = <String, String>{};
+    for (final entry in rawNames.entries) {
+      final key = entry.key;
+      final name = entry.value;
+      if (key is String && name is String && name.trim().isNotEmpty) {
+        names[key] = name.trim();
+      }
+    }
+    if (names.isEmpty) return null;
+
+    final tint = rawTint is num ? rawTint.toDouble() : 0.04;
+    if (tint < 0 || tint > 1) return null;
+
+    return AppThemeDefinition(
+      id: id.trim(),
+      names: Map.unmodifiable(names),
+      seedColor: parsedSeed,
+      brightness: parsedBrightness,
+      surfaceTintStrength: tint,
+    );
   }
 }
 
-abstract final class AppThemeCatalog {
-  static ThemeData themeFor(AppThemeId id) {
-    switch (id) {
-      case AppThemeId.besyuBlue:
-        return _build(
-          seed: const Color(0xFF4A90D9),
-          brightness: Brightness.light,
-          surfaceTintStrength: 0.05,
-        );
-      case AppThemeId.warmSand:
-        return _build(
-          seed: const Color(0xFFB47B45),
-          brightness: Brightness.light,
-          surfaceTintStrength: 0.02,
-        );
-      case AppThemeId.sageCare:
-        return _build(
-          seed: const Color(0xFF5D8068),
-          brightness: Brightness.light,
-          surfaceTintStrength: 0.03,
-        );
-      case AppThemeId.lavenderCalm:
-        return _build(
-          seed: const Color(0xFF7C6BA8),
-          brightness: Brightness.light,
-          surfaceTintStrength: 0.04,
-        );
-      case AppThemeId.midnight:
-        return _build(
-          seed: const Color(0xFF8DA4FF),
-          brightness: Brightness.dark,
-          surfaceTintStrength: 0.08,
-        );
+class AppThemeCatalog {
+  AppThemeCatalog._(List<AppThemeDefinition> themes)
+      : themes = List.unmodifiable(themes),
+        _byId = Map.unmodifiable({for (final theme in themes) theme.id: theme});
+
+  final List<AppThemeDefinition> themes;
+  final Map<String, AppThemeDefinition> _byId;
+
+  static const fallback = AppThemeDefinition(
+    id: defaultAppThemeId,
+    names: <String, String>{
+      'en': 'Besyu Blue',
+      'th': 'Besyu Blue',
+    },
+    seedColor: Color(0xFF4A90D9),
+    brightness: Brightness.light,
+    surfaceTintStrength: 0.05,
+  );
+
+  factory AppThemeCatalog.fromJson(String source) {
+    try {
+      final decoded = jsonDecode(source);
+      final rawThemes = decoded is Map ? decoded['themes'] : null;
+      if (rawThemes is! List) return AppThemeCatalog._([fallback]);
+
+      final parsed = <AppThemeDefinition>[fallback];
+      final seen = <String>{defaultAppThemeId};
+      for (final rawTheme in rawThemes) {
+        final theme = AppThemeDefinition.tryParse(rawTheme);
+        if (theme == null || !seen.add(theme.id)) continue;
+        parsed.add(theme);
+      }
+      return AppThemeCatalog._(parsed);
+    } catch (_) {
+      return AppThemeCatalog._([fallback]);
     }
   }
 
-  static ThemeData _build({
-    required Color seed,
-    required Brightness brightness,
-    required double surfaceTintStrength,
-  }) {
+  static Future<AppThemeCatalog> load() async {
+    try {
+      final source = await rootBundle.loadString(_themeCatalogAsset);
+      return AppThemeCatalog.fromJson(source);
+    } catch (_) {
+      return AppThemeCatalog._([fallback]);
+    }
+  }
+
+  bool contains(String id) => _byId.containsKey(id);
+
+  AppThemeDefinition definitionFor(String id) => _byId[id] ?? fallback;
+
+  ThemeData themeFor(String id) => _build(definitionFor(id));
+
+  static ThemeData _build(AppThemeDefinition definition) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
+      seedColor: definition.seedColor,
+      brightness: definition.brightness,
     );
     final base = ThemeData(
       useMaterial3: true,
-      brightness: brightness,
+      brightness: definition.brightness,
       colorScheme: scheme,
     );
 
     return base.copyWith(
       scaffoldBackgroundColor: Color.alphaBlend(
-        scheme.primary.withValues(alpha: surfaceTintStrength),
+        scheme.primary.withValues(alpha: definition.surfaceTintStrength),
         scheme.surface,
       ),
       cardTheme: CardThemeData(
@@ -139,4 +195,36 @@ abstract final class AppThemeCatalog {
       ),
     );
   }
+}
+
+class AppThemeController extends StateNotifier<String> {
+  AppThemeController(this._settings, this._catalog)
+      : super(_resolveInitialTheme(_settings, _catalog));
+
+  final Box<dynamic> _settings;
+  final AppThemeCatalog _catalog;
+
+  Future<void> select(String themeId) async {
+    final resolved = _catalog.contains(themeId) ? themeId : defaultAppThemeId;
+    if (state == resolved) return;
+    await _settings.put(appThemeSettingKey, resolved);
+    state = resolved;
+  }
+
+  static String _resolveInitialTheme(
+    Box<dynamic> settings,
+    AppThemeCatalog catalog,
+  ) {
+    final stored = settings.get(appThemeSettingKey);
+    if (stored is String && catalog.contains(stored)) return stored;
+    return defaultAppThemeId;
+  }
+}
+
+Color? _parseHexColor(String value) {
+  final normalized = value.trim().replaceFirst('#', '');
+  if (normalized.length != 6 && normalized.length != 8) return null;
+  final parsed = int.tryParse(normalized, radix: 16);
+  if (parsed == null) return null;
+  return Color(normalized.length == 6 ? 0xFF000000 | parsed : parsed);
 }
