@@ -11,6 +11,7 @@ import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
+import 'features/refill/application/calculate_remaining_stock.dart';
 import 'features/refill/data/datasources/refill_local_data_source.dart';
 import 'features/refill/data/repositories/local_refill_repository.dart';
 import 'features/refill/presentation/providers/refill_providers.dart';
@@ -95,6 +96,19 @@ class _BootstrapAppState extends State<BootstrapApp> {
       const photoStore = LocalMedicationPhotoStore();
       final themeController = AppThemeController(settingsBox, themeCatalog);
 
+      int? stockResolver(medication, logs) {
+        return refillRepository.readAll().fold(
+              onSuccess: (refills) => calculateRemainingStock(
+                medication: medication,
+                doseLogs: logs,
+                refillEvents: refills,
+              ),
+              // A failed refill read must not make an until-empty medication
+              // look empty or trigger a false low-stock warning.
+              onFailure: (_) => null,
+            );
+      }
+
       _checkpoint('Checking medication photos');
       await medicationRepository.readAll().fold(
             onSuccess: (medications) => photoStore
@@ -127,6 +141,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
             ),
             doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
             refillRepositoryProvider.overrideWithValue(refillRepository),
+            medicationStockResolverProvider.overrideWithValue(stockResolver),
             medicationReminderSchedulerProvider.overrideWithValue(
               reminderScheduler,
             ),

@@ -18,6 +18,10 @@ final doseLogRepositoryProvider = Provider<DoseLogRepository>(
       throw UnimplementedError('DoseLogRepository must be provided by app DI.'),
 );
 
+final medicationStockResolverProvider = Provider<MedicationStockResolver>(
+  (ref) => legacyMedicationStockResolver,
+);
+
 final medicationReminderSchedulerProvider =
     Provider<MedicationReminderScheduler>(
   (ref) => throw UnimplementedError(
@@ -45,6 +49,7 @@ final medsProvider =
     repository: ref.watch(medicationRepositoryProvider),
     reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
     photoStore: ref.watch(medicationPhotoStoreProvider),
+    stockResolver: ref.watch(medicationStockResolverProvider),
     onFailure: (failure) => _reportFailure(ref, failure),
   ),
 );
@@ -62,6 +67,7 @@ final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
   return buildTodayDoses(
     medications: ref.watch(medsProvider),
     logs: ref.watch(logsProvider),
+    stockResolver: ref.watch(medicationStockResolverProvider),
   );
 });
 
@@ -97,16 +103,19 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     required MedicationRepository repository,
     required MedicationReminderScheduler reminderScheduler,
     required MedicationPhotoStore photoStore,
+    required MedicationStockResolver stockResolver,
     required void Function(Failure failure) onFailure,
   })  : _repository = repository,
         _reminderScheduler = reminderScheduler,
         _photoStore = photoStore,
+        _stockResolver = stockResolver,
         _onFailure = onFailure,
         super(_loadMedications(repository, onFailure));
 
   final MedicationRepository _repository;
   final MedicationReminderScheduler _reminderScheduler;
   final MedicationPhotoStore _photoStore;
+  final MedicationStockResolver _stockResolver;
   final void Function(Failure failure) _onFailure;
 
   Future<bool> _persist() async {
@@ -131,7 +140,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     if (index < 0) return;
 
     final old = state[index];
-    final remaining = old.remaining(logs);
+    final remaining = _stockResolver(old, logs);
     var updated = old;
 
     if (old.mode == MedicationMode.untilEmpty &&
@@ -142,7 +151,7 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
 
     final threshold = old.lowThreshold;
-    if (threshold != null && remaining != null && old.isLowStock(logs)) {
+    if (threshold != null && remaining != null && remaining <= threshold) {
       final before = remaining + old.dosagePerTime;
       if (before > threshold) {
         await _reminderScheduler.showLowStock(old.name, remaining);
@@ -161,8 +170,10 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     final now = DateTime.now();
     final next = <Medication>[];
     for (final medication in state) {
-      if (medication.isExpired(now) ||
-          !medication.isActiveOn(now, logs: logs)) {
+      final remaining = _stockResolver(medication, logs);
+      final emptyUntilEmpty =
+          medication.mode == MedicationMode.untilEmpty && remaining == 0;
+      if (medication.isExpired(now) || emptyUntilEmpty) {
         await _reminderScheduler.cancelIds(medication.notificationIds);
         next.add(medication.copyWith(notificationIds: const <int>[]));
         continue;

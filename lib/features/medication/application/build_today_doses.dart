@@ -1,5 +1,16 @@
 import '../domain/entities/medication.dart';
 
+typedef MedicationStockResolver = int? Function(
+  Medication medication,
+  Iterable<DoseLog> logs,
+);
+
+int? legacyMedicationStockResolver(
+  Medication medication,
+  Iterable<DoseLog> logs,
+) =>
+    medication.remaining(logs);
+
 /// Builds the medication portion of today's operational timeline.
 ///
 /// Keeping this outside the ViewModel makes the deterministic scheduling/read
@@ -8,14 +19,18 @@ import '../domain/entities/medication.dart';
 List<ScheduledDose> buildTodayDoses({
   required Iterable<Medication> medications,
   required Iterable<DoseLog> logs,
+  MedicationStockResolver stockResolver = legacyMedicationStockResolver,
   DateTime? now,
 }) {
   final current = now ?? DateTime.now();
   final doses = <ScheduledDose>[];
 
   for (final medication in medications) {
-    if (!medication.isActiveOn(current, logs: logs)) continue;
-    final remaining = medication.remaining(logs);
+    final remaining = stockResolver(medication, logs);
+    if (medication.isExpired(current)) continue;
+    if (medication.mode == MedicationMode.untilEmpty && remaining == 0) {
+      continue;
+    }
 
     for (final time in medication.times) {
       final parts = time.split(':');
