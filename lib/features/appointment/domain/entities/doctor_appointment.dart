@@ -1,5 +1,5 @@
 class DoctorAppointment {
-  const DoctorAppointment({
+  DoctorAppointment({
     required this.id,
     required this.title,
     required this.startsAt,
