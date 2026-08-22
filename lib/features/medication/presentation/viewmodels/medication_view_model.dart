@@ -249,8 +249,17 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
       },
     );
     if (!deleted) return;
-    await _lowStockAlertStateStore.clear(id);
+
     state = state.where((item) => item.id != id).toList(growable: false);
+
+    // Alert deduplication is operational delivery state. Once the medication
+    // repository delete succeeds, cleanup must not keep a deleted medication
+    // visible or actionable if the settings store is temporarily unavailable.
+    try {
+      await _lowStockAlertStateStore.clear(id);
+    } catch (_) {
+      // Best-effort cleanup; stale state is harmless and cannot resurrect data.
+    }
   }
 }
 
