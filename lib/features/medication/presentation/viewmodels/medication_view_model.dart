@@ -181,7 +181,13 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
       return;
     }
 
-    final ids = await _reminderScheduler.schedule(old);
+    // The platform scheduler still guards legacy until-empty medications whose
+    // initial amount is zero. Pass a scheduling snapshot with the refill-aware
+    // balance so a positive refill can restore reminders without mutating the
+    // medication's persisted initial amount.
+    final ids = await _reminderScheduler.schedule(
+      old.copyWith(initialAmount: remaining),
+    );
     final next = <Medication>[...state];
     next[index] = old.copyWith(notificationIds: ids);
     state = next;
