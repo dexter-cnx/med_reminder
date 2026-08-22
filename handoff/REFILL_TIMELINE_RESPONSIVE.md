@@ -52,7 +52,8 @@ shapeRatio = shortestSide / longestSide
 Current classification:
 
 ```text
-shapeRatio >= 0.60 AND shortestSide >= 600 -> tablet-shaped\anotherwise                                  -> mobile-shaped
+shapeRatio >= 0.60 AND shortestSide >= 600 -> tablet-shaped
+otherwise                                  -> mobile-shaped
 ```
 
 The 600 logical-pixel value is a safety guard, not the primary sizing model. It prevents compact square windows/phones from being treated as tablets.
