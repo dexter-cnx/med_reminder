@@ -3,6 +3,7 @@ import 'package:med_reminder_offline/features/medication_checkin/data/datasource
 import 'package:med_reminder_offline/features/medication_checkin/data/models/medication_check_in_record.dart';
 import 'package:med_reminder_offline/features/medication_checkin/data/repositories/local_medication_check_in_repository.dart';
 import 'package:med_reminder_offline/features/medication_checkin/domain/entities/medication_check_in.dart';
+import 'package:med_reminder_offline/features/medication_checkin/presentation/providers/medication_check_in_providers.dart';
 
 void main() {
   test('check-in record round-trips factual user-reported data', () {
@@ -61,6 +62,37 @@ void main() {
         );
 
     expect(ids, <String>['earlier', 'later']);
+  });
+
+  test('view model replaces an existing check-in with the same id', () async {
+    final dataSource = _MemoryCheckInDataSource();
+    final repository = LocalMedicationCheckInRepository(dataSource);
+    final viewModel = MedicationCheckInViewModel(
+      repository,
+      onFailure: (_) {},
+    );
+
+    final first = MedicationCheckIn(
+      id: 'same',
+      medicationId: 'm1',
+      recordedAt: DateTime(2026, 8, 22, 8),
+      kind: MedicationCheckInKind.noIssue,
+    );
+    final replacement = MedicationCheckIn(
+      id: 'same',
+      medicationId: 'm1',
+      recordedAt: DateTime(2026, 8, 22, 9),
+      kind: MedicationCheckInKind.nausea,
+      note: 'Updated entry',
+    );
+
+    expect(await viewModel.append(first), isTrue);
+    expect(await viewModel.append(replacement), isTrue);
+
+    expect(viewModel.state, hasLength(1));
+    expect(viewModel.state.single.recordedAt, replacement.recordedAt);
+    expect(viewModel.state.single.kind, MedicationCheckInKind.nausea);
+    expect(viewModel.state.single.note, 'Updated entry');
   });
 }
 
