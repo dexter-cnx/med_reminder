@@ -73,8 +73,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
           .timeout(const Duration(seconds: 5));
 
       _checkpoint('Loading app themes');
-      final themeCatalog = await AppThemeCatalog.load()
-          .timeout(const Duration(seconds: 5));
+      final themeCatalog =
+          await AppThemeCatalog.load().timeout(const Duration(seconds: 5));
 
       final localDataSource = HiveMedicationLocalDataSource(
         medicationBox: medsBox,
