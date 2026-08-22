@@ -8,7 +8,8 @@ import 'package:med_reminder_offline/features/timeline/application/build_daily_t
 import 'package:med_reminder_offline/features/timeline/domain/entities/timeline_item.dart';
 
 void main() {
-  test('appointment provider updates feed the daily timeline projection', () async {
+  test('appointment provider updates feed the daily timeline projection',
+      () async {
     final repository = _MemoryAppointmentRepository();
     final container = ProviderContainer(
       overrides: [
@@ -24,12 +25,12 @@ void main() {
       location: 'Clinic A',
     );
 
-    final saved = await container
-        .read(appointmentsProvider.notifier)
-        .upsert(appointment);
+    final saved =
+        await container.read(appointmentsProvider.notifier).upsert(appointment);
 
     expect(saved, isTrue);
-    expect(container.read(appointmentsProvider), <DoctorAppointment>[appointment]);
+    expect(
+        container.read(appointmentsProvider), <DoctorAppointment>[appointment]);
 
     final timeline = buildDailyTimeline(
       appointments: container.read(appointmentsProvider),
@@ -49,8 +50,7 @@ void main() {
 }
 
 class _MemoryAppointmentRepository implements AppointmentRepository {
-  final Map<String, DoctorAppointment> _values =
-      <String, DoctorAppointment>{};
+  final Map<String, DoctorAppointment> _values = <String, DoctorAppointment>{};
 
   @override
   Result<List<DoctorAppointment>> readAll() {
