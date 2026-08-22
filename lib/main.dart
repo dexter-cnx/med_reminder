@@ -72,6 +72,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final settingsBox = await Hive.openBox<dynamic>('settings')
           .timeout(const Duration(seconds: 5));
 
+      _checkpoint('Loading app themes');
+      final themeCatalog = await AppThemeCatalog.load()
+          .timeout(const Duration(seconds: 5));
+
       final localDataSource = HiveMedicationLocalDataSource(
         medicationBox: medsBox,
         doseLogBox: logsBox,
@@ -80,7 +84,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       const photoStore = LocalMedicationPhotoStore();
-      final themeController = AppThemeController(settingsBox);
+      final themeController = AppThemeController(settingsBox, themeCatalog);
 
       _checkpoint('Checking medication photos');
       await medicationRepository.readAll().fold(
@@ -117,6 +121,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
               reminderScheduler,
             ),
             medicationPhotoStoreProvider.overrideWithValue(photoStore),
+            appThemeCatalogProvider.overrideWithValue(themeCatalog),
             appThemeProvider.overrideWith((ref) => themeController),
           ],
           child: BesyuApp(
@@ -288,13 +293,14 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
   @override
   Widget build(BuildContext context) {
     final themeId = ref.watch(appThemeProvider);
+    final themeCatalog = ref.watch(appThemeCatalogProvider);
     return MaterialApp(
       title: 'Besyu',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
-      theme: AppThemeCatalog.themeFor(themeId),
+      theme: themeCatalog.themeFor(themeId),
       home: _onboardingCompleted
           ? const HomeScreen()
           : OnboardingScreen(
