@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+paths=(
+  lib
+  test
+  tool
+  assets/translations.csv
+  assets/translations
+  lib/l10n/generated_locales.dart
+)
+
+if [[ -n "$(git status --porcelain=v1 -- "${paths[@]}")" ]]; then
+  cat <<'EOF'
+
+[pre-push] Refusing to validate a dirty guarded working tree.
+Commit or discard changes under lib/test/tool/localization assets first so
+checks run against the exact committed content that will be pushed.
+EOF
+  git status --short -- "${paths[@]}"
+  exit 1
+fi
+
+printf '\n[pre-push] Preparing generated files and Dart formatting...\n'
+make pre-push-prepare
+
+if [[ -n "$(git status --porcelain=v1 -- "${paths[@]}")" ]]; then
+  cat <<'EOF'
+
+[pre-push] Formatter or localization generation changed committed content.
+Review and commit those changes before pushing, then run git push again.
+EOF
+  git status --short -- "${paths[@]}"
+  exit 1
+fi
+
+printf '[pre-push] Generated/format state matches the pushed commits. Running CI-equivalent checks...\n'
+make check
+
+printf '[pre-push] All checks passed.\n'
