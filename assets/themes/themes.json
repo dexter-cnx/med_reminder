@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "themes": [
+    {
+      "id": "warm_sand",
+      "name": {
+        "en": "Warm Sand",
+        "th": "Warm Sand"
+      },
+      "seed": "#B47B45",
+      "brightness": "light",
+      "surfaceTintStrength": 0.02
+    },
+    {
+      "id": "sage_care",
+      "name": {
+        "en": "Sage Care",
+        "th": "Sage Care"
+      },
+      "seed": "#5D8068",
+      "brightness": "light",
+      "surfaceTintStrength": 0.03
+    },
+    {
+      "id": "lavender_calm",
+      "name": {
+        "en": "Lavender Calm",
+        "th": "Lavender Calm"
+      },
+      "seed": "#7C6BA8",
+      "brightness": "light",
+      "surfaceTintStrength": 0.04
+    },
+    {
+      "id": "midnight",
+      "name": {
+        "en": "Midnight",
+        "th": "Midnight"
+      },
+      "seed": "#8DA4FF",
+      "brightness": "dark",
+      "surfaceTintStrength": 0.08
+    }
+  ]
+}
