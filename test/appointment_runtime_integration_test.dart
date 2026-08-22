@@ -11,7 +11,7 @@ void main() {
   test('appointment provider updates feed the daily timeline projection', () async {
     final repository = _MemoryAppointmentRepository();
     final container = ProviderContainer(
-      overrides: <Override>[
+      overrides: [
         appointmentRepositoryProvider.overrideWithValue(repository),
       ],
     );
