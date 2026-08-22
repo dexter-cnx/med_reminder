@@ -32,7 +32,9 @@ void main() {
 
     expect(await viewModel.append(newer), isTrue);
     expect(
-        viewModel.state.map((event) => event.id), <String>['older', 'newer']);
+      viewModel.state.map((event) => event.id),
+      <String>['older', 'newer'],
+    );
     expect(repository.values.length, 2);
     expect(failure, isNull);
   });
@@ -56,35 +58,38 @@ void main() {
     expect(failure?.code, 'refill_write_failed');
   });
 
-  test('refill can restore reminders for zero-initial until-empty stock', () async {
-    final medication = Medication(
-      id: 'med-1',
-      name: 'Vitamin C',
-      times: const <String>['08:00'],
-      createdAt: DateTime(2026, 8, 20),
-      initialAmount: 0,
-      mode: MedicationMode.untilEmpty,
-      notificationIds: const <int>[],
-    );
-    final repository = _MemoryMedicationRepository(<Medication>[medication]);
-    final scheduler = _TrackingReminderScheduler();
-    final viewModel = MedicationViewModel(
-      repository: repository,
-      reminderScheduler: scheduler,
-      photoStore: _FakePhotoStore(),
-      stockResolver: (_, __) => 12,
-      onFailure: (_) {},
-    );
+  test(
+    'refill can restore reminders for zero-initial until-empty stock',
+    () async {
+      final medication = Medication(
+        id: 'med-1',
+        name: 'Vitamin C',
+        times: const <String>['08:00'],
+        createdAt: DateTime(2026, 8, 20),
+        initialAmount: 0,
+        mode: MedicationMode.untilEmpty,
+        notificationIds: const <int>[],
+      );
+      final repository = _MemoryMedicationRepository(<Medication>[medication]);
+      final scheduler = _TrackingReminderScheduler();
+      final viewModel = MedicationViewModel(
+        repository: repository,
+        reminderScheduler: scheduler,
+        photoStore: _FakePhotoStore(),
+        stockResolver: (_, __) => 12,
+        onFailure: (_) {},
+      );
 
-    await viewModel.refreshAfterRefill('med-1', const <DoseLog>[]);
+      await viewModel.refreshAfterRefill('med-1', const <DoseLog>[]);
 
-    expect(scheduler.scheduleCalls, 1);
-    expect(scheduler.lastScheduledInitialAmount, 12);
-    expect(viewModel.state.single.initialAmount, 0);
-    expect(viewModel.state.single.notificationIds, <int>[101]);
-    expect(repository.values.single.initialAmount, 0);
-    expect(repository.values.single.notificationIds, <int>[101]);
-  });
+      expect(scheduler.scheduleCalls, 1);
+      expect(scheduler.lastScheduledInitialAmount, 12);
+      expect(viewModel.state.single.initialAmount, 0);
+      expect(viewModel.state.single.notificationIds, <int>[101]);
+      expect(repository.values.single.initialAmount, 0);
+      expect(repository.values.single.notificationIds, <int>[101]);
+    },
+  );
 }
 
 class _MemoryRefillRepository implements RefillRepository {
