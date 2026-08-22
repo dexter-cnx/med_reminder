@@ -140,10 +140,17 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
       createdAt: DateTime.now(),
       note: note.isEmpty ? null : note,
     );
-    final saved = await ref.read(refillEventsProvider.notifier).append(event);
-    if (!mounted) return;
 
+    // Capture app-scoped collaborators before awaiting. They remain valid even
+    // if the modal sheet is dismissed while persistence is in flight.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final refillViewModel = ref.read(refillEventsProvider.notifier);
+    final medicationViewModel = ref.read(medsProvider.notifier);
+    final logs = ref.read(logsProvider);
+
+    final saved = await refillViewModel.append(event);
     if (!saved) {
+      if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('refill_save_failed'.tr())),
@@ -151,10 +158,8 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
       return;
     }
 
-    ref.invalidate(todayDosesProvider);
-    await ref
-        .read(medsProvider.notifier)
-        .refreshAfterRefill(widget.medication.id, ref.read(logsProvider));
+    container.invalidate(todayDosesProvider);
+    await medicationViewModel.refreshAfterRefill(widget.medication.id, logs);
     if (!mounted) return;
 
     _quantityController.clear();
