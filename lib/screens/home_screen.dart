@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../features/appointment/presentation/screens/appointment_screen.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
 import '../providers/meds_provider.dart';
@@ -41,19 +42,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onSnooze: _snooze,
         ),
       1 => _MedicationList(meds: meds),
+      2 => const AppointmentScreen(),
       _ => const SettingsScreen(embedded: true),
     };
 
     return Scaffold(
       appBar: AppBar(title: Text('app_title'.tr())),
       body: body,
-      floatingActionButton: _tab == 2
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _addMedication,
-              icon: const Icon(Icons.add),
-              label: Text('add_med'.tr()),
-            ),
+      floatingActionButton: switch (_tab) {
+        0 || 1 => FloatingActionButton.extended(
+            onPressed: _addMedication,
+            icon: const Icon(Icons.add),
+            label: Text('add_med'.tr()),
+          ),
+        2 => FloatingActionButton.extended(
+            onPressed: _addAppointment,
+            icon: const Icon(Icons.event_available_outlined),
+            label: Text('appointment_add'.tr()),
+          ),
+        _ => null,
+      },
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (value) => setState(() => _tab = value),
@@ -67,6 +75,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.medication_outlined),
             selectedIcon: const Icon(Icons.medication),
             label: 'all_meds'.tr(),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.event_outlined),
+            selectedIcon: const Icon(Icons.event),
+            label: 'appointments'.tr(),
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
@@ -139,6 +152,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Native Live Activity support is an optional handoff.
     }
   }
+
+  Future<void> _addAppointment() => showAppointmentEditor(context, ref);
 }
 
 class _MedicationList extends ConsumerWidget {

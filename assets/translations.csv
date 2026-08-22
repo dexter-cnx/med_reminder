@@ -87,7 +87,7 @@ settings_about,About,เกี่ยวกับ
 settings_about_desc,Beside You. An offline medication companion with no application server.,Beside You. อยู่ข้างกาย ในทุกวัน แอปช่วยดูแลเรื่องยาแบบออฟไลน์และไม่มีเซิร์ฟเวอร์ของแอป
 settings_version,Version,เวอร์ชัน
 settings_offline_title,Offline first,ทำงานแบบออฟไลน์
-settings_offline_desc,Medication records and profile data stay on this device,ข้อมูลยาและข้อมูลผู้ใช้เก็บอยู่บนเครื่องนี้
+settings_offline_desc,Medication records and profile data stay on this device,ข้อมูลยาและข้อมูลผู้ใช้เก็บไว้บนเครื่องนี้
 refill_action,Refill,เติมยา
 refill_title,Refill {name},เติม {name}
 refill_quantity,Quantity added,จำนวนที่เติม
@@ -99,3 +99,11 @@ refill_save_failed,Unable to save refill,ไม่สามารถบันท
 refill_history,Refill history,ประวัติการเติมยา
 refill_history_empty,No refill history yet,ยังไม่มีประวัติการเติมยา
 refill_history_quantity,Added {count},เติม {count} เม็ด
+appointments,Appointments,นัดหมาย
+appointment_add,Add appointment,เพิ่มนัดหมาย
+appointment_edit,Edit appointment,แก้ไขนัดหมาย
+appointment_title,Appointment title,ชื่อนัดหมาย
+appointment_location,Location (optional),สถานที่ (เว้นได้)
+appointment_note,Note (optional),หมายเหตุ (เว้นได้)
+appointment_empty,No appointments yet,ยังไม่มีนัดหมาย
+delete,Delete,ลบ

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/appointment/presentation/providers/appointment_providers.dart';
 import '../features/refill/presentation/providers/refill_providers.dart';
 import '../features/timeline/application/build_daily_timeline.dart';
 import '../features/timeline/domain/entities/timeline_item.dart';
@@ -18,6 +19,7 @@ final dailyTimelineProvider = Provider<List<TimelineItem>>((ref) {
   return buildDailyTimeline(
     scheduledDoses: ref.watch(todayDosesProvider),
     refillEvents: ref.watch(refillEventsProvider),
+    appointments: ref.watch(appointmentsProvider),
     medicationNames: names,
     day: DateTime.now(),
   );

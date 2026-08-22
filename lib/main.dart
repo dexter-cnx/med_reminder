@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'features/appointment/data/datasources/appointment_local_data_source.dart';
+import 'features/appointment/data/repositories/local_appointment_repository.dart';
+import 'features/appointment/presentation/providers/appointment_providers.dart';
 import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
@@ -76,6 +79,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final refillsBox = await Hive.openBox<dynamic>('refills')
           .timeout(const Duration(seconds: 5));
 
+      _checkpoint('Opening appointment storage');
+      final appointmentsBox = await Hive.openBox<dynamic>('appointments')
+          .timeout(const Duration(seconds: 5));
+
       _checkpoint('Opening app settings');
       final settingsBox = await Hive.openBox<dynamic>('settings')
           .timeout(const Duration(seconds: 5));
@@ -89,9 +96,13 @@ class _BootstrapAppState extends State<BootstrapApp> {
         doseLogBox: logsBox,
       );
       final refillDataSource = HiveRefillLocalDataSource(refillsBox);
+      final appointmentDataSource =
+          HiveAppointmentLocalDataSource(appointmentsBox);
       final medicationRepository = LocalMedicationRepository(localDataSource);
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       final refillRepository = LocalRefillRepository(refillDataSource);
+      final appointmentRepository =
+          LocalAppointmentRepository(appointmentDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
@@ -104,8 +115,6 @@ class _BootstrapAppState extends State<BootstrapApp> {
                 doseLogs: logs,
                 refillEvents: refills,
               ),
-              // A failed refill read must not make an until-empty medication
-              // look empty or trigger a false low-stock warning.
               onFailure: (_) => null,
             );
       }
@@ -142,6 +151,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
             ),
             doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
             refillRepositoryProvider.overrideWithValue(refillRepository),
+            appointmentRepositoryProvider.overrideWithValue(
+              appointmentRepository,
+            ),
             medicationStockResolverProvider.overrideWithValue(stockResolver),
             medicationReminderSchedulerProvider.overrideWithValue(
               reminderScheduler,
