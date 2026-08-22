@@ -11,6 +11,9 @@ import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
+import 'features/refill/data/datasources/refill_local_data_source.dart';
+import 'features/refill/data/repositories/local_refill_repository.dart';
+import 'features/refill/presentation/providers/refill_providers.dart';
 import 'l10n/generated_locales.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -68,6 +71,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final logsBox = await Hive.openBox<dynamic>('logs')
           .timeout(const Duration(seconds: 5));
 
+      _checkpoint('Opening refill storage');
+      final refillsBox = await Hive.openBox<dynamic>('refills')
+          .timeout(const Duration(seconds: 5));
+
       _checkpoint('Opening app settings');
       final settingsBox = await Hive.openBox<dynamic>('settings')
           .timeout(const Duration(seconds: 5));
@@ -80,8 +87,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
         medicationBox: medsBox,
         doseLogBox: logsBox,
       );
+      final refillDataSource = HiveRefillLocalDataSource(refillsBox);
       final medicationRepository = LocalMedicationRepository(localDataSource);
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
+      final refillRepository = LocalRefillRepository(refillDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       const photoStore = LocalMedicationPhotoStore();
       final themeController = AppThemeController(settingsBox, themeCatalog);
@@ -117,6 +126,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
               medicationRepository,
             ),
             doseLogRepositoryProvider.overrideWithValue(doseLogRepository),
+            refillRepositoryProvider.overrideWithValue(refillRepository),
             medicationReminderSchedulerProvider.overrideWithValue(
               reminderScheduler,
             ),
