@@ -171,7 +171,8 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     if (index < 0) return;
 
     final old = state[index];
-    if (old.mode != MedicationMode.untilEmpty || old.isExpired(DateTime.now())) {
+    if (old.mode != MedicationMode.untilEmpty ||
+        old.isExpired(DateTime.now())) {
       return;
     }
 
