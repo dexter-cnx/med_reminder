@@ -97,7 +97,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       const photoStore = LocalMedicationPhotoStore();
       final themeController = AppThemeController(settingsBox, themeCatalog);
 
-      final MedicationStockResolver stockResolver = (medication, logs) {
+      int? stockResolver(medication, logs) {
         return refillRepository.readAll().fold(
               onSuccess: (refills) => calculateRemainingStock(
                 medication: medication,
@@ -108,7 +108,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
               // look empty or trigger a false low-stock warning.
               onFailure: (_) => null,
             );
-      };
+      }
 
       _checkpoint('Checking medication photos');
       await medicationRepository.readAll().fold(
