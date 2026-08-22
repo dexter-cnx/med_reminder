@@ -135,7 +135,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final languageCode = context.locale.languageCode == 'th' ? 'th' : 'en';
-    final selectedTheme = ref.watch(appThemeProvider);
+    final selectedThemeId = ref.watch(appThemeProvider);
+    final themeCatalog = ref.watch(appThemeCatalogProvider);
+    final selectedTheme = themeCatalog.definitionFor(selectedThemeId);
+
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
@@ -144,7 +147,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: Text('settings_theme'.tr()),
-            subtitle: Text(_themeLabel(selectedTheme).tr()),
+            subtitle: Text(selectedTheme.displayName(context.locale)),
             trailing: const Icon(Icons.chevron_right),
             onTap: _showThemePicker,
           ),
@@ -320,7 +323,9 @@ class _ThemePickerSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedTheme = ref.watch(appThemeProvider);
+    final selectedThemeId = ref.watch(appThemeProvider);
+    final catalog = ref.watch(appThemeCatalogProvider);
+
     return SafeArea(
       top: false,
       child: ConstrainedBox(
@@ -352,15 +357,17 @@ class _ThemePickerSheet extends ConsumerWidget {
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: AppThemeId.values.length,
+                itemCount: catalog.themes.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final themeId = AppThemeId.values[index];
+                  final definition = catalog.themes[index];
                   return _ThemePreviewChoice(
-                    themeId: themeId,
-                    selected: selectedTheme == themeId,
-                    onTap: () =>
-                        ref.read(appThemeProvider.notifier).select(themeId),
+                    definition: definition,
+                    previewTheme: catalog.themeFor(definition.id),
+                    selected: selectedThemeId == definition.id,
+                    onTap: () => ref
+                        .read(appThemeProvider.notifier)
+                        .select(definition.id),
                   );
                 },
               ),
@@ -374,18 +381,19 @@ class _ThemePickerSheet extends ConsumerWidget {
 
 class _ThemePreviewChoice extends StatelessWidget {
   const _ThemePreviewChoice({
-    required this.themeId,
+    required this.definition,
+    required this.previewTheme,
     required this.selected,
     required this.onTap,
   });
 
-  final AppThemeId themeId;
+  final AppThemeDefinition definition;
+  final ThemeData previewTheme;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final previewTheme = AppThemeCatalog.themeFor(themeId);
     final outerScheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -411,12 +419,20 @@ class _ThemePreviewChoice extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _themeLabel(themeId).tr(),
+                      definition.displayName(context.locale),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                     ),
                   ),
+                  if (definition.id == defaultAppThemeId)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        'Default',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
                   if (selected)
                     Icon(Icons.check_circle, color: outerScheme.primary),
                 ],
@@ -442,12 +458,13 @@ class _ThemeCodePreview extends StatelessWidget {
       data: theme,
       child: Builder(
         builder: (previewContext) {
-          final scheme = Theme.of(previewContext).colorScheme;
+          final previewTheme = Theme.of(previewContext);
+          final scheme = previewTheme.colorScheme;
           return IgnorePointer(
             child: Container(
-              height: 190,
+              height: 154,
               decoration: BoxDecoration(
-                color: Theme.of(previewContext).scaffoldBackgroundColor,
+                color: previewTheme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: scheme.outlineVariant),
               ),
@@ -464,10 +481,9 @@ class _ThemeCodePreview extends StatelessWidget {
                         const SizedBox(width: 7),
                         Text(
                           'Besyu',
-                          style: Theme.of(previewContext)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          style: previewTheme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const Spacer(),
                         Icon(
@@ -480,99 +496,84 @@ class _ThemeCodePreview extends StatelessWidget {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 9, 10, 7),
-                      child: Column(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
                         children: [
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(9),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: scheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      Icons.medication_outlined,
-                                      size: 18,
-                                      color: scheme.onPrimaryContainer,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 9),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                          Expanded(
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
                                         Container(
-                                          height: 7,
-                                          width: 80,
+                                          width: 32,
+                                          height: 32,
                                           decoration: BoxDecoration(
-                                            color: scheme.onSurface,
+                                            color: scheme.primaryContainer,
                                             borderRadius:
-                                                BorderRadius.circular(99),
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(
+                                            Icons.medication_outlined,
+                                            size: 18,
+                                            color: scheme.onPrimaryContainer,
                                           ),
                                         ),
-                                        const SizedBox(height: 7),
-                                        Container(
-                                          height: 6,
+                                        const Spacer(),
+                                        SizedBox(
                                           width: 54,
-                                          decoration: BoxDecoration(
-                                            color: scheme.onSurfaceVariant
-                                                .withValues(alpha: 0.45),
-                                            borderRadius:
-                                                BorderRadius.circular(99),
+                                          height: 30,
+                                          child: FilledButton(
+                                            onPressed: () {},
+                                            style: FilledButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: const Size(54, 30),
+                                            ),
+                                            child: const Icon(
+                                              Icons.check,
+                                              size: 16,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: 30,
-                                    child: FilledButton(
-                                      onPressed: () {},
-                                      style: FilledButton.styleFrom(
-                                        minimumSize: const Size(56, 30),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                        ),
-                                        visualDensity: VisualDensity.compact,
+                                    const Spacer(),
+                                    Container(
+                                      height: 7,
+                                      width: 84,
+                                      decoration: BoxDecoration(
+                                        color: scheme.onSurface,
+                                        borderRadius: BorderRadius.circular(99),
                                       ),
-                                      child: const Icon(Icons.check, size: 16),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 7),
+                                    Container(
+                                      height: 6,
+                                      width: 58,
+                                      decoration: BoxDecoration(
+                                        color: scheme.onSurfaceVariant
+                                            .withValues(alpha: 0.45),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          const Spacer(),
-                          Container(
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: BoxDecoration(
-                              color: scheme.surfaceContainer,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Icon(Icons.today,
-                                    size: 18, color: scheme.primary),
-                                Icon(
-                                  Icons.medication_outlined,
-                                  size: 18,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                                Icon(
-                                  Icons.settings_outlined,
-                                  size: 18,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ],
-                            ),
+                          const SizedBox(width: 10),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _ColorDot(color: scheme.primary),
+                              const SizedBox(height: 7),
+                              _ColorDot(color: scheme.secondary),
+                              const SizedBox(height: 7),
+                              _ColorDot(color: scheme.tertiary),
+                            ],
                           ),
                         ],
                       ),
@@ -588,18 +589,24 @@ class _ThemeCodePreview extends StatelessWidget {
   }
 }
 
-String _themeLabel(AppThemeId id) {
-  switch (id) {
-    case AppThemeId.besyuBlue:
-      return 'theme_besyu_blue';
-    case AppThemeId.warmSand:
-      return 'theme_warm_sand';
-    case AppThemeId.sageCare:
-      return 'theme_sage_care';
-    case AppThemeId.lavenderCalm:
-      return 'theme_lavender_calm';
-    case AppThemeId.midnight:
-      return 'theme_midnight';
+class _ColorDot extends StatelessWidget {
+  const _ColorDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+    );
   }
 }
 
