@@ -28,7 +28,9 @@ int? calculateRemainingStock({
           note: event.note,
         ),
     for (final log in doseLogs)
-      if (log.medId == medication.id && log.isTaken)
+      if (log.medId == medication.id &&
+          log.isTaken &&
+          medication.dosagePerTime != 0)
         StockEvent(
           id: 'dose:${log.id}',
           itemId: medication.id,
