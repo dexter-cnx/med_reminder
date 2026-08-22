@@ -1,3 +1,4 @@
+import '../../appointment/domain/entities/doctor_appointment.dart';
 import '../../medication/domain/entities/scheduled_dose.dart';
 import '../../refill/domain/entities/refill_event.dart';
 import '../domain/entities/timeline_item.dart';
@@ -9,10 +10,11 @@ import '../domain/entities/timeline_item.dart';
 ///
 /// When [day] is omitted, inputs are treated as already scoped by their caller
 /// and are not filtered against the wall clock. Supplying [day] explicitly
-/// applies same-day filtering to both dose and refill inputs.
+/// applies same-day filtering to all source inputs.
 List<TimelineItem> buildDailyTimeline({
   Iterable<ScheduledDose> scheduledDoses = const <ScheduledDose>[],
   Iterable<RefillEvent> refillEvents = const <RefillEvent>[],
+  Iterable<DoctorAppointment> appointments = const <DoctorAppointment>[],
   Map<String, String> medicationNames = const <String, String>{},
   DateTime? day,
 }) {
@@ -26,6 +28,9 @@ List<TimelineItem> buildDailyTimeline({
           event: event,
           medicationName: medicationNames[event.medicationId] ?? '',
         ),
+    for (final appointment in appointments)
+      if (day == null || _isSameDay(appointment.startsAt, day))
+        AppointmentTimelineItem(appointment: appointment),
   ];
   items.sort((a, b) => a.at.compareTo(b.at));
   return List<TimelineItem>.unmodifiable(items);
