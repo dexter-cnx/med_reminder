@@ -16,6 +16,10 @@ int? legacyMedicationStockResolver(
 /// Keeping this outside the ViewModel makes the deterministic scheduling/read
 /// logic reusable by Home, future timeline composition, doctor summaries, and
 /// MCP/application tools without depending on Flutter or Riverpod.
+///
+/// PRN/as-needed medications are intentionally excluded because they do not
+/// represent pre-scheduled doses. They should enter history only when the user
+/// explicitly records an as-needed dose.
 List<ScheduledDose> buildTodayDoses({
   required Iterable<Medication> medications,
   required Iterable<DoseLog> logs,
@@ -26,6 +30,8 @@ List<ScheduledDose> buildTodayDoses({
   final doses = <ScheduledDose>[];
 
   for (final medication in medications) {
+    if (!medication.hasScheduledDoses) continue;
+
     final remaining = stockResolver(medication, logs);
     if (medication.isExpired(current)) continue;
     if (medication.mode == MedicationMode.untilEmpty && remaining == 0) {
