@@ -37,13 +37,17 @@ class AppointmentRecord {
       throw const FormatException('Appointment record has an invalid title.');
     }
     if (startsAt is! String) {
-      throw const FormatException('Appointment record has an invalid startsAt.');
+      throw const FormatException(
+        'Appointment record has an invalid startsAt.',
+      );
     }
     if (endsAt != null && endsAt is! String) {
       throw const FormatException('Appointment record has an invalid endsAt.');
     }
     if (location != null && location is! String) {
-      throw const FormatException('Appointment record has an invalid location.');
+      throw const FormatException(
+        'Appointment record has an invalid location.',
+      );
     }
     if (note != null && note is! String) {
       throw const FormatException('Appointment record has an invalid note.');
