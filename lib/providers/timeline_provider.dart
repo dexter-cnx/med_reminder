@@ -19,5 +19,6 @@ final dailyTimelineProvider = Provider<List<TimelineItem>>((ref) {
     scheduledDoses: ref.watch(todayDosesProvider),
     refillEvents: ref.watch(refillEventsProvider),
     medicationNames: names,
+    day: DateTime.now(),
   );
 });
