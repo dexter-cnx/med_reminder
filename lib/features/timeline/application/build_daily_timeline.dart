@@ -1,16 +1,35 @@
 import '../../medication/domain/entities/scheduled_dose.dart';
+import '../../refill/domain/entities/refill_event.dart';
 import '../domain/entities/timeline_item.dart';
 
 /// Composes source feature read models into one ordered daily timeline.
 ///
-/// Appointment/refill/check-in items can be added as new TimelineItem
-/// subclasses without teaching HomeScreen how to join repositories.
+/// Timeline remains a projection only. Source features continue to own their
+/// persistence and lifecycle.
+///
+/// When [day] is omitted, inputs are treated as already scoped by their caller
+/// and are not filtered against the wall clock. Supplying [day] explicitly
+/// applies same-day filtering to both dose and refill inputs.
 List<TimelineItem> buildDailyTimeline({
   Iterable<ScheduledDose> scheduledDoses = const <ScheduledDose>[],
+  Iterable<RefillEvent> refillEvents = const <RefillEvent>[],
+  Map<String, String> medicationNames = const <String, String>{},
+  DateTime? day,
 }) {
   final items = <TimelineItem>[
-    for (final dose in scheduledDoses) MedicationDoseTimelineItem(dose: dose),
+    for (final dose in scheduledDoses)
+      if (day == null || _isSameDay(dose.scheduledAt, day))
+        MedicationDoseTimelineItem(dose: dose),
+    for (final event in refillEvents)
+      if (day == null || _isSameDay(event.createdAt, day))
+        RefillTimelineItem(
+          event: event,
+          medicationName: medicationNames[event.medicationId] ?? '',
+        ),
   ];
   items.sort((a, b) => a.at.compareTo(b.at));
   return List<TimelineItem>.unmodifiable(items);
 }
+
+bool _isSameDay(DateTime value, DateTime day) =>
+    value.year == day.year && value.month == day.month && value.day == day.day;

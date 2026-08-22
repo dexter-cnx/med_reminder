@@ -1,4 +1,5 @@
 import '../../../medication/domain/entities/scheduled_dose.dart';
+import '../../../refill/domain/entities/refill_event.dart';
 
 /// Presentation-oriented read model for Besyu's daily operational timeline.
 ///
@@ -16,4 +17,14 @@ final class MedicationDoseTimelineItem extends TimelineItem {
       : super(at: dose.scheduledAt);
 
   final ScheduledDose dose;
+}
+
+final class RefillTimelineItem extends TimelineItem {
+  RefillTimelineItem({
+    required this.event,
+    required this.medicationName,
+  }) : super(at: event.createdAt);
+
+  final RefillEvent event;
+  final String medicationName;
 }
