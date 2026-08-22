@@ -76,20 +76,30 @@ Future<void> showAppointmentEditor(
   BuildContext context,
   WidgetRef ref, {
   DoctorAppointment? appointment,
-}) async {
-  final draft = await showModalBottomSheet<DoctorAppointment>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => _AppointmentEditor(appointment: appointment),
-  );
-  if (draft == null) return;
-  await ref.read(appointmentsProvider.notifier).upsert(draft);
-}
+}) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _AppointmentEditor(
+        appointment: appointment,
+        onSave: (draft) =>
+            ref.read(appointmentsProvider.notifier).upsert(draft),
+        failureMessage: () =>
+            ref.read(appointmentFailureProvider)?.message ??
+            'Unable to save appointment.',
+      ),
+    );
 
 class _AppointmentEditor extends StatefulWidget {
-  const _AppointmentEditor({this.appointment});
+  const _AppointmentEditor({
+    required this.onSave,
+    required this.failureMessage,
+    this.appointment,
+  });
 
   final DoctorAppointment? appointment;
+  final Future<bool> Function(DoctorAppointment appointment) onSave;
+  final String Function() failureMessage;
 
   @override
   State<_AppointmentEditor> createState() => _AppointmentEditorState();
@@ -100,6 +110,8 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
   late final TextEditingController _location;
   late final TextEditingController _note;
   late DateTime _startsAt;
+  var _saving = false;
+  String? _saveError;
 
   @override
   void initState() {
@@ -175,7 +187,7 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.calendar_today_outlined),
                     title: Text(localizations.formatMediumDate(_startsAt)),
-                    onTap: _pickDate,
+                    onTap: _saving ? null : _pickDate,
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -185,12 +197,26 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
                         TimeOfDay.fromDateTime(_startsAt),
                       ),
                     ),
-                    onTap: _pickTime,
+                    onTap: _saving ? null : _pickTime,
                   ),
+                  if (_saveError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _saveError!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: _save,
-                    child: Text('save_offline'.tr()),
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text('save_offline'.tr()),
                   ),
                 ],
               ),
@@ -237,22 +263,35 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _saving) return;
     final existing = widget.appointment;
     final duration = existing?.endsAt?.difference(existing.startsAt);
-    Navigator.of(context).pop(
-      DoctorAppointment(
-        id: existing?.id ?? const Uuid().v4(),
-        title: title,
-        startsAt: _startsAt,
-        endsAt: duration == null ? null : _startsAt.add(duration),
-        location: _nullableText(_location.text),
-        note: _nullableText(_note.text),
-        externalCalendarEventId: existing?.externalCalendarEventId,
-      ),
+    final draft = DoctorAppointment(
+      id: existing?.id ?? const Uuid().v4(),
+      title: title,
+      startsAt: _startsAt,
+      endsAt: duration == null ? null : _startsAt.add(duration),
+      location: _nullableText(_location.text),
+      note: _nullableText(_note.text),
+      externalCalendarEventId: existing?.externalCalendarEventId,
     );
+
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    final saved = await widget.onSave(draft);
+    if (!mounted) return;
+    if (saved) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _saving = false;
+      _saveError = widget.failureMessage();
+    });
   }
 
   String? _nullableText(String value) {
