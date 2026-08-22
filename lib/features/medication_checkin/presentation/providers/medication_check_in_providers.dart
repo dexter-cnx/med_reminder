@@ -4,7 +4,8 @@ import '../../../../core/result/result.dart';
 import '../../domain/entities/medication_check_in.dart';
 import '../../domain/repositories/medication_check_in_repository.dart';
 
-final medicationCheckInRepositoryProvider = Provider<MedicationCheckInRepository>(
+final medicationCheckInRepositoryProvider =
+    Provider<MedicationCheckInRepository>(
   (ref) => throw UnimplementedError(
     'MedicationCheckInRepository must be provided by app DI.',
   ),
@@ -24,7 +25,8 @@ final medicationCheckInsProvider =
   ),
 );
 
-class MedicationCheckInViewModel extends StateNotifier<List<MedicationCheckIn>> {
+class MedicationCheckInViewModel
+    extends StateNotifier<List<MedicationCheckIn>> {
   MedicationCheckInViewModel(
     MedicationCheckInRepository repository, {
     required void Function(Failure failure) onFailure,
@@ -51,8 +53,10 @@ class MedicationCheckInViewModel extends StateNotifier<List<MedicationCheckIn>> 
     final result = await _repository.append(checkIn);
     return result.fold(
       onSuccess: (_) {
-        final next = <MedicationCheckIn>[...state, checkIn]
-          ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+        final next = <MedicationCheckIn>[
+          ...state.where((item) => item.id != checkIn.id),
+          checkIn,
+        ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
         state = List<MedicationCheckIn>.unmodifiable(next);
         return true;
       },
