@@ -23,7 +23,8 @@ void main() {
     expect(restored.note, event.note);
   });
 
-  test('repository persists refills and returns them chronologically', () async {
+  test('repository persists refills and returns them chronologically',
+      () async {
     final dataSource = _MemoryRefillLocalDataSource();
     final repository = LocalRefillRepository(dataSource);
 
