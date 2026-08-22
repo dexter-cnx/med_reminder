@@ -93,6 +93,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       final refillRepository = LocalRefillRepository(refillDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
+      final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
       final themeController = AppThemeController(settingsBox, themeCatalog);
 
@@ -144,6 +145,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
             medicationStockResolverProvider.overrideWithValue(stockResolver),
             medicationReminderSchedulerProvider.overrideWithValue(
               reminderScheduler,
+            ),
+            lowStockAlertStateStoreProvider.overrideWithValue(
+              lowStockAlertStateStore,
             ),
             medicationPhotoStoreProvider.overrideWithValue(photoStore),
             appThemeCatalogProvider.overrideWithValue(themeCatalog),
