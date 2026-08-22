@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
-import 'package:med_reminder_offline/features/medication/domain/entities/scheduled_dose.dart';
 import 'package:med_reminder_offline/features/refill/domain/entities/refill_event.dart';
 import 'package:med_reminder_offline/features/timeline/application/build_daily_timeline.dart';
 import 'package:med_reminder_offline/features/timeline/domain/entities/timeline_item.dart';
