@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+printf '\n[pre-push] Running Besyu quality gates...\n'
+
+make pre-push
+
+if ! git diff --quiet -- lib test tool assets/translations.csv assets/translations lib/l10n/generated_locales.dart; then
+  cat <<'EOF'
+
+[pre-push] Generated or formatted files changed.
+Commit those changes before pushing, then run git push again.
+EOF
+  git status --short -- \
+    lib test tool assets/translations.csv assets/translations \
+    lib/l10n/generated_locales.dart
+  exit 1
+fi
+
+printf '[pre-push] All checks passed and the working tree is format-clean.\n'
