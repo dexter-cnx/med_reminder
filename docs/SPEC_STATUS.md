@@ -19,6 +19,7 @@
 | Timezone changes | Implemented | app-resume timezone detection + medication/log-aware reschedule |
 | In-app Taken/Skip/Snooze | Implemented | snooze = 10 minutes |
 | Low-stock notification | Implemented | threshold crossing from DoseLog-derived remaining stock |
+| AI tool abstraction / MCP integration | Handoff | Architecture defined in `docs/AI_MCP.md`; provider-neutral tool registry, permissions, risk levels, confirmation policy, audit boundary, and future MCP adapter; no production AI/MCP dependency yet |
 | iOS Live Activity | Handoff | Widget Extension/App Group/channel wiring + Android/iOS evidence matrix required |
 | watchOS sync | Handoff | WatchConnectivity target required |
 | Android native ongoing UI | Handoff | `MainActivity.kt`/plugin wiring and real-device screenshot evidence required |

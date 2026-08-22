@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/result/result.dart';
+import '../../application/build_today_doses.dart';
 import '../../domain/entities/medication.dart';
 import '../../domain/repositories/medication_repository.dart';
 import '../../domain/services/medication_services.dart';
@@ -58,50 +59,14 @@ final logsProvider = StateNotifierProvider<DoseLogViewModel, List<DoseLog>>(
 );
 
 final todayDosesProvider = Provider<List<ScheduledDose>>((ref) {
-  final meds = ref.watch(medsProvider);
-  final logs = ref.watch(logsProvider);
-  final now = DateTime.now();
-  final doses = <ScheduledDose>[];
-
-  for (final med in meds) {
-    if (!med.isActiveOn(now, logs: logs)) continue;
-    final remaining = med.remaining(logs);
-    for (final time in med.times) {
-      final parts = time.split(':');
-      if (parts.length != 2) continue;
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-      if (hour == null || minute == null) continue;
-      final scheduled = DateTime(now.year, now.month, now.day, hour, minute);
-      DoseLog? existing;
-      for (final log in logs) {
-        if (_sameDose(log, med.id, scheduled)) {
-          existing = log;
-          break;
-        }
-      }
-      doses.add(
-        ScheduledDose(
-          medication: med,
-          scheduledAt: scheduled,
-          log: existing,
-          remaining: remaining,
-        ),
-      );
-    }
-  }
-
-  doses.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-  return doses;
+  return buildTodayDoses(
+    medications: ref.watch(medsProvider),
+    logs: ref.watch(logsProvider),
+  );
 });
 
 bool _sameDose(DoseLog log, String medId, DateTime scheduled) =>
-    log.medId == medId &&
-    log.scheduledAt.year == scheduled.year &&
-    log.scheduledAt.month == scheduled.month &&
-    log.scheduledAt.day == scheduled.day &&
-    log.scheduledAt.hour == scheduled.hour &&
-    log.scheduledAt.minute == scheduled.minute;
+    isSameScheduledDose(log, medId, scheduled);
 
 List<Medication> _loadMedications(
   MedicationRepository repository,

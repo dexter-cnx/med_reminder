@@ -29,7 +29,14 @@ jobs:
 
       - run: flutter pub get
       - run: make l10n-check
-      - run: make format-check
+      - name: Run format check
+        id: format_check
+        run: make format-check
+      - name: Show formatting diff
+        if: failure() && steps.format_check.outcome == 'failure'
+        run: |
+          dart format lib test tool
+          git diff -- lib test tool
       - run: make analyze
       - run: make test
       - name: Build Android debug APK

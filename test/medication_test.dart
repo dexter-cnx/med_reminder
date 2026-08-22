@@ -76,6 +76,32 @@ void main() {
     expect(() => med.notificationIds.add(3), throwsUnsupportedError);
   });
 
+  test('generic medication name round-trips through persistence record', () {
+    final med = Medication(
+      id: 'm1',
+      name: 'Tylenol',
+      genericName: 'Paracetamol',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 19),
+    );
+
+    final restored = MedicationRecord.fromEntity(med).toEntity();
+
+    expect(restored.name, 'Tylenol');
+    expect(restored.genericName, 'Paracetamol');
+  });
+
+  test('legacy medication without generic name remains compatible', () {
+    const record = MedicationRecord(<String, dynamic>{
+      'id': 'm1',
+      'name': 'Legacy',
+      'times': <String>['08:00'],
+      'createdAt': '2026-08-19T00:00:00.000',
+    });
+
+    expect(record.toEntity().genericName, isEmpty);
+  });
+
   test('legacy totalAmount maps into initialAmount', () {
     const record = MedicationRecord(<String, dynamic>{
       'id': 'm1',

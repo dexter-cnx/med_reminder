@@ -10,6 +10,7 @@ class MedicationRecord {
       MedicationRecord(<String, dynamic>{
         'id': medication.id,
         'name': medication.name,
+        'genericName': medication.genericName,
         'description': medication.description,
         'initialAmount': medication.initialAmount,
         'lowThreshold': medication.lowThreshold,
@@ -32,6 +33,7 @@ class MedicationRecord {
     return Medication(
       id: value['id'] as String,
       name: value['name'] as String,
+      genericName: (value['genericName'] ?? '') as String,
       description: (value['description'] ?? value['desc'] ?? '') as String,
       initialAmount: (value['initialAmount'] ?? value['totalAmount']) as int?,
       lowThreshold: value['lowThreshold'] as int?,

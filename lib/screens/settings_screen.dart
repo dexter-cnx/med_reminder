@@ -2,25 +2,27 @@ import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
+import '../theme/app_theme.dart';
 
 const _profileAgeKey = 'profile_age';
 const _profileSexKey = 'profile_sex';
 const _languageCodeKey = 'language_code';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({this.embedded = false, super.key});
 
   final bool embedded;
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _ageController = TextEditingController();
   String _sex = 'not_specified';
   bool _savingProfile = false;
@@ -67,13 +69,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _setLanguage(String languageCode) async {
-    if (languageCode == context.locale.languageCode) {
-      await _settings.put(_languageCodeKey, languageCode);
-      return;
-    }
     await _settings.put(_languageCodeKey, languageCode);
-    if (!mounted) return;
+    if (!mounted || languageCode == context.locale.languageCode) return;
     await context.setLocale(Locale(languageCode));
+  }
+
+  Future<void> _showThemePicker() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => const _ThemePickerSheet(),
+    );
   }
 
   Future<void> _requestNotifications() async {
@@ -128,9 +135,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final languageCode = context.locale.languageCode == 'th' ? 'th' : 'en';
+    final selectedThemeId = ref.watch(appThemeProvider);
+    final themeCatalog = ref.watch(appThemeCatalogProvider);
+    final selectedTheme = themeCatalog.definitionFor(selectedThemeId);
+
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        _SectionTitle('settings_appearance'.tr()),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: Text('settings_theme'.tr()),
+            subtitle: Text(selectedTheme.displayName(context.locale)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _showThemePicker,
+          ),
+        ),
+        const SizedBox(height: 20),
         _SectionTitle('settings_language'.tr()),
         Card(
           child: Padding(
@@ -293,6 +315,298 @@ class _SettingsScreenState extends State<SettingsScreen> {
       default:
         return 'settings_sex_not_specified';
     }
+  }
+}
+
+class _ThemePickerSheet extends ConsumerWidget {
+  const _ThemePickerSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedThemeId = ref.watch(appThemeProvider);
+    final catalog = ref.watch(appThemeCatalogProvider);
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'settings_theme'.tr(),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'settings_theme_desc'.tr(),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                itemCount: catalog.themes.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final definition = catalog.themes[index];
+                  return _ThemePreviewChoice(
+                    definition: definition,
+                    previewTheme: catalog.themeFor(definition.id),
+                    selected: selectedThemeId == definition.id,
+                    onTap: () => ref
+                        .read(appThemeProvider.notifier)
+                        .select(definition.id),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemePreviewChoice extends StatelessWidget {
+  const _ThemePreviewChoice({
+    required this.definition,
+    required this.previewTheme,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppThemeDefinition definition;
+  final ThemeData previewTheme;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final outerScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: selected
+          ? outerScheme.secondaryContainer
+          : outerScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: selected ? outerScheme.primary : outerScheme.outlineVariant,
+          width: selected ? 2 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      definition.displayName(context.locale),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                  if (definition.id == defaultAppThemeId)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        'Default',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
+                  if (selected)
+                    Icon(Icons.check_circle, color: outerScheme.primary),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _ThemeCodePreview(theme: previewTheme),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeCodePreview extends StatelessWidget {
+  const _ThemeCodePreview({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: theme,
+      child: Builder(
+        builder: (previewContext) {
+          final previewTheme = Theme.of(previewContext);
+          final scheme = previewTheme.colorScheme;
+          return IgnorePointer(
+            child: Container(
+              height: 154,
+              decoration: BoxDecoration(
+                color: previewTheme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    color: scheme.surface,
+                    child: Row(
+                      children: [
+                        Icon(Icons.favorite, size: 17, color: scheme.primary),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Besyu',
+                          style: previewTheme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.notifications_outlined,
+                          size: 17,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color: scheme.primaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(
+                                            Icons.medication_outlined,
+                                            size: 18,
+                                            color: scheme.onPrimaryContainer,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        SizedBox(
+                                          width: 54,
+                                          height: 30,
+                                          child: FilledButton(
+                                            onPressed: () {},
+                                            style: FilledButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: const Size(54, 30),
+                                            ),
+                                            child: const Icon(
+                                              Icons.check,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Container(
+                                      height: 7,
+                                      width: 84,
+                                      decoration: BoxDecoration(
+                                        color: scheme.onSurface,
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Container(
+                                      height: 6,
+                                      width: 58,
+                                      decoration: BoxDecoration(
+                                        color: scheme.onSurfaceVariant
+                                            .withValues(alpha: 0.45),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _ColorDot(color: scheme.primary),
+                              const SizedBox(height: 7),
+                              _ColorDot(color: scheme.secondary),
+                              const SizedBox(height: 7),
+                              _ColorDot(color: scheme.tertiary),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  const _ColorDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+    );
   }
 }
 

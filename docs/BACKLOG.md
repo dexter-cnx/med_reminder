@@ -63,6 +63,29 @@ Typography, spacing, radius, and component behavior should stay shared unless a 
 
 Do not expand the first theme milestone into an unrestricted theme editor. Custom user colors, downloadable themes, per-theme typography packs, and cloud synchronization are separate future work.
 
+## Features awaiting product decision
+
+These items are documented for future evaluation but are **not approved for implementation and are not committed roadmap scope**.
+
+### Cycle Tracking / Period Log
+
+Status: **Awaiting product decision**.
+
+Potential direction:
+
+- Lightweight period start/end logging.
+- Optional flow, symptom, and daily-note records.
+- Deterministic estimate of the next period from user-owned history.
+- Optional estimated-period reminders.
+- Possible Daily Timeline / calendar projection without making Timeline the source of truth.
+- Separate `cycle_tracking` bounded feature; do not add reproductive-health fields to `Medication` or a global medication profile.
+- Local-first and opt-in by default, with individual-record deletion and full cycle-data deletion.
+- Analytics must not collect exact cycle dates, symptoms, flow values, or free-text notes by default.
+- Initial scope should remain **Period Log + Cycle Estimate**, not fertility, ovulation, pregnancy, diagnosis, contraception advice, or medical recommendations.
+- Future HealthKit / Health Connect and AI/MCP access require separate permission/privacy decisions.
+
+Detailed proposal and decision checklist: `docs/CYCLE_TRACKING_PROPOSAL.md`.
+
 ## PR #2 — Native companion features
 
 Scope remains the native handoff described in `handoff/NATIVE_HANDOFF.md`: iOS Live Activity / Dynamic Island, watchOS, Android ongoing notification fallback, Wear OS, and real-device evidence.
