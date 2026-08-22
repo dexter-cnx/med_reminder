@@ -166,6 +166,34 @@ class MedicationViewModel extends StateNotifier<List<Medication>> {
     }
   }
 
+  Future<void> refreshAfterRefill(String id, Iterable<DoseLog> logs) async {
+    final index = state.indexWhere((med) => med.id == id);
+    if (index < 0) return;
+
+    final old = state[index];
+    if (old.mode != MedicationMode.untilEmpty ||
+        old.isExpired(DateTime.now())) {
+      return;
+    }
+
+    final remaining = _stockResolver(old, logs);
+    if (remaining == null || remaining == 0 || old.notificationIds.isNotEmpty) {
+      return;
+    }
+
+    // The platform scheduler still guards legacy until-empty medications whose
+    // initial amount is zero. Pass a scheduling snapshot with the refill-aware
+    // balance so a positive refill can restore reminders without mutating the
+    // medication's persisted initial amount.
+    final ids = await _reminderScheduler.schedule(
+      old.copyWith(initialAmount: remaining),
+    );
+    final next = <Medication>[...state];
+    next[index] = old.copyWith(notificationIds: ids);
+    state = next;
+    await _persist();
+  }
+
   Future<void> rescheduleAll(Iterable<DoseLog> logs) async {
     final now = DateTime.now();
     final next = <Medication>[];
