@@ -1,3 +1,4 @@
+import '../../../appointment/domain/entities/doctor_appointment.dart';
 import '../../../medication/domain/entities/scheduled_dose.dart';
 import '../../../refill/domain/entities/refill_event.dart';
 
@@ -27,4 +28,11 @@ final class RefillTimelineItem extends TimelineItem {
 
   final RefillEvent event;
   final String medicationName;
+}
+
+final class AppointmentTimelineItem extends TimelineItem {
+  AppointmentTimelineItem({required this.appointment})
+      : super(at: appointment.startsAt);
+
+  final DoctorAppointment appointment;
 }
