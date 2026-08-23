@@ -26,4 +26,7 @@ make format
 # the guarded Dart trees so the commit contains exactly the formatted output.
 git add -- "${format_paths[@]}"
 
-printf '[pre-commit] Dart formatting applied and staged.\n'
+printf '[pre-commit] Running flutter analyze before commit...\n'
+make analyze
+
+printf '[pre-commit] Formatting applied, staged, and analyzer passed.\n'

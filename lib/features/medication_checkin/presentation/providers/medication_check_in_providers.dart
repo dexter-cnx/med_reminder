@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/result/result.dart';
+import '../../application/query_medication_check_ins.dart';
+import '../../application/record_medication_check_in.dart';
 import '../../domain/entities/medication_check_in.dart';
 import '../../domain/repositories/medication_check_in_repository.dart';
 
@@ -24,6 +26,15 @@ final medicationCheckInsProvider =
     },
   ),
 );
+
+final medicationCheckInsForProvider =
+    Provider.family<List<MedicationCheckIn>, String>((ref, medicationId) {
+  final items = ref.watch(medicationCheckInsProvider);
+  return const QueryMedicationCheckIns()(
+    checkIns: items,
+    medicationId: medicationId,
+  );
+});
 
 class MedicationCheckInViewModel
     extends StateNotifier<List<MedicationCheckIn>> {
@@ -49,15 +60,19 @@ class MedicationCheckInViewModel
             },
           );
 
-  Future<bool> append(MedicationCheckIn checkIn) async {
-    final result = await _repository.append(checkIn);
+  Future<bool> record({
+    required String medicationId,
+    required MedicationCheckInKind kind,
+    String note = '',
+  }) async {
+    final result = await RecordMedicationCheckIn(_repository)(
+      medicationId: medicationId,
+      kind: kind,
+      note: note,
+    );
     return result.fold(
-      onSuccess: (_) {
-        final next = <MedicationCheckIn>[
-          ...state.where((item) => item.id != checkIn.id),
-          checkIn,
-        ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
-        state = List<MedicationCheckIn>.unmodifiable(next);
+      onSuccess: (checkIn) {
+        _replaceInState(checkIn);
         return true;
       },
       onFailure: (failure) {
@@ -65,5 +80,27 @@ class MedicationCheckInViewModel
         return false;
       },
     );
+  }
+
+  Future<bool> append(MedicationCheckIn checkIn) async {
+    final result = await _repository.append(checkIn);
+    return result.fold(
+      onSuccess: (_) {
+        _replaceInState(checkIn);
+        return true;
+      },
+      onFailure: (failure) {
+        _onFailure(failure);
+        return false;
+      },
+    );
+  }
+
+  void _replaceInState(MedicationCheckIn checkIn) {
+    final next = <MedicationCheckIn>[
+      ...state.where((item) => item.id != checkIn.id),
+      checkIn,
+    ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+    state = List<MedicationCheckIn>.unmodifiable(next);
   }
 }
