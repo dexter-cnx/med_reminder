@@ -43,8 +43,9 @@ class BuildDoctorVisitSummary {
 
       return DoctorVisitMedicationSummary(
         medication: medication,
-        takenCount:
-            medicationLogs.where((log) => log.status == DoseStatus.taken).length,
+        takenCount: medicationLogs
+            .where((log) => log.status == DoseStatus.taken)
+            .length,
         skippedCount: medicationLogs
             .where((log) => log.status == DoseStatus.skipped)
             .length,
