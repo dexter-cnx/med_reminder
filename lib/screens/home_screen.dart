@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/appointment/presentation/screens/appointment_screen.dart';
+import '../features/emergency/presentation/screens/emergency_medical_card_screen.dart';
 import '../features/medication_checkin/presentation/widgets/medication_check_in_panel.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
@@ -48,7 +49,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text('app_title'.tr())),
+      appBar: AppBar(
+        title: Text('app_title'.tr()),
+        actions: [
+          IconButton(
+            tooltip: 'Emergency Medical Card',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const EmergencyMedicalCardScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.medical_information_outlined),
+          ),
+        ],
+      ),
       body: body,
       floatingActionButton: switch (_tab) {
         0 || 1 => FloatingActionButton.extended(
