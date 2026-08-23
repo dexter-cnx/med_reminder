@@ -1,9 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../medication/domain/entities/medication.dart';
-import '../providers/emergency_profile_providers.dart';
 import '../../domain/entities/emergency_profile.dart';
+import '../providers/emergency_profile_providers.dart';
 
 class EmergencyMedicalCardScreen extends ConsumerStatefulWidget {
   const EmergencyMedicalCardScreen({super.key});
@@ -50,7 +51,7 @@ class _EmergencyMedicalCardScreenState
     _initializeFrom(profile);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Emergency Medical Card')),
+      appBar: AppBar(title: Text('emergency_card_title'.tr())),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
@@ -62,37 +63,35 @@ class _EmergencyMedicalCardScreenState
                 children: [
                   Text(
                     profile == null || profile.isEmpty
-                        ? 'No emergency profile saved yet'
+                        ? 'emergency_profile_empty'.tr()
                         : (profile.displayName.isEmpty
-                            ? 'Emergency profile'
+                            ? 'emergency_profile_title'.tr()
                             : profile.displayName),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'This card shows only information you entered and current medication records from Besyu. It does not diagnose conditions.',
-                  ),
+                  Text('emergency_card_disclaimer'.tr()),
                   const SizedBox(height: 16),
                   _ReadOnlyField(
-                    label: 'Emergency contact',
+                    label: 'emergency_contact'.tr(),
                     value: _joinContact(profile),
                   ),
                   _ReadOnlyField(
-                    label: 'Medication allergies',
+                    label: 'emergency_medication_allergies'.tr(),
                     value: profile?.medicationAllergies ?? '',
                   ),
                   _ReadOnlyField(
-                    label: 'Medical notes',
+                    label: 'emergency_medical_notes'.tr(),
                     value: profile?.medicalNotes ?? '',
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Current medications',
+                    'emergency_current_medications'.tr(),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
                   if (card.currentMedications.isEmpty)
-                    const Text('No current medication records')
+                    Text('emergency_no_current_medications'.tr())
                   else
                     ...card.currentMedications.map(_MedicationSummary.new),
                 ],
@@ -100,60 +99,65 @@ class _EmergencyMedicalCardScreenState
             ),
           ),
           const SizedBox(height: 20),
-          Text('Edit emergency information',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'emergency_edit_title'.tr(),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _displayName,
-            decoration: const InputDecoration(labelText: 'Display name'),
+            decoration: InputDecoration(
+              labelText: 'emergency_display_name'.tr(),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _contactName,
-            decoration:
-                const InputDecoration(labelText: 'Emergency contact name'),
+            decoration: InputDecoration(
+              labelText: 'emergency_contact_name'.tr(),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _contactPhone,
             keyboardType: TextInputType.phone,
-            decoration:
-                const InputDecoration(labelText: 'Emergency contact phone'),
+            decoration: InputDecoration(
+              labelText: 'emergency_contact_phone'.tr(),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _allergies,
             maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Medication allergies',
-              helperText: 'Enter only information you know or were told.',
+            decoration: InputDecoration(
+              labelText: 'emergency_medication_allergies'.tr(),
+              helperText: 'emergency_allergies_helper'.tr(),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _medicalNotes,
             maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Medical notes',
-              helperText:
-                  'Optional user-entered notes. Besyu does not infer diagnoses.',
+            decoration: InputDecoration(
+              labelText: 'emergency_medical_notes'.tr(),
+              helperText: 'emergency_notes_helper'.tr(),
             ),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _busy ? null : _save,
             icon: const Icon(Icons.save_outlined),
-            label: const Text('Save on this device'),
+            label: Text('emergency_save'.tr()),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy || profile == null ? null : _confirmClear,
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Clear emergency information'),
+            label: Text('emergency_clear'.tr()),
           ),
           const SizedBox(height: 8),
           Text(
-            'Emergency information stays on this device. Clearing it does not delete medication records.',
+            'emergency_local_note'.tr(),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -184,9 +188,9 @@ class _EmergencyMedicalCardScreenState
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(saved
-            ? 'Emergency information saved on this device'
-            : 'Unable to save emergency information'),
+        content: Text(
+          (saved ? 'emergency_saved' : 'emergency_save_failed').tr(),
+        ),
       ),
     );
   }
@@ -195,18 +199,16 @@ class _EmergencyMedicalCardScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear emergency information?'),
-        content: const Text(
-          'This removes the emergency profile from this device. Medication records are not deleted.',
-        ),
+        title: Text('emergency_clear_confirm_title'.tr()),
+        content: Text('emergency_clear_confirm_body'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text('common_cancel'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: Text('emergency_clear_action'.tr()),
           ),
         ],
       ),
@@ -226,9 +228,9 @@ class _EmergencyMedicalCardScreenState
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(cleared
-            ? 'Emergency information cleared'
-            : 'Unable to clear emergency information'),
+        content: Text(
+          (cleared ? 'emergency_cleared' : 'emergency_clear_failed').tr(),
+        ),
       ),
     );
   }
