@@ -4,7 +4,7 @@ DEVICE ?=
 
 .PHONY: bootstrap setup-hooks configure-identifiers pub-get ensure-pub l10n-generate l10n-validate l10n-check \
 	format format-check analyze test test-domain test-data test-presentation \
-	test-suites test-all check pre-push-prepare pre-push android-build android-test android ios-build \
+	test-suites test-all check pre-commit pre-push-prepare pre-push android-build android-test android ios-build \
 	ios-test ios ios-device-profile ios-device-release
 
 bootstrap: setup-hooks
@@ -60,6 +60,10 @@ test-all: ensure-pub
 	$(FLUTTER) test
 
 check: l10n-check format-check analyze test-all
+
+# Fast developer gate used by the tracked pre-commit hook.
+pre-commit: format analyze
+	@echo "Pre-commit format + analyze checks passed."
 
 # Writable preparation step used by the tracked Git pre-push hook.
 pre-push-prepare: l10n-generate format
