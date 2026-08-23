@@ -1,4 +1,6 @@
 import '../../medication/domain/entities/medication.dart';
+import '../../refill/application/calculate_remaining_stock.dart';
+import '../../refill/domain/entities/refill_event.dart';
 import '../domain/entities/emergency_profile.dart';
 
 class EmergencyMedicalCard {
@@ -20,9 +22,23 @@ class BuildEmergencyMedicalCard {
     required DateTime now,
     required EmergencyProfile? profile,
     required Iterable<Medication> medications,
+    Iterable<DoseLog> doseLogs = const <DoseLog>[],
+    Iterable<RefillEvent> refillEvents = const <RefillEvent>[],
   }) {
+    bool isCurrent(Medication medication) {
+      if (medication.isExpired(now)) return false;
+      if (medication.mode != MedicationMode.untilEmpty) return true;
+
+      final remaining = calculateRemainingStock(
+        medication: medication,
+        doseLogs: doseLogs,
+        refillEvents: refillEvents,
+      );
+      return remaining != 0;
+    }
+
     final currentMedications = medications
-        .where((medication) => medication.isActiveOn(now))
+        .where(isCurrent)
         .toList(growable: false)
       ..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
