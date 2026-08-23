@@ -135,7 +135,8 @@ class _EmergencyMedicalCardScreenState
             maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'Medical notes',
-              helperText: 'Optional user-entered notes. Besyu does not infer diagnoses.',
+              helperText:
+                  'Optional user-entered notes. Besyu does not infer diagnoses.',
             ),
           ),
           const SizedBox(height: 16),
@@ -266,9 +267,8 @@ class _MedicationSummary extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.medication_outlined),
       title: Text(medication.name),
-      subtitle: medication.genericName.isEmpty
-          ? null
-          : Text(medication.genericName),
+      subtitle:
+          medication.genericName.isEmpty ? null : Text(medication.genericName),
     );
   }
 }
