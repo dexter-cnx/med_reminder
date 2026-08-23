@@ -10,6 +10,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'features/appointment/data/datasources/appointment_local_data_source.dart';
 import 'features/appointment/data/repositories/local_appointment_repository.dart';
 import 'features/appointment/presentation/providers/appointment_providers.dart';
+import 'features/emergency/data/datasources/emergency_profile_local_data_source.dart';
+import 'features/emergency/data/repositories/local_emergency_profile_repository.dart';
+import 'features/emergency/presentation/providers/emergency_profile_providers.dart';
 import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
@@ -91,6 +94,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
         'medication_check_ins',
       ).timeout(const Duration(seconds: 5));
 
+      _checkpoint('Opening emergency profile storage');
+      final emergencyProfileBox = await Hive.openBox<dynamic>(
+        'emergency_profile',
+      ).timeout(const Duration(seconds: 5));
+
       _checkpoint('Opening app settings');
       final settingsBox = await Hive.openBox<dynamic>('settings')
           .timeout(const Duration(seconds: 5));
@@ -108,6 +116,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
           HiveAppointmentLocalDataSource(appointmentsBox);
       final medicationCheckInDataSource =
           HiveMedicationCheckInLocalDataSource(medicationCheckInsBox);
+      final emergencyProfileDataSource =
+          HiveEmergencyProfileLocalDataSource(emergencyProfileBox);
       final medicationRepository = LocalMedicationRepository(localDataSource);
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       final refillRepository = LocalRefillRepository(refillDataSource);
@@ -115,6 +125,8 @@ class _BootstrapAppState extends State<BootstrapApp> {
           LocalAppointmentRepository(appointmentDataSource);
       final medicationCheckInRepository =
           LocalMedicationCheckInRepository(medicationCheckInDataSource);
+      final emergencyProfileRepository =
+          LocalEmergencyProfileRepository(emergencyProfileDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
@@ -168,6 +180,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
             ),
             medicationCheckInRepositoryProvider.overrideWithValue(
               medicationCheckInRepository,
+            ),
+            emergencyProfileRepositoryProvider.overrideWithValue(
+              emergencyProfileRepository,
             ),
             medicationStockResolverProvider.overrideWithValue(stockResolver),
             medicationReminderSchedulerProvider.overrideWithValue(
