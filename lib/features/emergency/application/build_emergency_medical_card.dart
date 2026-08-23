@@ -37,12 +37,11 @@ class BuildEmergencyMedicalCard {
       return remaining != 0;
     }
 
-    final currentMedications = medications
-        .where(isCurrent)
-        .toList(growable: false)
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    final currentMedications =
+        medications.where(isCurrent).toList(growable: false)
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     return EmergencyMedicalCard(
       generatedAt: now,
