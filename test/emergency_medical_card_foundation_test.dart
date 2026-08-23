@@ -5,6 +5,7 @@ import 'package:med_reminder_offline/features/emergency/data/models/emergency_pr
 import 'package:med_reminder_offline/features/emergency/data/repositories/local_emergency_profile_repository.dart';
 import 'package:med_reminder_offline/features/emergency/domain/entities/emergency_profile.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
+import 'package:med_reminder_offline/features/refill/domain/entities/refill_event.dart';
 
 void main() {
   test('emergency profile record round-trips user-entered fields', () {
@@ -71,6 +72,68 @@ void main() {
 
     expect(card.profile, same(profile));
     expect(card.currentMedications.map((item) => item.id), <String>['active']);
+  });
+
+  test('medical card excludes depleted until-empty medication', () {
+    final now = DateTime(2026, 8, 23);
+    final medication = Medication(
+      id: 'until-empty',
+      name: 'Until empty',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 1),
+      initialAmount: 1,
+      mode: MedicationMode.untilEmpty,
+    );
+    final logs = <DoseLog>[
+      DoseLog(
+        id: 'taken-1',
+        medId: medication.id,
+        scheduledAt: DateTime(2026, 8, 22, 8),
+        takenAt: DateTime(2026, 8, 22, 8, 5),
+        status: DoseStatus.taken,
+      ),
+    ];
+
+    final card = const BuildEmergencyMedicalCard()(
+      now: now,
+      profile: null,
+      medications: <Medication>[medication],
+      doseLogs: logs,
+    );
+
+    expect(card.currentMedications, isEmpty);
+  });
+
+  test('medical card includes refilled until-empty medication', () {
+    final now = DateTime(2026, 8, 23);
+    final medication = Medication(
+      id: 'until-empty',
+      name: 'Until empty',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 8, 1),
+      initialAmount: 0,
+      mode: MedicationMode.untilEmpty,
+    );
+    final refills = <RefillEvent>[
+      RefillEvent(
+        id: 'refill-1',
+        medicationId: medication.id,
+        quantity: 10,
+        createdAt: DateTime(2026, 8, 22),
+      ),
+    ];
+
+    final card = const BuildEmergencyMedicalCard()(
+      now: now,
+      profile: null,
+      medications: <Medication>[medication],
+      refillEvents: refills,
+    );
+
+    expect(
+      card.currentMedications.map((item) => item.id),
+      <String>['until-empty'],
+    );
   });
 }
 
