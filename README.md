@@ -81,6 +81,23 @@ make l10n-generate
 
 Generated runtime files live under `assets/translations/`. CI runs `make l10n-check` so stale JSON or locale metadata cannot be merged.
 
+## Git quality hooks
+
+Install the tracked hooks once per clone:
+
+```bash
+make setup-hooks
+```
+
+After installation:
+
+- `git commit` runs `make format` automatically and re-stages formatted Dart files before the commit is created.
+- The pre-commit hook refuses to auto-stage when unrelated unstaged Dart changes exist, preventing accidental commit contamination.
+- `git push` runs generated-file preparation plus CI-equivalent checks through the tracked pre-push hook.
+- The pre-push hook remains a final guard: if generation or formatting would change committed content, the push stops instead of sending a commit that CI would reject.
+
+This keeps formatting correction before the commit boundary while retaining strict verification before push.
+
 ## Validation
 
 ```bash
