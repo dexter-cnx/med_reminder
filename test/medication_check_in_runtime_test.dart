@@ -33,7 +33,7 @@ void main() {
   });
 
   test('query isolates medication and returns newest first', () {
-    final query = const QueryMedicationCheckIns();
+    const query = QueryMedicationCheckIns();
     final items = <MedicationCheckIn>[
       MedicationCheckIn(
         id: 'old',
