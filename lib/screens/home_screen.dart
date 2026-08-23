@@ -157,6 +157,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _addAppointment() => showAppointmentEditor(context, ref);
 }
 
+enum _MedicationAction { refill, delete }
+
 class _MedicationList extends ConsumerWidget {
   const _MedicationList({required this.meds});
   final List<Medication> meds;
@@ -184,20 +186,38 @@ class _MedicationList extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.fact_check_outlined),
                 ),
-                IconButton(
-                  tooltip: 'refill_action'.tr(),
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => RefillPanel(medication: med),
-                  ),
-                  icon: const Icon(Icons.add_box_outlined),
-                ),
-                IconButton(
-                  tooltip: 'delete'.tr(),
-                  onPressed: () =>
-                      ref.read(medsProvider.notifier).remove(med.id),
-                  icon: const Icon(Icons.delete_outline),
+                PopupMenuButton<_MedicationAction>(
+                  tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+                  onSelected: (action) async {
+                    switch (action) {
+                      case _MedicationAction.refill:
+                        await showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => RefillPanel(medication: med),
+                        );
+                      case _MedicationAction.delete:
+                        await ref.read(medsProvider.notifier).remove(med.id);
+                    }
+                  },
+                  itemBuilder: (context) => <PopupMenuEntry<_MedicationAction>>[
+                    PopupMenuItem<_MedicationAction>(
+                      value: _MedicationAction.refill,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.add_box_outlined),
+                        title: Text('refill_action'.tr()),
+                      ),
+                    ),
+                    PopupMenuItem<_MedicationAction>(
+                      value: _MedicationAction.delete,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.delete_outline),
+                        title: Text('delete'.tr()),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
