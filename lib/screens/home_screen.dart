@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/appointment/presentation/screens/appointment_screen.dart';
+import '../features/medication_checkin/presentation/widgets/medication_check_in_panel.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
 import '../providers/meds_provider.dart';
@@ -175,6 +176,15 @@ class _MedicationList extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 IconButton(
+                  tooltip: 'checkin_action'.tr(),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => MedicationCheckInPanel(medication: med),
+                  ),
+                  icon: const Icon(Icons.fact_check_outlined),
+                ),
+                IconButton(
                   tooltip: 'refill_action'.tr(),
                   onPressed: () => showModalBottomSheet<void>(
                     context: context,
@@ -184,6 +194,7 @@ class _MedicationList extends ConsumerWidget {
                   icon: const Icon(Icons.add_box_outlined),
                 ),
                 IconButton(
+                  tooltip: 'delete'.tr(),
                   onPressed: () =>
                       ref.read(medsProvider.notifier).remove(med.id),
                   icon: const Icon(Icons.delete_outline),
