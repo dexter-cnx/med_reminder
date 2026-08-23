@@ -107,3 +107,19 @@ appointment_location,Location (optional),สถานที่ (เว้นไ�
 appointment_note,Note (optional),หมายเหตุ (เว้นได้)
 appointment_empty,No appointments yet,ยังไม่มีนัดหมาย
 delete,Delete,ลบ
+checkin_action,Check-in,เช็กอิน
+checkin_title,Check-in: {},เช็กอิน: {}
+checkin_safety_note,Record what you noticed. Besyu does not determine whether the medication caused it.,บันทึกสิ่งที่คุณสังเกตได้ Besyu จะไม่สรุปว่าอาการนั้นเกิดจากยา
+checkin_observation,Reported observation,สิ่งที่สังเกตได้
+checkin_note,Note (optional),หมายเหตุ (เว้นได้)
+checkin_note_hint,Add context in your own words,บันทึกรายละเอียดด้วยคำของคุณเอง
+checkin_record,Record check-in,บันทึกเช็กอิน
+checkin_history,Check-in history,ประวัติเช็กอิน
+checkin_empty,No check-ins yet,ยังไม่มีประวัติเช็กอิน
+checkin_saved,Check-in saved,บันทึกเช็กอินแล้ว
+checkin_save_failed,Unable to save check-in,ไม่สามารถบันทึกเช็กอินได้
+checkin_kind_no_issue,No issue noticed,ไม่พบความผิดปกติ
+checkin_kind_dizziness,Dizziness,เวียนศีรษะ
+checkin_kind_nausea,Nausea,คลื่นไส้
+checkin_kind_rash,Rash,ผื่น
+checkin_kind_other,Other,อื่น ๆ
