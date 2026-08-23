@@ -14,6 +14,9 @@ import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
+import 'features/medication_checkin/data/datasources/medication_check_in_local_data_source.dart';
+import 'features/medication_checkin/data/repositories/local_medication_check_in_repository.dart';
+import 'features/medication_checkin/presentation/providers/medication_check_in_providers.dart';
 import 'features/refill/application/calculate_remaining_stock.dart';
 import 'features/refill/data/datasources/refill_local_data_source.dart';
 import 'features/refill/data/repositories/local_refill_repository.dart';
@@ -83,6 +86,11 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final appointmentsBox = await Hive.openBox<dynamic>('appointments')
           .timeout(const Duration(seconds: 5));
 
+      _checkpoint('Opening medication check-in storage');
+      final medicationCheckInsBox = await Hive.openBox<dynamic>(
+        'medication_check_ins',
+      ).timeout(const Duration(seconds: 5));
+
       _checkpoint('Opening app settings');
       final settingsBox = await Hive.openBox<dynamic>('settings')
           .timeout(const Duration(seconds: 5));
@@ -98,11 +106,15 @@ class _BootstrapAppState extends State<BootstrapApp> {
       final refillDataSource = HiveRefillLocalDataSource(refillsBox);
       final appointmentDataSource =
           HiveAppointmentLocalDataSource(appointmentsBox);
+      final medicationCheckInDataSource =
+          HiveMedicationCheckInLocalDataSource(medicationCheckInsBox);
       final medicationRepository = LocalMedicationRepository(localDataSource);
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       final refillRepository = LocalRefillRepository(refillDataSource);
       final appointmentRepository =
           LocalAppointmentRepository(appointmentDataSource);
+      final medicationCheckInRepository =
+          LocalMedicationCheckInRepository(medicationCheckInDataSource);
       const reminderScheduler = LocalMedicationReminderScheduler();
       final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
@@ -153,6 +165,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
             refillRepositoryProvider.overrideWithValue(refillRepository),
             appointmentRepositoryProvider.overrideWithValue(
               appointmentRepository,
+            ),
+            medicationCheckInRepositoryProvider.overrideWithValue(
+              medicationCheckInRepository,
             ),
             medicationStockResolverProvider.overrideWithValue(stockResolver),
             medicationReminderSchedulerProvider.overrideWithValue(
