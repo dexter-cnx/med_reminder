@@ -123,3 +123,14 @@ checkin_kind_dizziness,Dizziness,เวียนศีรษะ
 checkin_kind_nausea,Nausea,คลื่นไส้
 checkin_kind_rash,Rash,ผื่น
 checkin_kind_other,Other,อื่น ๆ
+doctor_summary_open,Doctor visit summary,สรุปสำหรับพบแพทย์
+doctor_summary_title,Doctor Visit Summary,สรุปสำหรับพบแพทย์
+doctor_summary_disclaimer,This is a factual summary of records you entered in Besyu. It does not diagnose conditions or determine whether a medication caused an observation.,นี่คือสรุปข้อเท็จจริงจากข้อมูลที่คุณบันทึกใน Besyu ไม่ใช่การวินิจฉัยและไม่สรุปว่ายาเป็นสาเหตุของสิ่งที่สังเกตได้
+doctor_summary_period,{from} – {to},{from} – {to}
+doctor_summary_no_meds,No medication records,ไม่มีข้อมูลยา
+doctor_summary_dose_facts,Taken {taken} · Skipped {skipped},กินแล้ว {taken} · ข้าม {skipped}
+doctor_summary_refills,Refilled {count},เติมยา {count}
+doctor_summary_observations,Reported observations,สิ่งที่ผู้ใช้รายงาน
+doctor_summary_no_observations,No reported observations in this period,ไม่มีสิ่งที่รายงานในช่วงนี้
+doctor_summary_upcoming_appointments,Upcoming appointments,นัดหมายถัดไป
+doctor_summary_no_appointments,No upcoming appointments,ไม่มีนัดหมายถัดไป

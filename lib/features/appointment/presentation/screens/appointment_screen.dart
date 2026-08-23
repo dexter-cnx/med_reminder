@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../shared/layout/responsive_layout.dart';
+import '../../../doctor_visit_summary/presentation/screens/doctor_visit_summary_screen.dart';
 import '../../domain/entities/doctor_appointment.dart';
 import '../providers/appointment_providers.dart';
 
@@ -16,43 +17,70 @@ class AppointmentScreen extends ConsumerWidget {
     final size = MediaQuery.sizeOf(context);
     final layout = ResponsiveLayoutInfo.fromSize(size);
     final maxWidth = layout.isTablet ? size.width * 0.78 : size.width;
-
-    if (appointments.isEmpty) {
-      return Center(child: Text('appointment_empty'.tr()));
-    }
+    final horizontalPadding = (size.width * 0.04).clamp(16.0, 32.0).toDouble();
 
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: ListView.builder(
-          padding: EdgeInsets.symmetric(
-            horizontal: (size.width * 0.04).clamp(16.0, 32.0).toDouble(),
-            vertical: 16,
-          ),
-          itemCount: appointments.length,
-          itemBuilder: (_, index) {
-            final appointment = appointments[index];
-            return Card(
-              child: ListTile(
-                leading: const Icon(Icons.event_outlined),
-                title: Text(appointment.title),
-                subtitle: Text(_subtitle(context, appointment)),
-                onTap: () => showAppointmentEditor(
-                  context,
-                  ref,
-                  appointment: appointment,
-                ),
-                trailing: IconButton(
-                  tooltip: 'delete'.tr(),
-                  onPressed: () => ref
-                      .read(appointmentsProvider.notifier)
-                      .delete(appointment.id),
-                  icon: const Icon(Icons.delete_outline),
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                16,
+                horizontalPadding,
+                8,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DoctorVisitSummaryScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.summarize_outlined),
+                  label: Text('doctor_summary_open'.tr()),
                 ),
               ),
-            );
-          },
+            ),
+            Expanded(
+              child: appointments.isEmpty
+                  ? Center(child: Text('appointment_empty'.tr()))
+                  : ListView.builder(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        8,
+                        horizontalPadding,
+                        16,
+                      ),
+                      itemCount: appointments.length,
+                      itemBuilder: (_, index) {
+                        final appointment = appointments[index];
+                        return Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.event_outlined),
+                            title: Text(appointment.title),
+                            subtitle: Text(_subtitle(context, appointment)),
+                            onTap: () => showAppointmentEditor(
+                              context,
+                              ref,
+                              appointment: appointment,
+                            ),
+                            trailing: IconButton(
+                              tooltip: 'delete'.tr(),
+                              onPressed: () => ref
+                                  .read(appointmentsProvider.notifier)
+                                  .delete(appointment.id),
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );
