@@ -1,5 +1,4 @@
 import '../../appointment/domain/entities/doctor_appointment.dart';
-import '../../medication/domain/entities/dose_log.dart';
 import '../../medication/domain/entities/medication.dart';
 import '../../medication_checkin/domain/entities/medication_check_in.dart';
 import '../../refill/domain/entities/refill_event.dart';
