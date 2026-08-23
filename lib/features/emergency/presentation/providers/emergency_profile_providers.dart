@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/result/result.dart';
 import '../../../medication/presentation/viewmodels/medication_view_model.dart';
+import '../../../refill/presentation/providers/refill_providers.dart';
 import '../../application/build_emergency_medical_card.dart';
 import '../../domain/entities/emergency_profile.dart';
 import '../../domain/repositories/emergency_profile_repository.dart';
@@ -33,6 +34,8 @@ final emergencyMedicalCardProvider =
     now: DateTime.now(),
     profile: ref.watch(emergencyProfileProvider),
     medications: ref.watch(medsProvider),
+    doseLogs: ref.watch(logsProvider),
+    refillEvents: ref.watch(refillEventsProvider),
   );
 });
 
