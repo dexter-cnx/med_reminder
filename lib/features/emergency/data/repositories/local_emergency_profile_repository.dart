@@ -19,7 +19,10 @@ class LocalEmergencyProfileRepository implements EmergencyProfileRepository {
       );
     } catch (error) {
       return Failed<EmergencyProfile?>(
-        Failure(code: 'emergency_profile_read_failed', message: error.toString()),
+        Failure(
+          code: 'emergency_profile_read_failed',
+          message: error.toString(),
+        ),
       );
     }
   }
@@ -32,7 +35,10 @@ class LocalEmergencyProfileRepository implements EmergencyProfileRepository {
       return const Success<void>(null);
     } catch (error) {
       return Failed<void>(
-        Failure(code: 'emergency_profile_write_failed', message: error.toString()),
+        Failure(
+          code: 'emergency_profile_write_failed',
+          message: error.toString(),
+        ),
       );
     }
   }
@@ -44,7 +50,10 @@ class LocalEmergencyProfileRepository implements EmergencyProfileRepository {
       return const Success<void>(null);
     } catch (error) {
       return Failed<void>(
-        Failure(code: 'emergency_profile_clear_failed', message: error.toString()),
+        Failure(
+          code: 'emergency_profile_clear_failed',
+          message: error.toString(),
+        ),
       );
     }
   }
