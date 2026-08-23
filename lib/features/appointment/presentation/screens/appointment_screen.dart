@@ -17,8 +17,7 @@ class AppointmentScreen extends ConsumerWidget {
     final size = MediaQuery.sizeOf(context);
     final layout = ResponsiveLayoutInfo.fromSize(size);
     final maxWidth = layout.isTablet ? size.width * 0.78 : size.width;
-    final horizontalPadding =
-        (size.width * 0.04).clamp(16.0, 32.0).toDouble();
+    final horizontalPadding = (size.width * 0.04).clamp(16.0, 32.0).toDouble();
 
     return Align(
       alignment: Alignment.topCenter,
