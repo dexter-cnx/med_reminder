@@ -53,7 +53,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text('app_title'.tr()),
         actions: [
           IconButton(
-            tooltip: 'Emergency Medical Card',
+            tooltip: 'emergency_card_title'.tr(),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const EmergencyMedicalCardScreen(),
