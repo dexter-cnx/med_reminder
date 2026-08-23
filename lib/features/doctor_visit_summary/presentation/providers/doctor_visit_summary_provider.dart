@@ -11,10 +11,15 @@ final doctorVisitSummaryClockProvider = Provider<DateTime Function()>(
   (ref) => DateTime.now,
 );
 
-final doctorVisitSummaryProvider = Provider<DoctorVisitSummary>((ref) {
+final doctorVisitSummaryNowProvider = Provider.autoDispose<DateTime>(
+  (ref) => ref.watch(doctorVisitSummaryClockProvider)(),
+);
+
+final doctorVisitSummaryProvider =
+    Provider.autoDispose<DoctorVisitSummary>((ref) {
   const builder = BuildDoctorVisitSummary();
   return builder(
-    now: ref.watch(doctorVisitSummaryClockProvider)(),
+    now: ref.watch(doctorVisitSummaryNowProvider),
     medications: ref.watch(medsProvider),
     doseLogs: ref.watch(logsProvider),
     refillEvents: ref.watch(refillEventsProvider),
