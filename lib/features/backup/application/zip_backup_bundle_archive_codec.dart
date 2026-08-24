@@ -4,8 +4,10 @@ import 'package:archive/archive.dart';
 
 import '../../../core/result/result.dart';
 import '../domain/entities/backup_attachment.dart';
+import '../domain/entities/backup_snapshot.dart';
 import 'backup_bundle_archive_codec.dart';
 import 'json_backup_archive_codec.dart';
+import 'medication_backup_data_port.dart';
 
 final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
   const ZipBackupBundleArchiveCodec({
@@ -112,25 +114,27 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       }
 
       final snapshotResult = await manifestCodec.decode(manifestBytes);
-      if (snapshotResult case Failed(:final failure)) {
+      if (snapshotResult case Failed<BackupSnapshot>(:final failure)) {
         return Failed<BackupAttachmentBundle>(failure);
       }
-      final snapshot = (snapshotResult as Success).value;
+      final snapshot = (snapshotResult as Success<BackupSnapshot>).value;
 
       final referencedAttachmentPaths = <String>{};
       for (final record in snapshot.records) {
         final imagePath = record.payload['imagePath'];
-        if (imagePath is String && imagePath.startsWith(attachmentPrefix)) {
-          if (!_isSafeAttachmentPath(imagePath)) {
-            return const Failed<BackupAttachmentBundle>(
-              Failure(
-                code: 'backup_attachment_path_invalid',
-                message: 'Backup manifest references an unsafe attachment path.',
-              ),
-            );
-          }
-          referencedAttachmentPaths.add(imagePath);
+        if (record.namespace != MedicationBackupDataPort.medicationNamespace ||
+            imagePath == null) {
+          continue;
         }
+        if (imagePath is! String || !_isSafeAttachmentPath(imagePath)) {
+          return const Failed<BackupAttachmentBundle>(
+            Failure(
+              code: 'backup_attachment_path_invalid',
+              message: 'Backup manifest references an unsafe attachment path.',
+            ),
+          );
+        }
+        referencedAttachmentPaths.add(imagePath);
       }
 
       final attachments = <BackupAttachment>[];
