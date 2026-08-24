@@ -69,7 +69,8 @@ void main() {
     await EasyLocalization.ensureInitialized();
   });
 
-  testWidgets('Emergency Medical Card is read-only and opens profile settings', (
+  testWidgets('Emergency Medical Card is read-only and opens profile settings',
+      (
     tester,
   ) async {
     const profile = EmergencyProfile(
