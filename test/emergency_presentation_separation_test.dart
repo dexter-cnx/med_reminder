@@ -118,22 +118,6 @@ void main() {
 
     expect(find.byType(EmergencyProfileSettingsScreen), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(5));
-  });
-
-  testWidgets('Emergency profile settings owns edit controls', (tester) async {
-    const profile = EmergencyProfile(
-      displayName: 'Dexter',
-      emergencyContactPhone: '0812345678',
-    );
-    final repository = _MemoryEmergencyProfileRepository(profile);
-
-    await _pumpLocalizedApp(
-      tester,
-      repository: repository,
-      home: const EmergencyProfileSettingsScreen(),
-    );
-
-    expect(find.byType(TextField), findsNWidgets(5));
     expect(find.byIcon(Icons.save_outlined), findsOneWidget);
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
   });
