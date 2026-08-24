@@ -50,11 +50,11 @@ class PrepareBackupRestore {
 
     final rewritten = _rewritePhotoPaths(
       bundle.snapshot,
-      stage.localPathsByArchivePath,
+      stage.pathsByArchivePath,
     );
     if (rewritten case Failed<BackupSnapshot>(:final failure)) {
       final discardResult = await attachmentRestorePort.discard(stage.stageId);
-      if (discardResult case Failed(:final failure)) {
+      if (discardResult case Failed()) {
         return const Failed<PreparedBackupRestore>(
           Failure(
             code: 'backup_restore_stage_cleanup_failed',
@@ -75,7 +75,7 @@ class PrepareBackupRestore {
 
   Result<BackupSnapshot> _rewritePhotoPaths(
     BackupSnapshot snapshot,
-    Map<String, String> localPaths,
+    Map<String, StagedBackupAttachmentPath> stagedPaths,
   ) {
     final records = <BackupRecord>[];
     for (final record in snapshot.records) {
@@ -90,18 +90,19 @@ class PrepareBackupRestore {
         continue;
       }
 
-      final localPath = localPaths[imagePath];
-      if (localPath == null || localPath.isEmpty) {
+      final stagedPath = stagedPaths[imagePath];
+      final finalPath = stagedPath?.finalPath;
+      if (finalPath == null || finalPath.isEmpty) {
         return const Failed<BackupSnapshot>(
           Failure(
             code: 'backup_restore_attachment_mapping_missing',
-            message: 'A staged attachment path is missing.',
+            message: 'A reserved final attachment path is missing.',
           ),
         );
       }
 
       final payload = Map<String, Object?>.from(record.payload)
-        ..['imagePath'] = localPath;
+        ..['imagePath'] = finalPath;
       records.add(
         BackupRecord(
           namespace: record.namespace,
