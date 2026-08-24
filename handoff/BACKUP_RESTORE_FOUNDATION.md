@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, and a versioned JSON manifest codec for the future fully offline ZIP export/import flow.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, a versioned JSON manifest codec, and a deterministic ZIP container for the fully offline export/import flow.
 
 Implemented:
 
@@ -23,10 +23,13 @@ Implemented:
 - focused `MedicationBackupDataPort` tests for valid capture, orphan filtering, preflight rejection before mutation, successful replace-all, first-repository rollback, and second-repository rollback;
 - `JsonBackupArchiveCodec` for deterministic UTF-8 `backup.json` manifest bytes;
 - independent manifest versioning so archive-container evolution is not coupled to the application backup schema;
-- manifest round-trip, malformed-manifest, invalid-record, and unsupported-manifest-version tests;
+- `ZipBackupArchiveCodec` wrapping the authoritative `backup.json` manifest in a deterministic ZIP container;
+- ZIP validation for corrupt bytes, missing manifests, and duplicate archive paths before manifest decoding;
+- ZIP and manifest round-trip/failure-path tests;
+- pinned `archive` 4.0.9 dependency to avoid adopting a just-published archive release in the restore foundation;
 - focused tests for capture/encode, corrupt archive failure, unsupported schemas, atomic restore delegation, DTO round trips, and notification-ID omission.
 
-No ZIP package, share sheet, file picker, ZIP attachment/photo copying, or reminder rebuild integration is introduced yet.
+No share sheet, file picker, ZIP attachment/photo collection, photo-path rewriting, or reminder rebuild integration is introduced yet.
 
 ## Boundary
 
@@ -41,16 +44,22 @@ BackupDataPort
         ↓
 BackupSnapshot
         ↓
-BackupArchiveCodec
+JsonBackupArchiveCodec
         ↓
-versioned backup.json manifest
+backup.json
         ↓
-future ZIP container + attachments/photos
+ZipBackupArchiveCodec
+        ↓
+ZIP container
+        ↓
+future attachments/photos
 ```
 
 Feature DTO adapters live with the owning feature so they can evolve with that domain without exposing Hive records. The concrete Medication/DoseLog data port composes repository contracts and DTO adapters into namespace-based `BackupRecord` values; it does not access Hive records directly.
 
-`backup.json` is the authoritative structured manifest inside the future archive. `manifestVersion` describes the manifest/container contract while `BackupSnapshot.schemaVersion` describes the application backup schema. They must remain independently versioned.
+`backup.json` is the authoritative structured manifest inside the ZIP. `manifestVersion` describes the manifest/container contract while `BackupSnapshot.schemaVersion` describes the application backup schema. They must remain independently versioned.
+
+The ZIP layer is currently responsible only for safe deterministic containment of `backup.json`. Attachment extraction must remain staged and validated before any restored path is written into application data.
 
 Backup presentation code must not read/write Hive boxes directly.
 
@@ -67,7 +76,7 @@ Restore uses replace-all semantics for the first product version because it is d
 
 A partially applied restore is not acceptable.
 
-`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The JSON manifest codec rejects malformed structure and unsupported manifest versions before a snapshot can reach restore mutation. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback whenever a repository replacement fails after mutation may have begun.
+`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The ZIP codec rejects corrupt archives, missing manifests, and duplicate archive paths; the JSON manifest codec then rejects malformed structure and unsupported manifest versions before a snapshot can reach restore mutation. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback whenever a repository replacement fails after mutation may have begun.
 
 ## Privacy
 
@@ -79,8 +88,8 @@ A partially applied restore is not acceptable.
 
 ## Next slices
 
-1. Add the ZIP container around `backup.json`, then attachment/photo collection and deterministic archive paths.
-2. Rewrite restored photo paths only after archive extraction is staged and validated.
+1. Add attachment/photo collection with deterministic archive paths and manifest references.
+2. Stage and validate ZIP attachment extraction, then rewrite restored photo paths only after extraction succeeds.
 3. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
 4. Add export/share and import/file-selection presentation only after the data + ZIP + attachment round-trip is tested.
-5. Expand coverage to corrupt ZIPs, missing manifests, duplicate archive paths, photo path rewriting, and extraction/restore rollback.
+5. Expand coverage to missing attachments, unsafe archive paths, photo path rewriting, and extraction/restore rollback.
