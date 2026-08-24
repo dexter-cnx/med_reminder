@@ -1,9 +1,7 @@
 import '../../../core/result/result.dart';
 import '../../medication/application/backup/dose_log_backup_dto.dart';
 import '../../medication/application/backup/medication_backup_dto.dart';
-import '../../medication/domain/entities/dose_log.dart';
 import '../../medication/domain/entities/medication.dart';
-import '../../medication/domain/repositories/dose_log_repository.dart';
 import '../../medication/domain/repositories/medication_repository.dart';
 import '../domain/entities/backup_record.dart';
 import '../domain/entities/backup_snapshot.dart';
