@@ -49,6 +49,15 @@ final class ZipBackupArchiveCodec implements BackupArchiveCodec {
 
   @override
   Future<Result<BackupSnapshot>> decode(Uint8List archiveBytes) async {
+    if (!_hasZipSignature(archiveBytes)) {
+      return const Failed<BackupSnapshot>(
+        Failure(
+          code: 'backup_zip_invalid',
+          message: 'Backup ZIP is invalid or corrupt.',
+        ),
+      );
+    }
+
     try {
       final archive = ZipDecoder().decodeBytes(archiveBytes, verify: true);
       final seenPaths = <String>{};
@@ -96,5 +105,17 @@ final class ZipBackupArchiveCodec implements BackupArchiveCodec {
         ),
       );
     }
+  }
+
+  static bool _hasZipSignature(Uint8List bytes) {
+    if (bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4b) {
+      return false;
+    }
+
+    final marker2 = bytes[2];
+    final marker3 = bytes[3];
+    return (marker2 == 0x03 && marker3 == 0x04) ||
+        (marker2 == 0x05 && marker3 == 0x06) ||
+        (marker2 == 0x07 && marker3 == 0x08);
   }
 }
