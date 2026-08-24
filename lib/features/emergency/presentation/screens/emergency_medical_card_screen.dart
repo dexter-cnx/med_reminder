@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../medication/domain/entities/medication.dart';
 import '../../domain/entities/emergency_profile.dart';
 import '../providers/emergency_profile_providers.dart';
+import '../widgets/sos_action_sheet.dart';
 
 class EmergencyMedicalCardScreen extends ConsumerStatefulWidget {
   const EmergencyMedicalCardScreen({super.key});
@@ -51,7 +52,19 @@ class _EmergencyMedicalCardScreenState
     _initializeFrom(profile);
 
     return Scaffold(
-      appBar: AppBar(title: Text('emergency_card_title'.tr())),
+      appBar: AppBar(
+        title: Text('emergency_card_title'.tr()),
+        actions: [
+          TextButton.icon(
+            onPressed: () => showSosActionSheet(context),
+            icon: const Icon(Icons.health_and_safety_outlined),
+            label: const Text('SOS'),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
