@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, and focused restore-safety coverage required for a future fully offline ZIP export/import flow.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, and a versioned JSON manifest codec for the future fully offline ZIP export/import flow.
 
 Implemented:
 
@@ -21,9 +21,12 @@ Implemented:
 - compensating rollback when either repository replacement reports failure after mutation begins;
 - capture filtering so orphan DoseLogs are not exported after their Medication has been deleted;
 - focused `MedicationBackupDataPort` tests for valid capture, orphan filtering, preflight rejection before mutation, successful replace-all, first-repository rollback, and second-repository rollback;
+- `JsonBackupArchiveCodec` for deterministic UTF-8 `backup.json` manifest bytes;
+- independent manifest versioning so archive-container evolution is not coupled to the application backup schema;
+- manifest round-trip, malformed-manifest, invalid-record, and unsupported-manifest-version tests;
 - focused tests for capture/encode, corrupt archive failure, unsupported schemas, atomic restore delegation, DTO round trips, and notification-ID omission.
 
-No ZIP package, share sheet, file picker, archive implementation, or photo copying is introduced yet.
+No ZIP package, share sheet, file picker, ZIP attachment/photo copying, or reminder rebuild integration is introduced yet.
 
 ## Boundary
 
@@ -40,10 +43,14 @@ BackupSnapshot
         ↓
 BackupArchiveCodec
         ↓
-Versioned offline archive
+versioned backup.json manifest
+        ↓
+future ZIP container + attachments/photos
 ```
 
 Feature DTO adapters live with the owning feature so they can evolve with that domain without exposing Hive records. The concrete Medication/DoseLog data port composes repository contracts and DTO adapters into namespace-based `BackupRecord` values; it does not access Hive records directly.
+
+`backup.json` is the authoritative structured manifest inside the future archive. `manifestVersion` describes the manifest/container contract while `BackupSnapshot.schemaVersion` describes the application backup schema. They must remain independently versioned.
 
 Backup presentation code must not read/write Hive boxes directly.
 
@@ -60,7 +67,7 @@ Restore uses replace-all semantics for the first product version because it is d
 
 A partially applied restore is not acceptable.
 
-`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback whenever a repository replacement fails after mutation may have begun.
+`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The JSON manifest codec rejects malformed structure and unsupported manifest versions before a snapshot can reach restore mutation. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback whenever a repository replacement fails after mutation may have begun.
 
 ## Privacy
 
@@ -72,7 +79,8 @@ A partially applied restore is not acceptable.
 
 ## Next slices
 
-1. Add the archive codec and versioned `backup.json` manifest, then ZIP attachment/photo handling.
-2. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
-3. Add export/share and import/file-selection presentation only after the data and archive round-trip is tested.
-4. Expand coverage to corrupt archives, unsupported future schemas, photo path rewriting, and restore failure rollback.
+1. Add the ZIP container around `backup.json`, then attachment/photo collection and deterministic archive paths.
+2. Rewrite restored photo paths only after archive extraction is staged and validated.
+3. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
+4. Add export/share and import/file-selection presentation only after the data + ZIP + attachment round-trip is tested.
+5. Expand coverage to corrupt ZIPs, missing manifests, duplicate archive paths, photo path rewriting, and extraction/restore rollback.
