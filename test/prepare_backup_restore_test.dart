@@ -120,7 +120,8 @@ final class _FakeBundleCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async => Success<BackupAttachmentBundle>(bundle);
+  ) async =>
+      Success<BackupAttachmentBundle>(bundle);
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) {
@@ -134,7 +135,8 @@ final class _FailingBundleCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async => const Failed<BackupAttachmentBundle>(
+  ) async =>
+      const Failed<BackupAttachmentBundle>(
         Failure(code: 'decode_failed', message: 'Decode failed.'),
       );
 
