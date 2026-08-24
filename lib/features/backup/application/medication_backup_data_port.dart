@@ -37,7 +37,10 @@ final class MedicationBackupDataPort implements BackupDataPort {
     }
 
     final medicationValues = (medications as Success<List<Medication>>).value;
-    final logValues = (logs as Success<List<DoseLog>>).value;
+    final medicationIds = medicationValues.map((value) => value.id).toSet();
+    final logValues = (logs as Success<List<DoseLog>>)
+        .value
+        .where((log) => medicationIds.contains(log.medId));
     return Success<BackupSnapshot>(
       BackupSnapshot(
         schemaVersion: BackupSnapshot.currentSchemaVersion,
@@ -82,6 +85,15 @@ final class MedicationBackupDataPort implements BackupDataPort {
 
     final medicationResult = await _medicationRepository.replaceAll(incoming.medications);
     if (medicationResult case Failed<void>(:final failure)) {
+      final medicationRollback = await _medicationRepository.replaceAll(oldMedications);
+      if (medicationRollback.isFailure) {
+        return const Failed<void>(
+          Failure(
+            code: 'backup_restore_rollback_failed',
+            message: 'Restore failed and the previous data could not be fully restored.',
+          ),
+        );
+      }
       return Failed<void>(failure);
     }
 
