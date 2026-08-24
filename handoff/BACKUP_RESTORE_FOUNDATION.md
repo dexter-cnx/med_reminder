@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, and a concrete Medication/DoseLog data port required for a future fully offline ZIP export/import flow.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, and focused restore-safety coverage required for a future fully offline ZIP export/import flow.
 
 Implemented:
 
@@ -18,7 +18,9 @@ Implemented:
 - Medication backup deliberately excludes notification IDs because notification schedules are derived state;
 - concrete `MedicationBackupDataPort` composed only from Medication and DoseLog repository contracts;
 - full restore preflight for DTO validity, duplicate IDs, namespace support, record/payload ID agreement, and DoseLog-to-Medication references;
-- compensating rollback if the second repository replacement fails;
+- compensating rollback when either repository replacement reports failure after mutation begins;
+- capture filtering so orphan DoseLogs are not exported after their Medication has been deleted;
+- focused `MedicationBackupDataPort` tests for valid capture, orphan filtering, preflight rejection before mutation, successful replace-all, first-repository rollback, and second-repository rollback;
 - focused tests for capture/encode, corrupt archive failure, unsupported schemas, atomic restore delegation, DTO round trips, and notification-ID omission.
 
 No ZIP package, share sheet, file picker, archive implementation, or photo copying is introduced yet.
@@ -58,7 +60,7 @@ Restore uses replace-all semantics for the first product version because it is d
 
 A partially applied restore is not acceptable.
 
-`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback if a later replacement fails.
+`RestoreBackup` rejects a snapshot whose schema version is not the currently supported version before calling the data port. Feature-level DTO decoders also reject unsupported record versions. The Medication/DoseLog port snapshots current repository state before replacement and attempts compensating rollback whenever a repository replacement fails after mutation may have begun.
 
 ## Privacy
 
@@ -70,8 +72,7 @@ A partially applied restore is not acceptable.
 
 ## Next slices
 
-1. Add focused `MedicationBackupDataPort` tests covering capture, preflight rejection, successful replace-all, and rollback preservation on failure.
-2. Add the archive codec and versioned `backup.json` manifest, then ZIP attachment/photo handling.
-3. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
-4. Add export/share and import/file-selection presentation only after the data and archive round-trip is tested.
-5. Expand coverage to corrupt archives, unsupported future schemas, photo path rewriting, and restore failure rollback.
+1. Add the archive codec and versioned `backup.json` manifest, then ZIP attachment/photo handling.
+2. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
+3. Add export/share and import/file-selection presentation only after the data and archive round-trip is tested.
+4. Expand coverage to corrupt archives, unsupported future schemas, photo path rewriting, and restore failure rollback.
