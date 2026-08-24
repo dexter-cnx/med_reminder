@@ -6,10 +6,12 @@ class BackupAttachment {
   BackupAttachment({
     required this.archivePath,
     required Uint8List bytes,
-  }) : bytes = Uint8List.fromList(bytes);
+  }) : _bytes = Uint8List.fromList(bytes);
 
   final String archivePath;
-  final Uint8List bytes;
+  final Uint8List _bytes;
+
+  Uint8List get bytes => Uint8List.fromList(_bytes);
 }
 
 class BackupAttachmentBundle {
