@@ -13,10 +13,12 @@ Implemented:
 - Riverpod provider/view-model state.
 - Dedicated read-only Emergency Medical Card presentation.
 - Separate `EmergencyProfileSettingsScreen` for editing and explicit clear/delete.
+- Emergency profile entry from the application's main Settings surface.
+- Focused widget coverage for the read-only card vs settings mutation boundary.
 - SOS entry points from Home and the Emergency Medical Card.
 - Call/SMS handoff through an `EmergencyContactLauncher` abstraction and native platform channel.
 
-The main Settings screen entry remains a follow-up slice. LINE direct-contact voice/video calling is not implemented because LINE's public URL scheme does not expose a supported direct friend voice/video-call deep link.
+LINE direct-contact voice/video calling is not implemented because LINE's public URL scheme does not expose a supported direct friend voice/video-call deep link.
 
 ## Data ownership
 
@@ -65,7 +67,9 @@ The read model is not persisted.
 
 The Emergency Medical Card is intentionally read-only. Editing and destructive actions live in `EmergencyProfileSettingsScreen` so an emergency-viewing context cannot accidentally mutate or clear the data being shown.
 
-The card can navigate to the settings screen through an explicit edit action. A later slice should also expose the same settings screen from the application's main Settings surface.
+The card can navigate to the settings screen through an explicit edit action. The same editor is also available from the application's main Settings surface.
+
+Focused widget coverage verifies that the card remains read-only and that editing/save/delete controls live on the settings screen.
 
 ## SOS platform boundary
 
@@ -76,8 +80,8 @@ The card can navigate to the settings screen through an explicit edit action. A 
 
 Besyu does not place a call or send an SMS itself.
 
-## Next slice
+## Remaining / deferred
 
-1. Add an Emergency section in the main Settings screen that opens `EmergencyProfileSettingsScreen`.
-2. Add focused presentation tests for read-only card vs settings mutation boundaries.
-3. Keep LINE share/chat exploration separate from direct-contact SOS because the official public URL scheme does not provide direct friend voice/video-call deep links.
+1. Keep LINE share/chat exploration separate from direct-contact SOS because the official public URL scheme does not provide direct friend voice/video-call deep links.
+2. Any future additional SOS transports must remain explicit user actions behind an application-facing launcher abstraction.
+3. Emergency profile export/import should join the application backup boundary rather than adding feature-specific raw Hive export logic.
