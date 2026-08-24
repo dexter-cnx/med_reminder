@@ -58,6 +58,27 @@ BackupSnapshot _snapshot({int schemaVersion = 1}) {
 }
 
 void main() {
+  test('backup record deeply freezes nested payload collections', () {
+    final times = <Object?>['08:00', '20:00'];
+    final schedule = <String, Object?>{'times': times};
+    final record = BackupRecord(
+      namespace: 'medication',
+      id: 'med-1',
+      payload: <String, Object?>{'schedule': schedule},
+    );
+
+    times.add('22:00');
+    schedule['mode'] = 'daily';
+
+    final frozenSchedule = record.payload['schedule']! as Map<String, Object?>;
+    final frozenTimes = frozenSchedule['times']! as List<Object?>;
+
+    expect(frozenTimes, <Object?>['08:00', '20:00']);
+    expect(frozenSchedule.containsKey('mode'), isFalse);
+    expect(() => frozenTimes.add('22:00'), throwsUnsupportedError);
+    expect(() => frozenSchedule['mode'] = 'daily', throwsUnsupportedError);
+  });
+
   test('create backup encodes the captured application snapshot', () async {
     final snapshot = _snapshot();
     final dataPort = _FakeDataPort(Success<BackupSnapshot>(snapshot));
@@ -69,18 +90,21 @@ void main() {
     expect(codec.encodedSnapshot, same(snapshot));
   });
 
-  test('restore rejects unsupported schema before application mutation', () async {
-    final snapshot = _snapshot(schemaVersion: 2);
-    final dataPort = _FakeDataPort(Success<BackupSnapshot>(snapshot));
-    final codec = _FakeCodec(decodeResult: Success<BackupSnapshot>(snapshot));
+  test(
+    'restore rejects unsupported schema before application mutation',
+    () async {
+      final snapshot = _snapshot(schemaVersion: 2);
+      final dataPort = _FakeDataPort(Success<BackupSnapshot>(snapshot));
+      final codec = _FakeCodec(decodeResult: Success<BackupSnapshot>(snapshot));
 
-    final result = await RestoreBackup(dataPort: dataPort, codec: codec)(
-      Uint8List.fromList(<int>[9]),
-    );
+      final result = await RestoreBackup(dataPort: dataPort, codec: codec)(
+        Uint8List.fromList(<int>[9]),
+      );
 
-    expect(result.isFailure, isTrue);
-    expect(dataPort.restoredSnapshot, isNull);
-  });
+      expect(result.isFailure, isTrue);
+      expect(dataPort.restoredSnapshot, isNull);
+    },
+  );
 
   test('restore does not mutate data when archive decoding fails', () async {
     final snapshot = _snapshot();
