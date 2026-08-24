@@ -10,7 +10,8 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_reco
 import 'package:med_reminder_offline/features/backup/domain/entities/backup_snapshot.dart';
 
 void main() {
-  test('preparation rewrites archive photo paths to reserved final paths', () async {
+  test('preparation rewrites archive photo paths to reserved final paths',
+      () async {
     final bundle = _bundle('attachments/medication/med-1.png');
     final port = _FakeRestorePort(
       staged: StagedBackupAttachments(
