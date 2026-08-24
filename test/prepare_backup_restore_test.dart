@@ -167,6 +167,14 @@ final class _FakeRestorePort implements BackupAttachmentRestorePort {
   }
 
   @override
+  Future<Result<void>> commit(String stageId) async =>
+      const Success<void>(null);
+
+  @override
+  Future<Result<void>> rollback(String stageId) async =>
+      const Success<void>(null);
+
+  @override
   Future<Result<void>> discard(String stageId) async {
     discardCalls++;
     lastDiscardedStageId = stageId;
