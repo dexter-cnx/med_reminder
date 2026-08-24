@@ -89,7 +89,8 @@ void main() {
     );
   });
 
-  test('archive encoder normalizes duplicate source paths to one entry', () async {
+  test('archive encoder normalizes duplicate source paths to one entry',
+      () async {
     final manifest = await const JsonBackupArchiveCodec().encode(_snapshot());
     final manifestBytes = manifest.fold(
       onSuccess: (value) => value,
@@ -114,8 +115,7 @@ void main() {
     expect(
       decodedArchive
           .where(
-            (entry) =>
-                entry.name == JsonBackupArchiveCodec.manifestFileName,
+            (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName,
           )
           .length,
       1,
