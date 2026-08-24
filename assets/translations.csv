@@ -134,3 +134,29 @@ doctor_summary_observations,Reported observations,สิ่งที่ผู้
 doctor_summary_no_observations,No reported observations in this period,ไม่มีสิ่งที่รายงานในช่วงนี้
 doctor_summary_upcoming_appointments,Upcoming appointments,นัดหมายถัดไป
 doctor_summary_no_appointments,No upcoming appointments,ไม่มีนัดหมายถัดไป
+emergency_card_title,Emergency Medical Card,บัตรข้อมูลฉุกเฉิน
+emergency_profile_empty,No emergency profile saved yet,ยังไม่มีข้อมูลฉุกเฉินที่บันทึกไว้
+emergency_profile_title,Emergency profile,ข้อมูลฉุกเฉิน
+emergency_card_disclaimer,This card shows only information you entered and current medication records from Besyu. It does not diagnose conditions.,บัตรนี้แสดงเฉพาะข้อมูลที่คุณกรอกและข้อมูลยาปัจจุบันจาก Besyu เท่านั้น ไม่ใช่การวินิจฉัยโรค
+emergency_contact,Emergency contact,ผู้ติดต่อฉุกเฉิน
+emergency_medication_allergies,Medication allergies,การแพ้ยา
+emergency_medical_notes,Medical notes,หมายเหตุทางการแพทย์
+emergency_current_medications,Current medications,ยาที่ใช้อยู่ปัจจุบัน
+emergency_no_current_medications,No current medication records,ไม่มีข้อมูลยาที่ใช้อยู่ปัจจุบัน
+emergency_edit_title,Edit emergency information,แก้ไขข้อมูลฉุกเฉิน
+emergency_display_name,Display name,ชื่อที่แสดง
+emergency_contact_name,Emergency contact name,ชื่อผู้ติดต่อฉุกเฉิน
+emergency_contact_phone,Emergency contact phone,เบอร์โทรผู้ติดต่อฉุกเฉิน
+emergency_allergies_helper,Enter only information you know or were told.,กรอกเฉพาะข้อมูลที่คุณทราบหรือได้รับแจ้งมา
+emergency_notes_helper,Optional user-entered notes. Besyu does not infer diagnoses.,หมายเหตุที่ผู้ใช้กรอกเองและไม่บังคับ Besyu จะไม่อนุมานการวินิจฉัยโรค
+emergency_save,Save on this device,บันทึกไว้บนเครื่องนี้
+emergency_clear,Clear emergency information,ล้างข้อมูลฉุกเฉิน
+emergency_local_note,Emergency information stays on this device. Clearing it does not delete medication records.,ข้อมูลฉุกเฉินจะเก็บไว้บนเครื่องนี้ การล้างข้อมูลจะไม่ลบข้อมูลยา
+emergency_saved,Emergency information saved on this device,บันทึกข้อมูลฉุกเฉินไว้บนเครื่องนี้แล้ว
+emergency_save_failed,Unable to save emergency information,ไม่สามารถบันทึกข้อมูลฉุกเฉินได้
+emergency_clear_confirm_title,Clear emergency information?,ล้างข้อมูลฉุกเฉินหรือไม่?
+emergency_clear_confirm_body,This removes the emergency profile from this device. Medication records are not deleted.,การดำเนินการนี้จะลบข้อมูลฉุกเฉินออกจากเครื่อง แต่จะไม่ลบข้อมูลยา
+common_cancel,Cancel,ยกเลิก
+emergency_clear_action,Clear,ล้างข้อมูล
+emergency_cleared,Emergency information cleared,ล้างข้อมูลฉุกเฉินแล้ว
+emergency_clear_failed,Unable to clear emergency information,ไม่สามารถล้างข้อมูลฉุกเฉินได้
