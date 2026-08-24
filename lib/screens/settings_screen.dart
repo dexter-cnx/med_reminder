@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../features/emergency/presentation/screens/emergency_profile_settings_screen.dart';
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
@@ -224,6 +225,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _SectionTitle('emergency_profile_title'.tr()),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.health_and_safety_outlined),
+            title: Text('emergency_edit_title'.tr()),
+            subtitle: Text('emergency_local_note'.tr()),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const EmergencyProfileSettingsScreen(),
+              ),
             ),
           ),
         ),
