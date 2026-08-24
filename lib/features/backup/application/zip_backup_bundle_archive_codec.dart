@@ -21,6 +21,45 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) async {
+    final referencedPathsResult = _referencedAttachmentPaths(bundle.snapshot);
+    if (referencedPathsResult case Failed<Set<String>>(:final failure)) {
+      return Failed<Uint8List>(failure);
+    }
+    final referencedPaths =
+        (referencedPathsResult as Success<Set<String>>).value;
+
+    final attachmentPaths = <String>{};
+    for (final attachment in bundle.attachments) {
+      if (!_isSafeAttachmentPath(attachment.archivePath) ||
+          !attachmentPaths.add(attachment.archivePath)) {
+        return const Failed<Uint8List>(
+          Failure(
+            code: 'backup_attachment_path_invalid',
+            message: 'Backup attachment path is invalid or duplicated.',
+          ),
+        );
+      }
+    }
+
+    final missingPaths = referencedPaths.difference(attachmentPaths);
+    if (missingPaths.isNotEmpty) {
+      return const Failed<Uint8List>(
+        Failure(
+          code: 'backup_attachment_missing',
+          message: 'Backup bundle is missing a referenced attachment.',
+        ),
+      );
+    }
+    final unexpectedPaths = attachmentPaths.difference(referencedPaths);
+    if (unexpectedPaths.isNotEmpty) {
+      return const Failed<Uint8List>(
+        Failure(
+          code: 'backup_attachment_unexpected',
+          message: 'Backup bundle contains an unreferenced attachment.',
+        ),
+      );
+    }
+
     final manifestResult = await manifestCodec.encode(bundle.snapshot);
     if (manifestResult case Failed<Uint8List>(:final failure)) {
       return Failed<Uint8List>(failure);
@@ -34,17 +73,7 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
             (manifestResult as Success<Uint8List>).value,
           ),
         );
-      final seenPaths = <String>{JsonBackupArchiveCodec.manifestFileName};
       for (final attachment in bundle.attachments) {
-        if (!_isSafeAttachmentPath(attachment.archivePath) ||
-            !seenPaths.add(attachment.archivePath)) {
-          return const Failed<Uint8List>(
-            Failure(
-              code: 'backup_attachment_path_invalid',
-              message: 'Backup attachment path is invalid or duplicated.',
-            ),
-          );
-        }
         archive.add(
           ArchiveFile.bytes(attachment.archivePath, attachment.bytes),
         );
@@ -119,24 +148,12 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
         return Failed<BackupAttachmentBundle>(failure);
       }
       final snapshot = (snapshotResult as Success<BackupSnapshot>).value;
-
-      final referencedAttachmentPaths = <String>{};
-      for (final record in snapshot.records) {
-        final imagePath = record.payload['imagePath'];
-        if (record.namespace != MedicationBackupDataPort.medicationNamespace ||
-            imagePath == null) {
-          continue;
-        }
-        if (imagePath is! String || !_isSafeAttachmentPath(imagePath)) {
-          return const Failed<BackupAttachmentBundle>(
-            Failure(
-              code: 'backup_attachment_path_invalid',
-              message: 'Backup manifest references an unsafe attachment path.',
-            ),
-          );
-        }
-        referencedAttachmentPaths.add(imagePath);
+      final referencedPathsResult = _referencedAttachmentPaths(snapshot);
+      if (referencedPathsResult case Failed<Set<String>>(:final failure)) {
+        return Failed<BackupAttachmentBundle>(failure);
       }
+      final referencedAttachmentPaths =
+          (referencedPathsResult as Success<Set<String>>).value;
 
       final attachments = <BackupAttachment>[];
       for (final path in referencedAttachmentPaths) {
@@ -177,6 +194,30 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
         ),
       );
     }
+  }
+
+  static Result<Set<String>> _referencedAttachmentPaths(
+    BackupSnapshot snapshot,
+  ) {
+    final paths = <String>{};
+    for (final record in snapshot.records) {
+      final imagePath = record.payload['imagePath'];
+      if (record.namespace != MedicationBackupDataPort.medicationNamespace ||
+          imagePath == null ||
+          imagePath == '') {
+        continue;
+      }
+      if (imagePath is! String || !_isSafeAttachmentPath(imagePath)) {
+        return const Failed<Set<String>>(
+          Failure(
+            code: 'backup_attachment_path_invalid',
+            message: 'Backup manifest references an unsafe attachment path.',
+          ),
+        );
+      }
+      paths.add(imagePath);
+    }
+    return Success<Set<String>>(paths);
   }
 
   static bool _isSafeAttachmentPath(String path) {
