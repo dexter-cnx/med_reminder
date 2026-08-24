@@ -10,13 +10,16 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_reco
 import 'package:med_reminder_offline/features/backup/domain/entities/backup_snapshot.dart';
 
 void main() {
-  test('preparation rewrites archive photo paths only after staging', () async {
+  test('preparation rewrites archive photo paths to reserved final paths', () async {
     final bundle = _bundle('attachments/medication/med-1.png');
     final port = _FakeRestorePort(
       staged: StagedBackupAttachments(
         stageId: 'stage-1',
-        localPathsByArchivePath: const <String, String>{
-          'attachments/medication/med-1.png': '/tmp/stage-1/med-1.png',
+        pathsByArchivePath: const <String, StagedBackupAttachmentPath>{
+          'attachments/medication/med-1.png': StagedBackupAttachmentPath(
+            stagedPath: '/tmp/stage-1/med-1.png',
+            finalPath: '/documents/med_photos/med-1.png',
+          ),
         },
       ),
     );
@@ -32,7 +35,7 @@ void main() {
         expect(prepared.stageId, 'stage-1');
         expect(
           prepared.snapshot.records.single.payload['imagePath'],
-          '/tmp/stage-1/med-1.png',
+          '/documents/med_photos/med-1.png',
         );
         expect(port.stageCalls, 1);
         expect(port.discardCalls, 0);
@@ -45,7 +48,7 @@ void main() {
     final port = _FakeRestorePort(
       staged: StagedBackupAttachments(
         stageId: 'unused',
-        localPathsByArchivePath: const <String, String>{},
+        pathsByArchivePath: const <String, StagedBackupAttachmentPath>{},
       ),
     );
     final useCase = PrepareBackupRestore(
@@ -59,12 +62,12 @@ void main() {
     expect(port.stageCalls, 0);
   });
 
-  test('missing staged mapping discards staged files before failure', () async {
+  test('missing final mapping discards staged files before failure', () async {
     final bundle = _bundle('attachments/medication/med-1.png');
     final port = _FakeRestorePort(
       staged: StagedBackupAttachments(
         stageId: 'stage-1',
-        localPathsByArchivePath: const <String, String>{},
+        pathsByArchivePath: const <String, StagedBackupAttachmentPath>{},
       ),
     );
     final useCase = PrepareBackupRestore(
