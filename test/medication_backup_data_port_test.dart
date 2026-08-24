@@ -9,9 +9,11 @@ import 'package:med_reminder_offline/features/medication/domain/repositories/dos
 import 'package:med_reminder_offline/features/medication/domain/repositories/medication_repository.dart';
 
 void main() {
-  test('capture excludes dose logs whose medication no longer exists', () async {
+  test('capture excludes dose logs whose medication no longer exists',
+      () async {
     final medication = _medication('med-1');
-    final medicationRepository = _FakeMedicationRepository(<Medication>[medication]);
+    final medicationRepository =
+        _FakeMedicationRepository(<Medication>[medication]);
     final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[
       _doseLog('log-1', 'med-1'),
       _doseLog('orphan-log', 'deleted-med'),
@@ -39,7 +41,8 @@ void main() {
     );
   });
 
-  test('restore rolls medication data back when first replacement fails', () async {
+  test('restore rolls medication data back when first replacement fails',
+      () async {
     final oldMedication = _medication('old-med');
     final newMedication = _medication('new-med');
     final medicationRepository = _FakeMedicationRepository(
@@ -66,7 +69,8 @@ void main() {
     final result = await port.restoreAtomically(snapshot);
 
     expect(result.isFailure, isTrue);
-    expect(medicationRepository.values.map((value) => value.id), <String>['old-med']);
+    expect(medicationRepository.values.map((value) => value.id),
+        <String>['old-med']);
     expect(medicationRepository.replaceCalls, 2);
     expect(doseLogRepository.replaceCalls, 0);
   });
@@ -111,7 +115,8 @@ final class _FakeMedicationRepository implements MedicationRepository {
     values = List<Medication>.of(medications);
     if (failFirstReplaceAfterMutation && replaceCalls == 1) {
       return const Failed<void>(
-        Failure(code: 'replace_failed', message: 'Simulated partial replacement.'),
+        Failure(
+            code: 'replace_failed', message: 'Simulated partial replacement.'),
       );
     }
     return const Success<void>(null);
