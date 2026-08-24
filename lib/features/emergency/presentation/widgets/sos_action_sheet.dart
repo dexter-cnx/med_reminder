@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/emergency_contact_launcher.dart';
 import '../../data/platform/url_launcher_emergency_contact_launcher.dart';
 import '../providers/emergency_profile_providers.dart';
-import '../screens/emergency_medical_card_screen.dart';
 
 final emergencyContactLauncherProvider = Provider<EmergencyContactLauncher>(
   (ref) => const UrlLauncherEmergencyContactLauncher(),
@@ -38,81 +37,53 @@ class SosActionSheet extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'sos_title'.tr(),
+              'SOS',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              hasPhone
-                  ? 'sos_contact'.tr(
-                      namedArgs: {
-                        'name': contactName.isEmpty
-                            ? 'sos_contact_default'.tr()
-                            : contactName,
-                        'phone': phone,
-                      },
-                    )
-                  : 'sos_no_contact'.tr(),
+              'emergency_contact'.tr(),
+              style: Theme.of(context).textTheme.labelLarge,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
-              'sos_external_action_note'.tr(),
-              style: Theme.of(context).textTheme.bodySmall,
+              <String>[
+                if (contactName.isNotEmpty) contactName,
+                if (phone.isNotEmpty) phone,
+              ].join(' · ').isEmpty
+                  ? '—'
+                  : <String>[
+                      if (contactName.isNotEmpty) contactName,
+                      if (phone.isNotEmpty) phone,
+                    ].join(' · '),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: hasPhone
-                  ? () => _launch(
-                        context,
-                        ref,
-                        (launcher) => launcher.call(phone),
-                      )
+                  ? () => ref
+                      .read(emergencyContactLauncherProvider)
+                      .call(phone)
                   : null,
               icon: const Icon(Icons.call_outlined),
-              label: Text('sos_call'.tr()),
+              label: Text(
+                hasPhone ? phone : 'emergency_contact_phone'.tr(),
+              ),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: hasPhone
-                  ? () => _launch(
-                        context,
-                        ref,
-                        (launcher) => launcher.sms(phone),
-                      )
+                  ? () => ref
+                      .read(emergencyContactLauncherProvider)
+                      .sms(phone)
                   : null,
               icon: const Icon(Icons.sms_outlined),
-              label: Text('sos_sms'.tr()),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const EmergencyMedicalCardScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.medical_information_outlined),
-              label: Text('emergency_card_title'.tr()),
+              label: const Text('SMS'),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Future<void> _launch(
-    BuildContext context,
-    WidgetRef ref,
-    Future<bool> Function(EmergencyContactLauncher launcher) action,
-  ) async {
-    final launched = await action(ref.read(emergencyContactLauncherProvider));
-    if (!context.mounted || launched) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('sos_launch_failed'.tr())),
     );
   }
 }
