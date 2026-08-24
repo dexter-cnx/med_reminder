@@ -74,7 +74,8 @@ void main() {
   });
 
   test('decode rejects ZIPs without backup.json', () async {
-    final archive = Archive()..add(ArchiveFile.string('other.txt', 'not a backup'));
+    final archive = Archive()
+      ..add(ArchiveFile.string('other.txt', 'not a backup'));
     final bytes = ZipEncoder().encodeBytes(archive);
 
     final result = await codec.decode(bytes);

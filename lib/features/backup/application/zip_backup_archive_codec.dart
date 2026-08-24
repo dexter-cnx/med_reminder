@@ -64,13 +64,15 @@ final class ZipBackupArchiveCodec implements BackupArchiveCodec {
       }
 
       final manifestEntries = archive
-          .where((entry) => entry.name == JsonBackupArchiveCodec.manifestFileName)
+          .where(
+              (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName)
           .toList(growable: false);
       if (manifestEntries.length != 1 || !manifestEntries.single.isFile) {
         return const Failed<BackupSnapshot>(
           Failure(
             code: 'backup_zip_manifest_missing',
-            message: 'Backup ZIP does not contain exactly one backup.json manifest.',
+            message:
+                'Backup ZIP does not contain exactly one backup.json manifest.',
           ),
         );
       }
