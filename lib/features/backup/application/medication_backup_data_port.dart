@@ -80,17 +80,21 @@ final class MedicationBackupDataPort implements BackupDataPort {
       return Failed<void>(failure);
     }
 
-    final oldMedications = (currentMedications as Success<List<Medication>>).value;
+    final oldMedications =
+        (currentMedications as Success<List<Medication>>).value;
     final oldLogs = (currentLogs as Success<List<DoseLog>>).value;
 
-    final medicationResult = await _medicationRepository.replaceAll(incoming.medications);
+    final medicationResult =
+        await _medicationRepository.replaceAll(incoming.medications);
     if (medicationResult case Failed<void>(:final failure)) {
-      final medicationRollback = await _medicationRepository.replaceAll(oldMedications);
+      final medicationRollback =
+          await _medicationRepository.replaceAll(oldMedications);
       if (medicationRollback.isFailure) {
         return const Failed<void>(
           Failure(
             code: 'backup_restore_rollback_failed',
-            message: 'Restore failed and the previous data could not be fully restored.',
+            message:
+                'Restore failed and the previous data could not be fully restored.',
           ),
         );
       }
@@ -99,13 +103,15 @@ final class MedicationBackupDataPort implements BackupDataPort {
 
     final logResult = await _doseLogRepository.replaceAll(incoming.logs);
     if (logResult case Failed<void>(:final failure)) {
-      final medicationRollback = await _medicationRepository.replaceAll(oldMedications);
+      final medicationRollback =
+          await _medicationRepository.replaceAll(oldMedications);
       final logRollback = await _doseLogRepository.replaceAll(oldLogs);
       if (medicationRollback.isFailure || logRollback.isFailure) {
         return const Failed<void>(
           Failure(
             code: 'backup_restore_rollback_failed',
-            message: 'Restore failed and the previous data could not be fully restored.',
+            message:
+                'Restore failed and the previous data could not be fully restored.',
           ),
         );
       }
