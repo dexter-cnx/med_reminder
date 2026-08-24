@@ -89,7 +89,7 @@ void main() {
     );
   });
 
-  test('decode rejects duplicate archive paths', () async {
+  test('archive encoder normalizes duplicate source paths to one entry', () async {
     final manifest = await const JsonBackupArchiveCodec().encode(_snapshot());
     final manifestBytes = manifest.fold(
       onSuccess: (value) => value,
@@ -109,16 +109,20 @@ void main() {
         ),
       );
     final bytes = ZipEncoder().encodeBytes(archive);
+    final decodedArchive = ZipDecoder().decodeBytes(bytes, verify: true);
+
+    expect(
+      decodedArchive
+          .where(
+            (entry) =>
+                entry.name == JsonBackupArchiveCodec.manifestFileName,
+          )
+          .length,
+      1,
+    );
 
     final result = await codec.decode(bytes);
-
-    expect(result.isFailure, isTrue);
-    result.fold(
-      onSuccess: (_) => fail('Expected duplicate path failure.'),
-      onFailure: (failure) {
-        expect(failure.code, 'backup_zip_duplicate_path');
-      },
-    );
+    expect(result.isSuccess, isTrue);
   });
 }
 
