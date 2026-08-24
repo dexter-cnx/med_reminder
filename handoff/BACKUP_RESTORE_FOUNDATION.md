@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, a versioned JSON manifest codec, deterministic ZIP containers, photo-attachment collection + ZIP bundle preflight, and a staged restore preparation boundary for the fully offline export/import flow.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, deterministic JSON/ZIP codecs, photo-attachment collection + ZIP preflight, staged restore preparation, and an application-level transactional commit boundary.
 
 Implemented:
 
@@ -13,13 +13,18 @@ Implemented:
 - deterministic `backup.json` manifest and ZIP codecs;
 - `MedicationPhotoAttachmentCollector` converting local photo paths into deterministic archive-relative references;
 - immutable attachment bytes with defensive-copy access;
-- `ZipBackupBundleArchiveCodec` that validates safe referenced attachments, missing/unexpected entries, duplicate paths, path traversal/backslash paths, and corrupt ZIPs;
-- `BackupAttachmentRestorePort` as the boundary for staging imported attachment bytes outside live application storage;
-- `PrepareBackupRestore` two-phase preparation that decodes/preflights the ZIP, validates schema, stages attachments, rewrites medication `imagePath` values to staged local paths, and discards the stage if rewrite validation fails;
-- focused tests proving decode failure does not stage files and incomplete staged mappings are discarded before failure;
+- `ZipBackupBundleArchiveCodec` validation for safe referenced attachments, missing/unexpected entries, duplicate paths, path traversal/backslash paths, and corrupt ZIPs;
+- `BackupAttachmentRestorePort` for staging imported attachment bytes outside live storage;
+- staged attachment mappings that separate temporary `stagedPath` from reserved `finalPath`;
+- `PrepareBackupRestore` that decodes/preflights, validates schema, stages attachments, and rewrites medication `imagePath` values only to reserved final paths;
+- stage cleanup when rewrite validation fails;
+- `CommitPreparedBackupRestore` transaction ordering: commit staged files first, then call `BackupDataPort.restoreAtomically()`;
+- committed attachment rollback when application-data restore fails;
+- explicit failure when attachment rollback itself fails;
+- focused tests for decode/stage safety, final-path rewriting, file-commit failure, data-restore failure, and rollback failure;
 - pinned `archive` 4.0.9 dependency.
 
-No share sheet, file picker, live attachment commit, repository-integrated staged rollback, or reminder rebuild integration is introduced yet.
+No concrete file-backed stage/commit implementation, share sheet, file picker, or reminder rebuild integration is introduced yet.
 
 ## Boundary
 
@@ -42,25 +47,32 @@ PrepareBackupRestore
         ↓
 BackupAttachmentRestorePort.stage()
         ↓
-prepared snapshot with staged local photo paths
+prepared snapshot with reserved final photo paths
         ↓
-future transactional commit + BackupDataPort.restoreAtomically()
+BackupAttachmentRestorePort.commit()
+        ↓
+BackupDataPort.restoreAtomically()
+        ↓
+success OR attachment rollback on data failure
 ```
 
-`backup.json` remains authoritative. Archive-relative attachment paths must never be persisted as live application photo paths. Preparation now separates archive parsing and file staging from repository mutation so failures before commit cannot partially replace application data.
+`backup.json` remains authoritative. Archive-relative attachment paths and temporary staging paths must never be persisted as live application photo paths. Prepared snapshots contain only reserved final paths.
 
 ## Restore safety
 
 Restore uses replace-all semantics for the first product version.
 
-The restore transaction must preserve these invariants:
+The restore transaction preserves these invariants:
 
 1. validate archive structure and application schema before mutation;
 2. stage every referenced file before repository replacement;
-3. rewrite photo paths only from verified stage mappings;
+3. reserve final photo paths during staging and rewrite snapshots only to those final paths;
 4. if staging or rewrite fails, discard the stage and leave repositories untouched;
-5. when commit integration is added, either both file commit and repository replacement succeed or cleanup/rollback restores the pre-import state;
-6. rebuild derived reminder schedules after successful restore rather than trusting exported notification identifiers.
+5. commit staged files before repository replacement so data never points to files that have not been promoted;
+6. if file commit fails, do not mutate repositories;
+7. if repository replacement fails after file commit, roll committed restore files back;
+8. surface an explicit rollback failure if cleanup cannot restore file state;
+9. rebuild derived reminder schedules only after the complete transaction succeeds.
 
 A partially applied restore is not acceptable.
 
@@ -74,8 +86,8 @@ A partially applied restore is not acceptable.
 
 ## Next slices
 
-1. Add a concrete file-backed staged photo restore implementation using temporary storage and reserved final `med_photos` destinations.
-2. Add explicit stage commit/discard semantics and integrate them with `BackupDataPort.restoreAtomically()` so repository or file-commit failure cannot leave dangling photo paths.
+1. Add a concrete file-backed `BackupAttachmentRestorePort` using temporary staging directories and collision-safe reserved `med_photos` destinations.
+2. Add interrupted-stage cleanup and verify commit/rollback behavior against real temporary files.
 3. Rebuild reminder schedules only after the complete restore transaction succeeds.
 4. Add export/share and import/file-selection presentation after transactional round-trip coverage is green.
-5. Expand coverage to extraction failure, destination conflicts, commit failure, rollback failure, and interrupted-stage cleanup.
+5. Expand coverage to destination conflicts, filesystem commit failure, filesystem rollback failure, and stale-stage cleanup.
