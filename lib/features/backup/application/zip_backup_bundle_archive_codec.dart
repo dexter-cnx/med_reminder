@@ -94,7 +94,8 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
         entriesByPath[entry.name] = entry;
       }
 
-      final manifestEntry = entriesByPath[JsonBackupArchiveCodec.manifestFileName];
+      final manifestEntry =
+          entriesByPath[JsonBackupArchiveCodec.manifestFileName];
       if (manifestEntry == null || !manifestEntry.isFile) {
         return const Failed<BackupAttachmentBundle>(
           Failure(
