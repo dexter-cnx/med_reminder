@@ -62,9 +62,7 @@ class SosActionSheet extends ConsumerWidget {
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: hasPhone
-                  ? () => ref
-                      .read(emergencyContactLauncherProvider)
-                      .call(phone)
+                  ? () => ref.read(emergencyContactLauncherProvider).call(phone)
                   : null,
               icon: const Icon(Icons.call_outlined),
               label: Text(
@@ -74,9 +72,7 @@ class SosActionSheet extends ConsumerWidget {
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: hasPhone
-                  ? () => ref
-                      .read(emergencyContactLauncherProvider)
-                      .sms(phone)
+                  ? () => ref.read(emergencyContactLauncherProvider).sms(phone)
                   : null,
               icon: const Icon(Icons.sms_outlined),
               label: const Text('SMS'),
