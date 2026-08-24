@@ -65,6 +65,29 @@ void main() {
     );
   });
 
+  test('decode rejects unsafe medication image paths in manifest', () async {
+    final manifest = await const JsonBackupArchiveCodec().encode(
+      _snapshot('../../outside.png'),
+    );
+    final manifestBytes = manifest.fold(
+      onSuccess: (value) => value,
+      onFailure: (failure) => fail(failure.toString()),
+    );
+    final archive = Archive()
+      ..add(ArchiveFile.bytes('backup.json', manifestBytes));
+    final bytes = ZipEncoder().encodeBytes(archive);
+
+    final result = await codec.decodeBundle(bytes);
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected unsafe manifest path failure.'),
+      onFailure: (failure) {
+        expect(failure.code, 'backup_attachment_path_invalid');
+      },
+    );
+  });
+
   test('decode rejects missing referenced attachments', () async {
     final manifest = await const JsonBackupArchiveCodec().encode(
       _snapshot('attachments/medication/med-1.png'),
