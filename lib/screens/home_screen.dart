@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../features/appointment/presentation/screens/appointment_screen.dart';
 import '../features/emergency/presentation/screens/emergency_medical_card_screen.dart';
+import '../features/emergency/presentation/widgets/sos_action_sheet.dart';
 import '../features/medication_checkin/presentation/widgets/medication_check_in_panel.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
@@ -52,6 +53,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: Text('app_title'.tr()),
         actions: [
+          TextButton.icon(
+            onPressed: () => showSosActionSheet(context),
+            icon: const Icon(Icons.health_and_safety_outlined),
+            label: const Text('SOS'),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+          ),
           IconButton(
             tooltip: 'emergency_card_title'.tr(),
             onPressed: () => Navigator.of(context).push(
