@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/emergency_contact_launcher.dart';
-import '../../data/platform/url_launcher_emergency_contact_launcher.dart';
+import '../../data/platform/platform_emergency_contact_launcher.dart';
 import '../providers/emergency_profile_providers.dart';
 
 final emergencyContactLauncherProvider = Provider<EmergencyContactLauncher>(
-  (ref) => const UrlLauncherEmergencyContactLauncher(),
+  (ref) => const PlatformEmergencyContactLauncher(),
 );
 
 Future<void> showSosActionSheet(BuildContext context) =>
