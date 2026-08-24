@@ -118,6 +118,10 @@ void main() {
 
     expect(find.byType(EmergencyProfileSettingsScreen), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(5));
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
     expect(find.byIcon(Icons.save_outlined), findsOneWidget);
     expect(find.byIcon(Icons.delete_outline), findsOneWidget);
   });
