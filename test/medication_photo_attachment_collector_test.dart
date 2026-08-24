@@ -47,8 +47,37 @@ void main() {
     );
   });
 
+  test('attachment bytes cannot be mutated through a returned view', () async {
+    final source = _FakeAttachmentSource(<String, Uint8List>{
+      '/documents/med_photos/photo.jpg': Uint8List.fromList(<int>[1, 2, 3]),
+    });
+    final collector = MedicationPhotoAttachmentCollector(source: source);
+    final result = await collector.collect(
+      _snapshot(
+        BackupRecord(
+          namespace: MedicationBackupDataPort.medicationNamespace,
+          id: 'med-1',
+          payload: <String, Object?>{
+            'version': 1,
+            'id': 'med-1',
+            'imagePath': '/documents/med_photos/photo.jpg',
+          },
+        ),
+      ),
+    );
+
+    result.fold(
+      onSuccess: (bundle) {
+        final exposed = bundle.attachments.single.bytes;
+        exposed[0] = 99;
+        expect(bundle.attachments.single.bytes, <int>[1, 2, 3]);
+      },
+      onFailure: (failure) => fail(failure.toString()),
+    );
+  });
+
   test('collector leaves records without photos unchanged', () async {
-    final collector = MedicationPhotoAttachmentCollector(
+    const collector = MedicationPhotoAttachmentCollector(
       source: _FakeAttachmentSource(<String, Uint8List>{}),
     );
     final record = BackupRecord(
@@ -73,7 +102,7 @@ void main() {
   });
 
   test('collector aborts when a referenced photo cannot be read', () async {
-    final collector = MedicationPhotoAttachmentCollector(
+    const collector = MedicationPhotoAttachmentCollector(
       source: _FailingAttachmentSource(),
     );
     final snapshot = _snapshot(
@@ -122,6 +151,8 @@ final class _FakeAttachmentSource implements BackupAttachmentSource {
 }
 
 final class _FailingAttachmentSource implements BackupAttachmentSource {
+  const _FailingAttachmentSource();
+
   @override
   Future<Result<Uint8List>> read(String sourcePath) async {
     return const Failed<Uint8List>(
