@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/features/medication/application/backup/dose_log_backup_dto.dart';
 import 'package:med_reminder_offline/features/medication/application/backup/medication_backup_dto.dart';
-import 'package:med_reminder_offline/features/medication/domain/entities/dose_log.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
 
 void main() {
