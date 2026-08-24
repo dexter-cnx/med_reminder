@@ -42,6 +42,7 @@ Future<void> _pumpLocalizedApp(
       supportedLocales: const <Locale>[Locale('en'), Locale('th')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
+      saveLocale: false,
       child: ProviderScope(
         overrides: <Override>[
           emergencyProfileRepositoryProvider.overrideWithValue(repository),
@@ -64,10 +65,6 @@ Future<void> _pumpLocalizedApp(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() async {
-    await EasyLocalization.ensureInitialized();
-  });
 
   testWidgets('Emergency Medical Card is read-only and opens profile settings',
       (
