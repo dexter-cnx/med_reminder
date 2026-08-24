@@ -29,5 +29,16 @@ abstract interface class BackupAttachmentRestorePort {
     List<BackupAttachment> attachments,
   );
 
+  /// Promotes every staged attachment to its reserved final path.
+  ///
+  /// A failure must not leave a partially committed stage behind.
+  Future<Result<void>> commit(String stageId);
+
+  /// Removes attachments that were already committed from this stage.
+  ///
+  /// Used when application-data replacement fails after file commit.
+  Future<Result<void>> rollback(String stageId);
+
+  /// Removes an uncommitted stage.
   Future<Result<void>> discard(String stageId);
 }
