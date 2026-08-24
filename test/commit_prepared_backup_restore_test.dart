@@ -72,6 +72,36 @@ void main() {
     );
   });
 
+  test('data rollback failure preserves committed files', () async {
+    final events = <String>[];
+    final attachments = _FakeAttachmentRestorePort(events: events);
+    final dataPort = _FakeDataPort(
+      events: events,
+      restoreResult: const Failed<void>(
+        Failure(
+          code: 'backup_restore_rollback_failed',
+          message: 'Data rollback failed.',
+        ),
+      ),
+    );
+    final useCase = CommitPreparedBackupRestore(
+      dataPort: dataPort,
+      attachmentRestorePort: attachments,
+    );
+
+    final result = await useCase(_prepared());
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected rollback failure.'),
+      onFailure: (failure) {
+        expect(failure.code, 'backup_restore_rollback_failed');
+      },
+    );
+    expect(events, <String>['commit:stage-1', 'restore']);
+    expect(attachments.rollbackCalls, 0);
+  });
+
   test('rollback failure surfaces explicit transactional failure', () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(
