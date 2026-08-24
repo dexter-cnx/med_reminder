@@ -9,7 +9,8 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_reco
 import 'package:med_reminder_offline/features/backup/domain/entities/backup_snapshot.dart';
 
 void main() {
-  test('collector rewrites medication image paths to deterministic archive paths',
+  test(
+      'collector rewrites medication image paths to deterministic archive paths',
       () async {
     final source = _FakeAttachmentSource(<String, Uint8List>{
       '/documents/med_photos/photo.PNG': Uint8List.fromList(<int>[1, 2, 3]),
