@@ -87,7 +87,7 @@ final class ZipBackupArchiveCodec implements BackupArchiveCodec {
         );
       }
 
-      return manifestCodec.decode(manifestBytes);
+      return await manifestCodec.decode(manifestBytes);
     } on Object {
       return const Failed<BackupSnapshot>(
         Failure(
