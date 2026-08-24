@@ -9,6 +9,8 @@ class CommitPreparedBackupRestore {
     required this.attachmentRestorePort,
   });
 
+  static const String dataRollbackFailedCode = 'backup_restore_rollback_failed';
+
   final BackupDataPort dataPort;
   final BackupAttachmentRestorePort attachmentRestorePort;
 
@@ -24,6 +26,10 @@ class CommitPreparedBackupRestore {
     }
 
     final dataFailure = (dataRestore as Failed<void>).failure;
+    if (dataFailure.code == dataRollbackFailedCode) {
+      return Failed<void>(dataFailure);
+    }
+
     final fileRollback = await attachmentRestorePort.rollback(prepared.stageId);
     if (fileRollback case Failed<void>()) {
       return const Failed<void>(
