@@ -33,7 +33,8 @@ void main() {
     );
   });
 
-  test('capture excludes dose logs whose medication no longer exists', () async {
+  test('capture excludes dose logs whose medication no longer exists',
+      () async {
     final medication = _medication('med-1');
     final medicationRepository =
         _FakeMedicationRepository(<Medication>[medication]);
