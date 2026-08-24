@@ -65,6 +65,67 @@ void main() {
     );
   });
 
+  test('encode rejects missing referenced attachments', () async {
+    final result = await codec.encodeBundle(
+      BackupAttachmentBundle(
+        snapshot: _snapshot('attachments/medication/med-1.png'),
+        attachments: const <BackupAttachment>[],
+      ),
+    );
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected missing attachment failure.'),
+      onFailure: (failure) {
+        expect(failure.code, 'backup_attachment_missing');
+      },
+    );
+  });
+
+  test('encode rejects unreferenced attachments', () async {
+    final result = await codec.encodeBundle(
+      BackupAttachmentBundle(
+        snapshot: _snapshot(null),
+        attachments: <BackupAttachment>[
+          BackupAttachment(
+            archivePath: 'attachments/medication/unreferenced.png',
+            bytes: Uint8List.fromList(<int>[9]),
+          ),
+        ],
+      ),
+    );
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected unexpected attachment failure.'),
+      onFailure: (failure) {
+        expect(failure.code, 'backup_attachment_unexpected');
+      },
+    );
+  });
+
+  test('empty medication image path round-trips as photo-less', () async {
+    final encoded = await codec.encodeBundle(
+      BackupAttachmentBundle(
+        snapshot: _snapshot(''),
+        attachments: const <BackupAttachment>[],
+      ),
+    );
+    final bytes = encoded.fold(
+      onSuccess: (value) => value,
+      onFailure: (failure) => fail(failure.toString()),
+    );
+    final decoded = await codec.decodeBundle(bytes);
+
+    decoded.fold(
+      onSuccess: (bundle) {
+        expect(bundle.snapshot.records.single.payload['imagePath'], '');
+        expect(bundle.attachments, isEmpty);
+      },
+      onFailure: (failure) => fail(failure.toString()),
+    );
+  });
+
   test('decode rejects unsafe medication image paths in manifest', () async {
     final manifest = await const JsonBackupArchiveCodec().encode(
       _snapshot('../../outside.png'),
