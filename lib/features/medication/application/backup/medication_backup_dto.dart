@@ -14,7 +14,7 @@ class MedicationBackupDto {
         'genericName': medication.genericName,
         'description': medication.description,
         'times': medication.times,
-        'createdAt': medication.createdAt.toUtc().toIso8601String(),
+        'createdAt': _encodeLocalDateTime(medication.createdAt),
         'initialAmount': medication.initialAmount,
         'lowThreshold': medication.lowThreshold,
         'imagePath': medication.imagePath,
@@ -51,14 +51,17 @@ class MedicationBackupDto {
         genericName: _optionalString(payload, 'genericName') ?? '',
         description: _optionalString(payload, 'description') ?? '',
         times: timesValue.map((value) => value as String).toList(),
-        createdAt: DateTime.parse(_requiredString(payload, 'createdAt')),
+        createdAt: _decodeLocalDateTime(
+          _requiredString(payload, 'createdAt'),
+        ),
         initialAmount: _optionalInt(payload, 'initialAmount'),
         lowThreshold: _optionalInt(payload, 'lowThreshold'),
         imagePath: _optionalString(payload, 'imagePath'),
         dosagePerTime: _optionalInt(payload, 'dosagePerTime') ?? 1,
         mode: MedicationMode.values.byName(_requiredString(payload, 'mode')),
         dosePlan: MedicationDosePlan.values.byName(
-          _optionalString(payload, 'dosePlan') ?? MedicationDosePlan.scheduled.name,
+          _optionalString(payload, 'dosePlan') ??
+              MedicationDosePlan.scheduled.name,
         ),
         daysCount: _optionalInt(payload, 'daysCount'),
       );
@@ -72,6 +75,31 @@ class MedicationBackupDto {
         ),
       );
     }
+  }
+
+  static String _encodeLocalDateTime(DateTime value) => DateTime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.millisecond,
+        value.microsecond,
+      ).toIso8601String();
+
+  static DateTime _decodeLocalDateTime(String value) {
+    final parsed = DateTime.parse(value);
+    return DateTime(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
   }
 
   static String _requiredString(Map<String, Object?> payload, String key) {
