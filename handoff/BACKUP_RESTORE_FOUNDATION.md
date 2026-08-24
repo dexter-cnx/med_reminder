@@ -2,44 +2,31 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, a versioned JSON manifest codec, deterministic ZIP containers, and a photo-attachment collection + ZIP bundle boundary for the fully offline export/import flow.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, focused restore-safety coverage, a versioned JSON manifest codec, deterministic ZIP containers, photo-attachment collection + ZIP bundle preflight, and a staged restore preparation boundary for the fully offline export/import flow.
 
 Implemented:
 
-- versioned `BackupSnapshot` model;
-- namespace-based `BackupRecord` model so Backup does not import feature persistence implementations;
-- deeply immutable backup record payloads;
+- versioned `BackupSnapshot` / `BackupRecord` models;
 - `BackupArchiveCodec` and `BackupBundleArchiveCodec` contracts;
-- `BackupDataPort` contract for capturing application-owned data and restoring it atomically;
-- `CreateBackup` and `RestoreBackup` use cases;
-- schema validation before restore mutation;
-- versioned Medication and DoseLog backup DTO conversion;
-- Medication backup deliberately excludes notification IDs because notification schedules are derived state;
-- concrete `MedicationBackupDataPort` with full preflight and compensating rollback;
-- capture filtering so orphan DoseLogs are not exported;
-- deterministic `JsonBackupArchiveCodec` and versioned `backup.json` manifest;
-- deterministic `ZipBackupArchiveCodec` for manifest-only archives;
-- `BackupAttachmentSource` and `FileBackupAttachmentSource` boundaries;
-- `MedicationPhotoAttachmentCollector` converting local photo paths into deterministic `attachments/medication/<encoded-medication-id>.<ext>` references;
+- `BackupDataPort` with atomic replace-all semantics and compensating rollback;
+- Medication and DoseLog backup DTOs with notification IDs excluded;
+- deterministic `backup.json` manifest and ZIP codecs;
+- `MedicationPhotoAttachmentCollector` converting local photo paths into deterministic archive-relative references;
 - immutable attachment bytes with defensive-copy access;
-- `ZipBackupBundleArchiveCodec` that writes the manifest and collected attachment bytes into one deterministic ZIP;
-- bundle decode preflight requiring every medication photo reference to be a safe archive-relative attachment path;
-- rejection of missing referenced attachments, unexpected/unreferenced attachment entries, duplicate paths, path traversal/backslash paths, and corrupt ZIPs;
-- focused attachment collection and ZIP bundle round-trip/failure-path tests;
+- `ZipBackupBundleArchiveCodec` that validates safe referenced attachments, missing/unexpected entries, duplicate paths, path traversal/backslash paths, and corrupt ZIPs;
+- `BackupAttachmentRestorePort` as the boundary for staging imported attachment bytes outside live application storage;
+- `PrepareBackupRestore` two-phase preparation that decodes/preflights the ZIP, validates schema, stages attachments, rewrites medication `imagePath` values to staged local paths, and discards the stage if rewrite validation fails;
+- focused tests proving decode failure does not stage files and incomplete staged mappings are discarded before failure;
 - pinned `archive` 4.0.9 dependency.
 
-No share sheet, file picker, live attachment extraction/commit, final local photo-path rewrite, or reminder rebuild integration is introduced yet.
+No share sheet, file picker, live attachment commit, repository-integrated staged rollback, or reminder rebuild integration is introduced yet.
 
 ## Boundary
-
-Backup is an application-composition feature. It must not become a shortcut around feature repositories or storage abstractions.
 
 ```text
 Feature-owned application data
         ↓
-versioned feature DTO adapters
-        ↓
-BackupDataPort
+BackupDataPort / versioned DTOs
         ↓
 BackupSnapshot
         ↓
@@ -47,48 +34,48 @@ MedicationPhotoAttachmentCollector
         ↓
 BackupAttachmentBundle
         ↓
-Json backup.json + attachment bytes
-        ↓
 ZipBackupBundleArchiveCodec
         ↓
 validated offline ZIP
+        ↓
+PrepareBackupRestore
+        ↓
+BackupAttachmentRestorePort.stage()
+        ↓
+prepared snapshot with staged local photo paths
+        ↓
+future transactional commit + BackupDataPort.restoreAtomically()
 ```
 
-Feature DTO adapters live with the owning feature so they can evolve with that domain without exposing Hive records. Backup presentation code must not read/write Hive boxes directly.
-
-`backup.json` is the authoritative structured manifest inside the ZIP. `manifestVersion` describes the manifest/container contract while `BackupSnapshot.schemaVersion` describes the application backup schema. They remain independently versioned.
-
-Medication photo collection deliberately converts device-local absolute `imagePath` values into deterministic archive-relative paths before encoding. Bundle decode now guarantees that each non-null medication image reference points to one safe attachment entry and that no unexpected attachment entries survive preflight.
-
-Archive-relative paths must never be persisted as live application photo paths. The next restore slice must stage extracted bytes first, compute final local `med_photos` paths, rewrite a prepared snapshot, and expose explicit commit/rollback before the prepared snapshot is passed to `BackupDataPort.restoreAtomically()`.
+`backup.json` remains authoritative. Archive-relative attachment paths must never be persisted as live application photo paths. Preparation now separates archive parsing and file staging from repository mutation so failures before commit cannot partially replace application data.
 
 ## Restore safety
 
-Restore uses replace-all semantics for the first product version because it is deterministic and explainable.
+Restore uses replace-all semantics for the first product version.
 
-`BackupDataPort.restoreAtomically()` has a strong contract:
+The restore transaction must preserve these invariants:
 
-1. validate all incoming records before mutating current state;
-2. stage file/record changes where needed;
-3. either replace the complete backup-owned dataset or leave the previous state intact;
-4. rebuild derived state such as reminder schedules after successful restore rather than trusting exported notification identifiers.
+1. validate archive structure and application schema before mutation;
+2. stage every referenced file before repository replacement;
+3. rewrite photo paths only from verified stage mappings;
+4. if staging or rewrite fails, discard the stage and leave repositories untouched;
+5. when commit integration is added, either both file commit and repository replacement succeed or cleanup/rollback restores the pre-import state;
+6. rebuild derived reminder schedules after successful restore rather than trusting exported notification identifiers.
 
 A partially applied restore is not acceptable.
-
-ZIP bundle decode is a preflight boundary only. It validates archive structure and attachment completeness but does not write files or mutate repositories. This separation prevents archive parsing errors from leaving partial restore state behind.
 
 ## Privacy
 
 - Backup remains offline-first.
 - No archive is uploaded by Besyu.
-- A future export share action hands the generated local archive to the operating-system share sheet; the user explicitly chooses the destination.
-- Sensitive health data in a backup must not be logged to analytics or crash breadcrumbs.
-- Encryption/password protection is a separate product/security decision and must not be implied until implemented and validated.
+- Sensitive health data or attachment paths/content must not be logged to analytics or crash breadcrumbs.
+- A future export share action hands the generated local archive to the OS share sheet; the user chooses the destination.
+- Encryption/password protection remains a separate product/security decision.
 
 ## Next slices
 
-1. Add a staged photo restore port that writes attachment bytes to temporary files, reserves final `med_photos` paths, and prepares a snapshot with rewritten local paths without mutating repositories.
-2. Integrate staged photo commit/rollback with `RestoreBackup` + `BackupDataPort.restoreAtomically()` so repository failure cleans staged files and file-commit failure cannot leave restored data pointing at missing photos.
-3. Rebuild reminder schedules after successful restore; never restore notification IDs as authoritative data.
-4. Add export/share and import/file-selection presentation only after the data + ZIP + attachment round-trip is transactionally integrated.
-5. Expand coverage to extraction failure, destination conflicts, commit failure, rollback failure, and interrupted restore cleanup.
+1. Add a concrete file-backed staged photo restore implementation using temporary storage and reserved final `med_photos` destinations.
+2. Add explicit stage commit/discard semantics and integrate them with `BackupDataPort.restoreAtomically()` so repository or file-commit failure cannot leave dangling photo paths.
+3. Rebuild reminder schedules only after the complete restore transaction succeeds.
+4. Add export/share and import/file-selection presentation after transactional round-trip coverage is green.
+5. Expand coverage to extraction failure, destination conflicts, commit failure, rollback failure, and interrupted-stage cleanup.
