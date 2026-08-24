@@ -5,7 +5,6 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_reco
 import 'package:med_reminder_offline/features/backup/domain/entities/backup_snapshot.dart';
 import 'package:med_reminder_offline/features/medication/application/backup/medication_backup_dto.dart';
 import 'package:med_reminder_offline/features/medication/domain/entities/medication.dart';
-import 'package:med_reminder_offline/features/medication/domain/repositories/dose_log_repository.dart';
 import 'package:med_reminder_offline/features/medication/domain/repositories/medication_repository.dart';
 
 void main() {
@@ -83,7 +82,7 @@ Medication _medication(String id) => Medication(
       description: 'description',
       times: const <String>['08:00'],
       createdAt: DateTime(2026, 8, 24),
-      mode: MedicationMode.continuous,
+      mode: MedicationMode.forever,
       dosePlan: MedicationDosePlan.scheduled,
     );
 
