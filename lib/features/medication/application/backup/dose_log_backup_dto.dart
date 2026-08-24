@@ -10,7 +10,7 @@ class DoseLogBackupDto {
         'version': version,
         'id': log.id,
         'medId': log.medId,
-        'scheduledAt': log.scheduledAt.toUtc().toIso8601String(),
+        'scheduledAt': _encodeLocalDateTime(log.scheduledAt),
         'takenAt': log.takenAt?.toUtc().toIso8601String(),
         'status': log.status.name,
       };
@@ -31,7 +31,7 @@ class DoseLogBackupDto {
         DoseLog(
           id: _requiredString(payload, 'id'),
           medId: _requiredString(payload, 'medId'),
-          scheduledAt: DateTime.parse(
+          scheduledAt: _decodeLocalDateTime(
             _requiredString(payload, 'scheduledAt'),
           ),
           takenAt: takenAt == null ? null : DateTime.parse(takenAt),
@@ -48,6 +48,31 @@ class DoseLogBackupDto {
         ),
       );
     }
+  }
+
+  static String _encodeLocalDateTime(DateTime value) => DateTime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second,
+        value.millisecond,
+        value.microsecond,
+      ).toIso8601String();
+
+  static DateTime _decodeLocalDateTime(String value) {
+    final parsed = DateTime.parse(value);
+    return DateTime(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
   }
 
   static String _requiredString(Map<String, Object?> payload, String key) {
