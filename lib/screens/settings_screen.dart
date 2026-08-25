@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../features/backup/presentation/widgets/reminder_repair_card.dart';
 import '../features/emergency/presentation/screens/emergency_profile_settings_screen.dart';
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
@@ -285,6 +286,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 20),
+        const ReminderRepairCard(),
         const SizedBox(height: 20),
         _SectionTitle('settings_about'.tr()),
         Card(
