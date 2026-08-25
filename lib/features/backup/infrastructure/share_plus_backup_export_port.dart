@@ -12,24 +12,27 @@ import '../application/backup_export_port.dart';
 final class SharePlusBackupExportPort implements BackupExportPort {
   const SharePlusBackupExportPort();
 
+  static const _retention = Duration(hours: 24);
+
   @override
   Future<Result<void>> shareArchive(
     Uint8List archiveBytes, {
     required String fileName,
     BackupShareAnchor? anchor,
   }) async {
-    File? temporaryFile;
     try {
       final temporaryDirectory = await getTemporaryDirectory();
       final shareDirectory = Directory(
         p.join(temporaryDirectory.path, 'besyu_backup_share'),
       );
       await shareDirectory.create(recursive: true);
-      temporaryFile = File(p.join(shareDirectory.path, fileName));
-      await temporaryFile.writeAsBytes(archiveBytes, flush: true);
+      await _cleanupStaleArchives(shareDirectory);
 
-      await Share.shareXFiles(
-        <XFile>[XFile(temporaryFile.path, mimeType: 'application/zip')],
+      final sharedFile = File(p.join(shareDirectory.path, fileName));
+      await sharedFile.writeAsBytes(archiveBytes, flush: true);
+
+      final shareResult = await Share.shareXFiles(
+        <XFile>[XFile(sharedFile.path, mimeType: 'application/zip')],
         subject: 'Besyu backup',
         sharePositionOrigin: anchor == null
             ? null
@@ -40,6 +43,22 @@ final class SharePlusBackupExportPort implements BackupExportPort {
                 anchor.height,
               ),
       );
+      if (shareResult.status == ShareResultStatus.dismissed) {
+        return const Failed<void>(
+          Failure(
+            code: 'backup_export_cancelled',
+            message: 'Backup export was cancelled before choosing a destination.',
+          ),
+        );
+      }
+      if (shareResult.status == ShareResultStatus.unavailable) {
+        return const Failed<void>(
+          Failure(
+            code: 'backup_export_share_unavailable',
+            message: 'The system share sheet is not available.',
+          ),
+        );
+      }
       return const Success<void>(null);
     } on Object {
       return const Failed<void>(
@@ -48,14 +67,23 @@ final class SharePlusBackupExportPort implements BackupExportPort {
           message: 'The backup could not be handed to the system share sheet.',
         ),
       );
-    } finally {
-      if (temporaryFile != null) {
+    }
+  }
+
+  Future<void> _cleanupStaleArchives(Directory shareDirectory) async {
+    final cutoff = DateTime.now().subtract(_retention);
+    try {
+      await for (final entity in shareDirectory.list(followLinks: false)) {
+        if (entity is! File) continue;
         try {
-          if (await temporaryFile.exists()) await temporaryFile.delete();
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoff)) await entity.delete();
         } on Object {
-          // Best-effort cleanup. Never turn a completed share into a failure.
+          // Best-effort retention cleanup must never block a new export.
         }
       }
+    } on Object {
+      // Best-effort retention cleanup must never block a new export.
     }
   }
 }
