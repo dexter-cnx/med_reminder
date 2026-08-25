@@ -47,7 +47,8 @@ final class SharePlusBackupExportPort implements BackupExportPort {
         return const Failed<void>(
           Failure(
             code: 'backup_export_cancelled',
-            message: 'Backup export was cancelled before choosing a destination.',
+            message:
+                'Backup export was cancelled before choosing a destination.',
           ),
         );
       }
