@@ -50,7 +50,8 @@ final class ReminderReconciliationTransaction {
     final sourceById = <String, Medication>{
       for (final medication in medications) medication.id: medication,
     };
-    final previousIds = previousNotificationIds?.toList(growable: false) ??
+    final previousIds =
+        previousNotificationIds?.toList(growable: false) ??
         <int>[
           for (final medication in medications) ...medication.notificationIds,
         ];
@@ -73,10 +74,10 @@ final class ReminderReconciliationTransaction {
 
         final schedulingSnapshot =
             medication.mode == MedicationMode.untilEmpty &&
-                    remaining != null &&
-                    remaining > 0
-                ? medication.copyWith(initialAmount: remaining)
-                : medication;
+                remaining != null &&
+                remaining > 0
+            ? medication.copyWith(initialAmount: remaining)
+            : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         createdIds.addAll(ids);
         createdIdsByMedication[medication.id] = ids;
