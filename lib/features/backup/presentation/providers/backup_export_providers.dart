@@ -48,7 +48,7 @@ final class BackupExportController extends StateNotifier<bool> {
       if (bundle case Failed<Uint8List>(:final failure)) {
         return Failed<void>(failure);
       }
-      return exportPort.shareArchive(
+      return await exportPort.shareArchive(
         (bundle as Success<Uint8List>).value,
         fileName: _fileName(_now()),
         anchor: anchor,
