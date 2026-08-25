@@ -12,10 +12,7 @@ void main() {
   });
 
   test('declares boot completed permission', () {
-    expect(
-      manifest,
-      contains('android.permission.RECEIVE_BOOT_COMPLETED'),
-    );
+    expect(manifest, contains('android.permission.RECEIVE_BOOT_COMPLETED'));
   });
 
   test('registers scheduled notification receiver', () {
