@@ -8,7 +8,6 @@ import '../../application/backup_import_port.dart';
 import '../../application/medication_backup_data_port.dart';
 import '../../application/restore_backup_bundle.dart';
 import '../../application/zip_backup_bundle_archive_codec.dart';
-import '../../domain/entities/backup_snapshot.dart';
 import '../../infrastructure/file_picker_backup_import_port.dart';
 import 'backup_restore_providers.dart';
 
