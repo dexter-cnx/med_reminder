@@ -13,17 +13,16 @@ final class FilePickerBackupImportPort implements BackupImportPort {
   @override
   Future<Result<BackupImportSelection?>> pickArchive() async {
     try {
-      final result = await FilePicker.pickFiles(
-        allowMultiple: false,
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: const <String>['zip'],
       );
-      if (result == null || result.files.isEmpty) {
+      if (file == null) {
         return const Success<BackupImportSelection?>(null);
       }
 
-      final file = result.files.single;
-      if (file.size > maximumArchiveBytes) {
+      final size = await file.length();
+      if (size > maximumArchiveBytes) {
         return const Failed<BackupImportSelection?>(
           Failure(
             code: 'backup_import_too_large',
@@ -32,7 +31,7 @@ final class FilePickerBackupImportPort implements BackupImportPort {
         );
       }
 
-      final bytes = await file.xFile.readAsBytes();
+      final bytes = await file.readAsBytes();
       if (bytes.length > maximumArchiveBytes) {
         return const Failed<BackupImportSelection?>(
           Failure(
