@@ -3,57 +3,55 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/backup_restore_providers.dart';
 
-class ReminderRepairCard extends ConsumerStatefulWidget {
+class ReminderRepairCard extends ConsumerWidget {
   const ReminderRepairCard({super.key});
 
-  @override
-  ConsumerState<ReminderRepairCard> createState() => _ReminderRepairCardState();
-}
+  bool _isThai(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'th';
 
-class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
-  bool _busy = false;
-
-  bool get _isThai => Localizations.localeOf(context).languageCode == 'th';
-
-  String get _title =>
-      _isThai ? 'ซ่อมการแจ้งเตือนยา' : 'Repair medication reminders';
-  String get _description => _isThai
+  String _title(BuildContext context) => _isThai(context)
+      ? 'ซ่อมการแจ้งเตือนยา'
+      : 'Repair medication reminders';
+  String _description(BuildContext context) => _isThai(context)
       ? 'สร้างการแจ้งเตือนใหม่จากข้อมูลยาปัจจุบัน โดยไม่เปลี่ยนข้อมูลยาที่บันทึกไว้'
       : 'Rebuild reminders from current medication data without changing your saved medication records.';
-  String get _action => _isThai ? 'ซ่อมการแจ้งเตือน' : 'Repair reminders';
-  String get _success => _isThai
+  String _action(BuildContext context) =>
+      _isThai(context) ? 'ซ่อมการแจ้งเตือน' : 'Repair reminders';
+  String _success(BuildContext context) => _isThai(context)
       ? 'สร้างการแจ้งเตือนยาใหม่เรียบร้อยแล้ว'
       : 'Medication reminders were rebuilt successfully.';
 
-  String _failureMessage(String code) {
-    if (_isThai) {
+  String _failureMessage(BuildContext context, String code) {
+    if (_isThai(context)) {
       return switch (code) {
         'backup_restore_reminder_state_persist_failed' =>
-          'สร้างการแจ้งเตือนได้ แต่บันทึกสถานะใหม่ไม่สำเร็จ กรุณาลองอีกครั้ง',
+          'ไม่สามารถบันทึกสถานะการแจ้งเตือนได้ ระบบยกเลิกการแจ้งเตือนที่สร้างใหม่แล้ว กรุณาลองซ่อมอีกครั้งก่อนพึ่งพาการเตือน',
         'backup_restore_reminder_cleanup_failed' =>
-          'ซ่อมการแจ้งเตือนไม่สำเร็จทั้งหมด กรุณาลองอีกครั้ง',
-        _ => 'ไม่สามารถซ่อมการแจ้งเตือนได้ กรุณาลองอีกครั้ง',
+          'ซ่อมการแจ้งเตือนไม่สำเร็จทั้งหมด กรุณาลองอีกครั้งและตรวจสอบการแจ้งเตือนยา',
+        'backup_restore_reminder_repair_in_progress' =>
+          'กำลังซ่อมการแจ้งเตือนอยู่ กรุณารอให้เสร็จก่อน',
+        _ =>
+          'ไม่สามารถซ่อมการแจ้งเตือนได้ การแจ้งเตือนยาอาจยังไม่พร้อม กรุณาลองอีกครั้ง',
       };
     }
     return switch (code) {
       'backup_restore_reminder_state_persist_failed' =>
-        'Reminders were rebuilt, but the new state could not be saved. Try again.',
+        'Reminder state could not be saved, so newly created reminders were removed. Repair reminders again before relying on medication alerts.',
       'backup_restore_reminder_cleanup_failed' =>
-        'Reminder repair could not be completed safely. Try again.',
-      _ => 'Medication reminders could not be repaired. Try again.',
+        'Reminder repair could not be completed safely. Try again and verify your medication reminders.',
+      'backup_restore_reminder_repair_in_progress' =>
+        'Reminder repair is already in progress. Let it finish before trying again.',
+      _ =>
+        'Medication reminders could not be repaired and may still be unavailable. Try again.',
     };
   }
 
-  Future<void> _repair() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    final controller = ref.read(reminderRepairControllerProvider);
-    final result = await controller.repair();
-    if (!mounted) return;
-    setState(() => _busy = false);
+  Future<void> _repair(BuildContext context, WidgetRef ref) async {
+    final result = await ref.read(reminderRepairControllerProvider.notifier).repair();
+    if (!context.mounted) return;
     final message = result.fold(
-      onSuccess: (_) => _success,
-      onFailure: (failure) => _failureMessage(failure.code),
+      onSuccess: (_) => _success(context),
+      onFailure: (failure) => _failureMessage(context, failure.code),
     );
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -61,7 +59,8 @@ class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(reminderRepairControllerProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -77,10 +76,12 @@ class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_title,
-                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        _title(context),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 4),
-                      Text(_description),
+                      Text(_description(context)),
                     ],
                   ),
                 ),
@@ -88,14 +89,14 @@ class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _busy ? null : _repair,
-              icon: _busy
+              onPressed: busy ? null : () => _repair(context, ref),
+              icon: busy
                   ? const SizedBox.square(
                       dimension: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.build_circle_outlined),
-              label: Text(_action),
+              label: Text(_action(context)),
             ),
           ],
         ),
