@@ -8,7 +8,8 @@ Current behavior:
 
 - persistent medication and dose-log data remain authoritative;
 - OS notification IDs are derived operational state;
-- Home triggers reconciliation after first operational mount and on app resume;
+- Home triggers reconciliation once after first operational mount to repair cold-launch state;
+- `BesyuApp` is the single foreground lifecycle owner: resume refreshes timezone and platform permission/capability state before reconciliation;
 - interactive reminder-affecting mutations (take, skip, snooze, medication add/delete, and refill) trigger the same reconciliation controller after persistence;
 - overlapping triggers are coalesced into one queued rerun so a mutation that lands during lifecycle repair is reconciled from the latest state afterward;
 - lifecycle repair retries once immediately after a failed reconciliation before giving up for that trigger;
@@ -41,6 +42,7 @@ Current behavior:
 11. Finite courses must never expand unboundedly into native pending notifications; only the configured rolling calendar window may be scheduled.
 12. Rolling-window projection must never rewrite the persisted medication course start date or duration.
 13. Calendar-day calculations must not depend on elapsed wall-clock hours, so DST transitions cannot move a finite course by one day.
+14. Foreground reminder repair has one lifecycle owner. `HomeScreen` may perform cold-launch repair after mount but must not register its own resume observer.
 
 ## Recovery model
 
@@ -52,5 +54,4 @@ Android force-stop remains a platform limitation: alarms/notifications may be su
 
 1. Validate reboot, force-stop recovery, timezone changes, permission transitions, rolling-window refill, and long-idle behavior on physical Android/iOS devices.
 2. Add global pending-notification budget allocation if physical iOS validation shows that per-course rolling windows can still exceed the platform queue under high medication/time counts.
-3. Consider consolidating duplicate resume observers after physical lifecycle validation confirms ordering across supported platforms.
-4. Refactor backup reminder rebuild to reuse the medication-level reconciliation core while preserving backup-specific error semantics.
+3. Refactor backup reminder rebuild to reuse the medication-level reconciliation core while preserving backup-specific error semantics; the duplicated implementation has already drifted by omitting PRN/as-needed scheduling exclusion.
