@@ -18,7 +18,9 @@ final class RebuildRestoredReminders {
   final MedicationStockResolver stockResolver;
   final DateTime Function() _now;
 
-  Future<Result<void>> call() async {
+  Future<Result<void>> call({
+    Iterable<int> previousNotificationIds = const <int>[],
+  }) async {
     final medicationsResult = medicationRepository.readAll();
     if (medicationsResult case Failed<List<Medication>>(:final failure)) {
       return Failed<void>(failure);
@@ -31,15 +33,16 @@ final class RebuildRestoredReminders {
     final medications = (medicationsResult as Success<List<Medication>>).value;
     final logs = (logsResult as Success<List<DoseLog>>).value;
     final rebuilt = <Medication>[];
+    final createdIds = <int>[];
 
     try {
+      await reminderScheduler.cancelIds(previousNotificationIds);
       final now = _now();
       for (final medication in medications) {
         final remaining = stockResolver(medication, logs);
         final shouldNotSchedule = medication.isExpired(now) ||
             (medication.mode == MedicationMode.untilEmpty && remaining == 0);
         if (shouldNotSchedule) {
-          await reminderScheduler.cancelIds(medication.notificationIds);
           rebuilt.add(
             medication.copyWith(notificationIds: const <int>[]),
           );
@@ -53,28 +56,48 @@ final class RebuildRestoredReminders {
                 ? medication.copyWith(initialAmount: remaining)
                 : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
+        createdIds.addAll(ids);
         rebuilt.add(medication.copyWith(notificationIds: ids));
       }
     } on Object {
-      return const Failed<void>(
-        Failure(
-          code: 'backup_restore_reminder_rebuild_failed',
-          message:
-              'Backup data was restored, but medication reminders could not be rebuilt.',
-        ),
+      return _cleanupCreatedIds(
+        createdIds,
+        failureCode: 'backup_restore_reminder_rebuild_failed',
+        failureMessage:
+            'Backup data was restored, but medication reminders could not be rebuilt.',
       );
     }
 
     final persisted = await medicationRepository.replaceAll(rebuilt);
     if (persisted case Failed<void>()) {
-      return const Failed<void>(
-        Failure(
-          code: 'backup_restore_reminder_state_persist_failed',
-          message:
-              'Backup data was restored, but rebuilt reminder state could not be saved.',
-        ),
+      return _cleanupCreatedIds(
+        createdIds,
+        failureCode: 'backup_restore_reminder_state_persist_failed',
+        failureMessage:
+            'Backup data was restored, but rebuilt reminder state could not be saved.',
       );
     }
     return const Success<void>(null);
+  }
+
+  Future<Result<void>> _cleanupCreatedIds(
+    Iterable<int> createdIds, {
+    required String failureCode,
+    required String failureMessage,
+  }) async {
+    try {
+      await reminderScheduler.cancelIds(createdIds);
+    } on Object {
+      return const Failed<void>(
+        Failure(
+          code: 'backup_restore_reminder_cleanup_failed',
+          message:
+              'Backup data was restored, but partially rebuilt reminders could not be cleaned up.',
+        ),
+      );
+    }
+    return Failed<void>(
+      Failure(code: failureCode, message: failureMessage),
+    );
   }
 }
