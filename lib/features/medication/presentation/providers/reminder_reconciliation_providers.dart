@@ -4,14 +4,15 @@ import '../../../../core/result/result.dart';
 import '../../application/reconcile_medication_reminders.dart';
 import '../viewmodels/medication_view_model.dart';
 
-final reconcileMedicationRemindersProvider = Provider<ReconcileMedicationReminders>(
-  (ref) => ReconcileMedicationReminders(
-    medicationRepository: ref.watch(medicationRepositoryProvider),
-    doseLogRepository: ref.watch(doseLogRepositoryProvider),
-    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
-    stockResolver: ref.watch(medicationStockResolverProvider),
-  ),
-);
+final reconcileMedicationRemindersProvider =
+    Provider<ReconcileMedicationReminders>(
+      (ref) => ReconcileMedicationReminders(
+        medicationRepository: ref.watch(medicationRepositoryProvider),
+        doseLogRepository: ref.watch(doseLogRepositoryProvider),
+        reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+        stockResolver: ref.watch(medicationStockResolverProvider),
+      ),
+    );
 
 final reminderReconciliationControllerProvider =
     Provider<ReminderReconciliationController>(
