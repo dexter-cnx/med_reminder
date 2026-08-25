@@ -29,11 +29,18 @@ class BackupExportCard extends ConsumerWidget {
       if (!context.mounted) return;
       final message = result.fold(
         onSuccess: (_) => isThai
-            ? 'สร้างไฟล์สำรองแล้ว เลือกปลายทางจากเมนูแชร์ของระบบได้เลย'
-            : 'Backup created. Choose a destination from the system share sheet.',
-        onFailure: (failure) => isThai
-            ? 'ไม่สามารถส่งออกไฟล์สำรองได้ กรุณาลองอีกครั้ง'
-            : 'The backup could not be exported. Try again.',
+            ? 'ส่งไฟล์สำรองไปยังปลายทางที่เลือกแล้ว'
+            : 'The backup was handed to the selected destination.',
+        onFailure: (failure) {
+          if (failure.code == 'backup_export_cancelled') {
+            return isThai
+                ? 'ยกเลิกการส่งออกไฟล์สำรองแล้ว'
+                : 'Backup export was cancelled.';
+          }
+          return isThai
+              ? 'ไม่สามารถส่งออกไฟล์สำรองได้ กรุณาลองอีกครั้ง'
+              : 'The backup could not be exported. Try again.';
+        },
       );
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
