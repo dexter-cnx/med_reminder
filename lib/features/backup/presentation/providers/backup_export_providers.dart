@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/result/result.dart';
@@ -30,7 +32,7 @@ final class BackupExportController extends StateNotifier<bool> {
   final BackupExportPort exportPort;
   final DateTime Function() _now;
 
-  Future<Result<void>> shareBackup() async {
+  Future<Result<void>> shareBackup({BackupShareAnchor? anchor}) async {
     if (state) {
       return const Failed<void>(
         Failure(
@@ -43,12 +45,13 @@ final class BackupExportController extends StateNotifier<bool> {
     state = true;
     try {
       final bundle = await createBundle();
-      if (bundle case Failed(:final failure)) {
+      if (bundle case Failed<Uint8List>(:final failure)) {
         return Failed<void>(failure);
       }
       return exportPort.shareArchive(
-        (bundle as Success).value,
+        (bundle as Success<Uint8List>).value,
         fileName: _fileName(_now()),
+        anchor: anchor,
       );
     } finally {
       state = false;
