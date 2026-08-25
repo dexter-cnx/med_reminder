@@ -16,8 +16,10 @@ final class FileBackupAttachmentRestorePort
     required this.stagingRootPath,
     Uuid? uuid,
     DateTime Function()? now,
+    Future<void> Function(Directory)? deleteDirectory,
   })  : _uuid = uuid ?? const Uuid(),
-        _now = now ?? DateTime.now;
+        _now = now ?? DateTime.now,
+        _deleteDirectory = deleteDirectory ?? _deleteDirectoryIfExists;
 
   static const String _metadataFileName = 'stage.json';
 
@@ -25,6 +27,7 @@ final class FileBackupAttachmentRestorePort
   final String stagingRootPath;
   final Uuid _uuid;
   final DateTime Function() _now;
+  final Future<void> Function(Directory) _deleteDirectory;
 
   @override
   Future<Result<StagedBackupAttachments>> stage(
@@ -48,7 +51,8 @@ final class FileBackupAttachmentRestorePort
         final finalPath = p.join(finalDirectory.path, '$fileId$extension');
 
         if (await File(finalPath).exists()) {
-          await _deleteDirectoryIfExists(stageDirectory);
+          final cleanup = await _cleanupFailedStage(stageDirectory);
+          if (cleanup != null) return cleanup;
           return const Failed<StagedBackupAttachments>(
             Failure(
               code: 'backup_restore_destination_conflict',
@@ -87,11 +91,29 @@ final class FileBackupAttachmentRestorePort
         ),
       );
     } on Object {
-      await _deleteDirectoryIfExists(stageDirectory);
+      final cleanup = await _cleanupFailedStage(stageDirectory);
+      if (cleanup != null) return cleanup;
       return const Failed<StagedBackupAttachments>(
         Failure(
           code: 'backup_restore_attachment_stage_failed',
           message: 'Backup attachments could not be staged.',
+        ),
+      );
+    }
+  }
+
+  Future<Failed<StagedBackupAttachments>?> _cleanupFailedStage(
+    Directory stageDirectory,
+  ) async {
+    try {
+      await _deleteDirectory(stageDirectory);
+      return null;
+    } on Object {
+      return const Failed<StagedBackupAttachments>(
+        Failure(
+          code: 'backup_restore_attachment_stage_cleanup_failed',
+          message:
+              'Backup attachment staging failed and partial files could not be cleaned up.',
         ),
       );
     }
@@ -159,7 +181,7 @@ final class FileBackupAttachmentRestorePort
         final file = File(entry.finalPath);
         if (await file.exists()) await file.delete();
       }
-      await _deleteDirectoryIfExists(_stageDirectory(stageId));
+      await _deleteDirectory(_stageDirectory(stageId));
       return const Success<void>(null);
     } on Object {
       return const Failed<void>(
@@ -174,7 +196,7 @@ final class FileBackupAttachmentRestorePort
   @override
   Future<Result<void>> discard(String stageId) async {
     try {
-      await _deleteDirectoryIfExists(_stageDirectory(stageId));
+      await _deleteDirectory(_stageDirectory(stageId));
       return const Success<void>(null);
     } on Object {
       return const Failed<void>(
@@ -210,7 +232,7 @@ final class FileBackupAttachmentRestorePort
         }
         createdAt ??= (await entity.stat()).modified.toUtc();
         if (createdAt.isAfter(cutoff)) continue;
-        await entity.delete(recursive: true);
+        await _deleteDirectory(entity);
         deleted++;
       }
       return Success<int>(deleted);
@@ -259,10 +281,11 @@ final class FileBackupAttachmentRestorePort
         if (stagedPath is! String || finalPath is! String) {
           throw const FormatException('Invalid paths.');
         }
-        if (!_isPathWithin(stageDirectory.path, stagedPath) ||
-            !_isPathWithin(_photoDirectoryPath, finalPath)) {
+        if (!await _isSafeManagedPath(stageDirectory.path, stagedPath) ||
+            !await _isSafeManagedPath(_photoDirectoryPath, finalPath)) {
           throw const FormatException(
-              'Stage metadata path escapes restore roots.');
+            'Stage metadata path escapes restore roots.',
+          );
         }
         entries.add(_StageEntry(stagedPath: stagedPath, finalPath: finalPath));
       }
@@ -284,11 +307,39 @@ final class FileBackupAttachmentRestorePort
       stageId != '.' &&
       stageId != '..';
 
-  static bool _isPathWithin(String root, String candidate) {
+  static Future<bool> _isSafeManagedPath(String root, String candidate) async {
     final normalizedRoot = p.normalize(p.absolute(root));
     final normalizedCandidate = p.normalize(p.absolute(candidate));
-    return normalizedCandidate != normalizedRoot &&
-        p.isWithin(normalizedRoot, normalizedCandidate);
+    if (normalizedCandidate == normalizedRoot ||
+        !p.isWithin(normalizedRoot, normalizedCandidate)) {
+      return false;
+    }
+
+    final rootType = await FileSystemEntity.type(
+      normalizedRoot,
+      followLinks: false,
+    );
+    if (rootType == FileSystemEntityType.link) return false;
+
+    final canonicalRoot = await Directory(normalizedRoot).resolveSymbolicLinks();
+    final parent = p.dirname(normalizedCandidate);
+    final relativeParent = p.relative(parent, from: normalizedRoot);
+    var current = normalizedRoot;
+    if (relativeParent != '.') {
+      for (final component in p.split(relativeParent)) {
+        current = p.join(current, component);
+        final type = await FileSystemEntity.type(current, followLinks: false);
+        if (type == FileSystemEntityType.link) return false;
+        if (type == FileSystemEntityType.directory) {
+          final canonicalCurrent = await Directory(current).resolveSymbolicLinks();
+          if (canonicalCurrent != canonicalRoot &&
+              !p.isWithin(canonicalRoot, canonicalCurrent)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
 
   static String _safeExtension(String archivePath) {
