@@ -40,17 +40,22 @@ final backupRestoreMaintenanceProvider =
 });
 
 Future<Result<void>> repairMedicationReminders(WidgetRef ref) async {
-  final medicationsResult = ref.read(medicationRepositoryProvider).readAll();
-  if (medicationsResult case Failed(:final failure)) {
+  final notificationIdsResult =
+      ref.read(medicationRepositoryProvider).readAll().fold<Result<List<int>>>(
+            onSuccess: (medications) => Success<List<int>>(
+              <int>[
+                for (final medication in medications)
+                  ...medication.notificationIds,
+              ],
+            ),
+            onFailure: (failure) => Failed<List<int>>(failure),
+          );
+  if (notificationIdsResult case Failed<List<int>>(:final failure)) {
     return Failed<void>(failure);
   }
 
-  final previousNotificationIds = <int>[
-    for (final medication
-        in (medicationsResult as Success).value)
-      ...medication.notificationIds,
-  ];
-
+  final previousNotificationIds =
+      (notificationIdsResult as Success<List<int>>).value;
   final result = await RebuildRestoredReminders(
     medicationRepository: ref.read(medicationRepositoryProvider),
     doseLogRepository: ref.read(doseLogRepositoryProvider),
