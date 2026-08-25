@@ -90,6 +90,49 @@ void main() {
     expect(controller.state.busy, isFalse);
     expect(controller.state.preview, isNull);
   });
+
+  test('unsupported schema is rejected before confirmation or restore load',
+      () async {
+    const codec = ZipBackupBundleArchiveCodec();
+    final encoded = await codec.encodeBundle(
+      BackupAttachmentBundle(
+        snapshot: BackupSnapshot(
+          schemaVersion: BackupSnapshot.currentSchemaVersion + 1,
+          exportedAt: DateTime.utc(2026, 8, 25),
+          records: const <BackupRecord>[],
+        ),
+        attachments: const <BackupAttachment>[],
+      ),
+    );
+    expect(encoded, isA<Success<Uint8List>>());
+
+    var restoreLoads = 0;
+    final controller = BackupImportController(
+      importPort: _FakeImportPort(
+        Success<BackupImportSelection?>(
+          BackupImportSelection(
+            fileName: 'future.zip',
+            bytes: (encoded as Success<Uint8List>).value,
+          ),
+        ),
+      ),
+      codec: codec,
+      loadRestore: () async {
+        restoreLoads += 1;
+        throw StateError('restore must not load for unsupported schema');
+      },
+    );
+
+    final selected = await controller.selectArchive();
+
+    expect(restoreLoads, 0);
+    expect(selected, isA<Failed<BackupImportPreview?>>());
+    expect(
+      (selected as Failed<BackupImportPreview?>).failure.code,
+      'backup_manifest_version_unsupported',
+    );
+    expect(controller.state.preview, isNull);
+  });
 }
 
 final class _FakeImportPort implements BackupImportPort {
