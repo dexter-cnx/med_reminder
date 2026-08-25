@@ -347,6 +347,8 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
   ReminderSystemTriggerCoordinator get _systemReminderTriggers =>
       ReminderSystemTriggerCoordinator(
         refreshTimezoneIfChanged: NotificationService.refreshTimezoneIfChanged,
+        refreshPermissionStateIfChanged:
+            NotificationService.refreshPermissionStateIfChanged,
         requestNotificationPermission:
             NotificationService.requestNotificationPermission,
         requestExactAlarmPermission:
