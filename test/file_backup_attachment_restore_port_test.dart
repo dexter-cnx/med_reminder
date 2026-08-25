@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -76,8 +77,10 @@ void main() {
 
     expect(rollback.isSuccess, isTrue);
     expect(await File(path.finalPath).exists(), isFalse);
-    expect(await Directory(p.join(staging.path, staged.stageId)).exists(),
-        isFalse);
+    expect(
+      await Directory(p.join(staging.path, staged.stageId)).exists(),
+      isFalse,
+    );
   });
 
   test('discard removes an uncommitted stage without touching live photos',
@@ -103,8 +106,10 @@ void main() {
     final result = await port.discard(staged.stageId);
 
     expect(result.isSuccess, isTrue);
-    expect(await Directory(p.join(staging.path, staged.stageId)).exists(),
-        isFalse);
+    expect(
+      await Directory(p.join(staging.path, staged.stageId)).exists(),
+      isFalse,
+    );
     expect(await live.readAsBytes(), <int>[9]);
   });
 
@@ -125,10 +130,10 @@ void main() {
     );
     final metadata = File(p.join(staging.path, staged.stageId, 'stage.json'));
     final outside = p.join(root.path, 'outside.jpg');
-    var text = await metadata.readAsString();
-    final originalFinal = staged.pathsByArchivePath.values.single.finalPath;
-    text = text.replaceAll(originalFinal.replaceAll('\\', '\\\\'), outside);
-    await metadata.writeAsString(text);
+    final decoded = jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
+    final entries = decoded['entries'] as List<dynamic>;
+    (entries.single as Map<String, dynamic>)['finalPath'] = outside;
+    await metadata.writeAsString(jsonEncode(decoded));
 
     final result = await port.commit(staged.stageId);
 
@@ -139,6 +144,76 @@ void main() {
           expect(failure.code, 'backup_restore_stage_invalid'),
     );
     expect(await File(outside).exists(), isFalse);
+  });
+
+  test('commit rejects symlink traversal in managed photo paths', () async {
+    if (Platform.isWindows) return;
+
+    final port = FileBackupAttachmentRestorePort(
+      documentsPath: documents.path,
+      stagingRootPath: staging.path,
+    );
+    final staged = (await port.stage(<BackupAttachment>[
+      BackupAttachment(
+        archivePath: 'attachments/medication/med-1.jpg',
+        bytes: Uint8List.fromList(<int>[7]),
+      ),
+    ]))
+        .fold(
+      onSuccess: (value) => value,
+      onFailure: (failure) => fail(failure.toString()),
+    );
+
+    final outsideDirectory = Directory(p.join(root.path, 'outside'));
+    await outsideDirectory.create(recursive: true);
+    final photoDirectory = Directory(p.join(documents.path, 'med_photos'));
+    final link = Link(p.join(photoDirectory.path, 'link'));
+    await link.create(outsideDirectory.path);
+
+    final metadata = File(p.join(staging.path, staged.stageId, 'stage.json'));
+    final decoded = jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
+    final entries = decoded['entries'] as List<dynamic>;
+    (entries.single as Map<String, dynamic>)['finalPath'] =
+        p.join(link.path, 'victim.jpg');
+    await metadata.writeAsString(jsonEncode(decoded));
+
+    final result = await port.commit(staged.stageId);
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected symlink traversal rejection.'),
+      onFailure: (failure) =>
+          expect(failure.code, 'backup_restore_stage_invalid'),
+    );
+    expect(await File(p.join(outsideDirectory.path, 'victim.jpg')).exists(), isFalse);
+  });
+
+  test('stage returns cleanup failure instead of throwing', () async {
+    final invalidRoot = File(p.join(root.path, 'not-a-directory'));
+    await invalidRoot.writeAsString('blocked');
+    final port = FileBackupAttachmentRestorePort(
+      documentsPath: documents.path,
+      stagingRootPath: invalidRoot.path,
+      deleteDirectory: (_) async => throw const FileSystemException(
+        'cleanup failed',
+      ),
+    );
+
+    final result = await port.stage(<BackupAttachment>[
+      BackupAttachment(
+        archivePath: 'attachments/medication/med-1.jpg',
+        bytes: Uint8List.fromList(<int>[1]),
+      ),
+    ]);
+
+    expect(result.isFailure, isTrue);
+    result.fold(
+      onSuccess: (_) => fail('Expected cleanup failure.'),
+      onFailure: (failure) => expect(
+        failure.code,
+        'backup_restore_attachment_stage_cleanup_failed',
+      ),
+    );
   });
 
   test('cleanupStaleStages removes only expired stage directories', () async {
