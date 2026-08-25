@@ -103,6 +103,8 @@ class Medication {
     List<int>? notificationIds,
     String? imagePath,
     MedicationDosePlan? dosePlan,
+    DateTime? createdAt,
+    int? daysCount,
   }) => Medication(
     id: id,
     name: name,
@@ -115,8 +117,8 @@ class Medication {
     dosagePerTime: dosagePerTime,
     mode: mode,
     dosePlan: dosePlan ?? this.dosePlan,
-    daysCount: daysCount,
-    createdAt: createdAt,
+    daysCount: daysCount ?? this.daysCount,
+    createdAt: createdAt ?? this.createdAt,
     notificationIds: notificationIds ?? this.notificationIds,
   );
 }
