@@ -16,6 +16,16 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
 
   static final DateTime _deterministicModifiedAt = DateTime.utc(1980);
   static const String attachmentPrefix = 'attachments/';
+  static const int maxArchiveEntryCount = 2048;
+  static const int maxUncompressedEntryBytes = 64 * 1024 * 1024;
+  static const int maxTotalUncompressedBytes = 128 * 1024 * 1024;
+  static const double maxCompressionRatio = 100;
+
+  static const int _endOfCentralDirectorySignature = 0x06054b50;
+  static const int _centralDirectoryFileHeaderSignature = 0x02014b50;
+  static const int _zip64Sentinel16 = 0xffff;
+  static const int _zip64Sentinel32 = 0xffffffff;
+  static const int _maxZipCommentLength = 0xffff;
 
   final JsonBackupArchiveCodec manifestCodec;
 
@@ -108,6 +118,11 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       );
     }
 
+    final metadataPreflight = _preflightZipMetadata(archiveBytes);
+    if (metadataPreflight case Failed<void>(:final failure)) {
+      return Failed<BackupAttachmentBundle>(failure);
+    }
+
     try {
       final archive = ZipDecoder().decodeBytes(archiveBytes, verify: true);
       final entriesByPath = <String, ArchiveFile>{};
@@ -195,6 +210,121 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       );
     }
   }
+
+  static Result<void> _preflightZipMetadata(Uint8List bytes) {
+    try {
+      if (bytes.length < 22) return _invalidZip();
+      final data = ByteData.sublistView(bytes);
+      final searchStart = bytes.length - 22;
+      final searchEnd =
+          (bytes.length - 22 - _maxZipCommentLength).clamp(0, bytes.length);
+
+      var eocdOffset = -1;
+      for (var offset = searchStart; offset >= searchEnd; offset--) {
+        if (data.getUint32(offset, Endian.little) ==
+            _endOfCentralDirectorySignature) {
+          eocdOffset = offset;
+          break;
+        }
+      }
+      if (eocdOffset < 0 || eocdOffset + 22 > bytes.length) {
+        return _invalidZip();
+      }
+
+      final diskNumber = data.getUint16(eocdOffset + 4, Endian.little);
+      final centralDirectoryDisk =
+          data.getUint16(eocdOffset + 6, Endian.little);
+      final entriesOnDisk = data.getUint16(eocdOffset + 8, Endian.little);
+      final totalEntries = data.getUint16(eocdOffset + 10, Endian.little);
+      final centralDirectorySize =
+          data.getUint32(eocdOffset + 12, Endian.little);
+      final centralDirectoryOffset =
+          data.getUint32(eocdOffset + 16, Endian.little);
+      final commentLength = data.getUint16(eocdOffset + 20, Endian.little);
+
+      if (eocdOffset + 22 + commentLength != bytes.length ||
+          diskNumber != 0 ||
+          centralDirectoryDisk != 0 ||
+          entriesOnDisk != totalEntries ||
+          totalEntries == _zip64Sentinel16 ||
+          centralDirectorySize == _zip64Sentinel32 ||
+          centralDirectoryOffset == _zip64Sentinel32 ||
+          totalEntries > maxArchiveEntryCount ||
+          centralDirectoryOffset + centralDirectorySize > eocdOffset) {
+        return _unsafeZip();
+      }
+
+      var offset = centralDirectoryOffset;
+      var totalUncompressed = 0;
+      for (var index = 0; index < totalEntries; index++) {
+        if (offset + 46 > bytes.length ||
+            data.getUint32(offset, Endian.little) !=
+                _centralDirectoryFileHeaderSignature) {
+          return _invalidZip();
+        }
+
+        final generalPurposeFlags =
+            data.getUint16(offset + 8, Endian.little);
+        final compressedSize = data.getUint32(offset + 20, Endian.little);
+        final uncompressedSize = data.getUint32(offset + 24, Endian.little);
+        final fileNameLength = data.getUint16(offset + 28, Endian.little);
+        final extraFieldLength = data.getUint16(offset + 30, Endian.little);
+        final fileCommentLength = data.getUint16(offset + 32, Endian.little);
+        final diskStart = data.getUint16(offset + 34, Endian.little);
+
+        if ((generalPurposeFlags & 0x1) != 0 ||
+            diskStart != 0 ||
+            compressedSize == _zip64Sentinel32 ||
+            uncompressedSize == _zip64Sentinel32 ||
+            uncompressedSize > maxUncompressedEntryBytes) {
+          return _unsafeZip();
+        }
+
+        totalUncompressed += uncompressedSize;
+        if (totalUncompressed > maxTotalUncompressedBytes) {
+          return _unsafeZip();
+        }
+
+        if (uncompressedSize > 0) {
+          if (compressedSize == 0 ||
+              uncompressedSize / compressedSize > maxCompressionRatio) {
+            return _unsafeZip();
+          }
+        }
+
+        final nextOffset = offset +
+            46 +
+            fileNameLength +
+            extraFieldLength +
+            fileCommentLength;
+        if (nextOffset <= offset || nextOffset > bytes.length) {
+          return _invalidZip();
+        }
+        offset = nextOffset;
+      }
+
+      if (offset != centralDirectoryOffset + centralDirectorySize) {
+        return _invalidZip();
+      }
+      return const Success<void>(null);
+    } on RangeError {
+      return _invalidZip();
+    }
+  }
+
+  static Failed<void> _invalidZip() => const Failed<void>(
+        Failure(
+          code: 'backup_zip_invalid',
+          message: 'Backup ZIP is invalid or corrupt.',
+        ),
+      );
+
+  static Failed<void> _unsafeZip() => const Failed<void>(
+        Failure(
+          code: 'backup_zip_expansion_limit_exceeded',
+          message: 'Backup ZIP exceeds safe expansion limits.',
+        ),
+      );
 
   static Result<Set<String>> _referencedAttachmentPaths(
     BackupSnapshot snapshot,
