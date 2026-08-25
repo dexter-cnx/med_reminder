@@ -23,7 +23,8 @@ void main() {
     if (await root.exists()) await root.delete(recursive: true);
   });
 
-  test('stage reserves final med_photos path and commit promotes bytes', () async {
+  test('stage reserves final med_photos path and commit promotes bytes',
+      () async {
     final port = FileBackupAttachmentRestorePort(
       documentsPath: documents.path,
       stagingRootPath: staging.path,
@@ -75,7 +76,8 @@ void main() {
 
     expect(rollback.isSuccess, isTrue);
     expect(await File(path.finalPath).exists(), isFalse);
-    expect(await Directory(p.join(staging.path, staged.stageId)).exists(), isFalse);
+    expect(await Directory(p.join(staging.path, staged.stageId)).exists(),
+        isFalse);
   });
 
   test('discard removes an uncommitted stage without touching live photos',
@@ -101,7 +103,8 @@ void main() {
     final result = await port.discard(staged.stageId);
 
     expect(result.isSuccess, isTrue);
-    expect(await Directory(p.join(staging.path, staged.stageId)).exists(), isFalse);
+    expect(await Directory(p.join(staging.path, staged.stageId)).exists(),
+        isFalse);
     expect(await live.readAsBytes(), <int>[9]);
   });
 
@@ -132,7 +135,8 @@ void main() {
     expect(result.isFailure, isTrue);
     result.fold(
       onSuccess: (_) => fail('Expected invalid stage metadata failure.'),
-      onFailure: (failure) => expect(failure.code, 'backup_restore_stage_invalid'),
+      onFailure: (failure) =>
+          expect(failure.code, 'backup_restore_stage_invalid'),
     );
     expect(await File(outside).exists(), isFalse);
   });

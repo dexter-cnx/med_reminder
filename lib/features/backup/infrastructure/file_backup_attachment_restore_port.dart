@@ -52,7 +52,8 @@ final class FileBackupAttachmentRestorePort
           return const Failed<StagedBackupAttachments>(
             Failure(
               code: 'backup_restore_destination_conflict',
-              message: 'A reserved medication photo destination already exists.',
+              message:
+                  'A reserved medication photo destination already exists.',
             ),
           );
         }
@@ -200,7 +201,8 @@ final class FileBackupAttachmentRestorePort
           try {
             final decoded = jsonDecode(await metadataFile.readAsString());
             if (decoded is Map<String, Object?>) {
-              createdAt = DateTime.tryParse(decoded['createdAt'] as String? ?? '');
+              createdAt =
+                  DateTime.tryParse(decoded['createdAt'] as String? ?? '');
             }
           } on Object {
             createdAt = null;
@@ -259,7 +261,8 @@ final class FileBackupAttachmentRestorePort
         }
         if (!_isPathWithin(stageDirectory.path, stagedPath) ||
             !_isPathWithin(_photoDirectoryPath, finalPath)) {
-          throw const FormatException('Stage metadata path escapes restore roots.');
+          throw const FormatException(
+              'Stage metadata path escapes restore roots.');
         }
         entries.add(_StageEntry(stagedPath: stagedPath, finalPath: finalPath));
       }
