@@ -26,11 +26,7 @@ void main() {
     ];
 
     expect(
-      calculateStockBalance(
-        itemId: 'tomato',
-        initialAmount: 6,
-        events: events,
-      ),
+      calculateStockBalance(itemId: 'tomato', initialAmount: 6, events: events),
       8,
     );
   });

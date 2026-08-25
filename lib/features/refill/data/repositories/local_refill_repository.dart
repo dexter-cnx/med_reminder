@@ -12,14 +12,15 @@ class LocalRefillRepository implements RefillRepository {
   @override
   Result<List<RefillEvent>> readAll() {
     try {
-      final events = _dataSource
-          .readRefillRecords()
-          .map(
-            (record) =>
-                RefillRecord(Map<String, dynamic>.from(record)).toEntity(),
-          )
-          .toList(growable: false)
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      final events =
+          _dataSource
+              .readRefillRecords()
+              .map(
+                (record) =>
+                    RefillRecord(Map<String, dynamic>.from(record)).toEntity(),
+              )
+              .toList(growable: false)
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return Success<List<RefillEvent>>(events);
     } catch (error) {
       return Failed<List<RefillEvent>>(

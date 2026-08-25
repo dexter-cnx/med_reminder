@@ -12,9 +12,9 @@ final class MedicationBackupDataPort implements BackupDataPort {
     required MedicationRepository medicationRepository,
     required DoseLogRepository doseLogRepository,
     DateTime Function()? now,
-  })  : _medicationRepository = medicationRepository,
-        _doseLogRepository = doseLogRepository,
-        _now = now ?? DateTime.now;
+  }) : _medicationRepository = medicationRepository,
+       _doseLogRepository = doseLogRepository,
+       _now = now ?? DateTime.now;
 
   static const medicationNamespace = 'medication';
   static const doseLogNamespace = 'dose_log';
@@ -36,9 +36,9 @@ final class MedicationBackupDataPort implements BackupDataPort {
 
     final medicationValues = (medications as Success<List<Medication>>).value;
     final medicationIds = medicationValues.map((value) => value.id).toSet();
-    final logValues = (logs as Success<List<DoseLog>>)
-        .value
-        .where((log) => medicationIds.contains(log.medId));
+    final logValues = (logs as Success<List<DoseLog>>).value.where(
+      (log) => medicationIds.contains(log.medId),
+    );
     return Success<BackupSnapshot>(
       BackupSnapshot(
         schemaVersion: BackupSnapshot.currentSchemaVersion,
@@ -82,11 +82,13 @@ final class MedicationBackupDataPort implements BackupDataPort {
         (currentMedications as Success<List<Medication>>).value;
     final oldLogs = (currentLogs as Success<List<DoseLog>>).value;
 
-    final medicationResult =
-        await _medicationRepository.replaceAll(incoming.medications);
+    final medicationResult = await _medicationRepository.replaceAll(
+      incoming.medications,
+    );
     if (medicationResult case Failed<void>(:final failure)) {
-      final medicationRollback =
-          await _medicationRepository.replaceAll(oldMedications);
+      final medicationRollback = await _medicationRepository.replaceAll(
+        oldMedications,
+      );
       if (medicationRollback.isFailure) {
         return const Failed<void>(
           Failure(
@@ -101,8 +103,9 @@ final class MedicationBackupDataPort implements BackupDataPort {
 
     final logResult = await _doseLogRepository.replaceAll(incoming.logs);
     if (logResult case Failed<void>(:final failure)) {
-      final medicationRollback =
-          await _medicationRepository.replaceAll(oldMedications);
+      final medicationRollback = await _medicationRepository.replaceAll(
+        oldMedications,
+      );
       final logRollback = await _doseLogRepository.replaceAll(oldLogs);
       if (medicationRollback.isFailure || logRollback.isFailure) {
         return const Failed<void>(

@@ -68,15 +68,9 @@ void main() {
   });
 
   test('ratio-first classifier separates phone and tablet shapes', () {
-    final phonePortrait = ResponsiveLayoutInfo.fromSize(
-      const Size(390, 844),
-    );
-    final phoneLandscape = ResponsiveLayoutInfo.fromSize(
-      const Size(844, 390),
-    );
-    final tabletPortrait = ResponsiveLayoutInfo.fromSize(
-      const Size(834, 1194),
-    );
+    final phonePortrait = ResponsiveLayoutInfo.fromSize(const Size(390, 844));
+    final phoneLandscape = ResponsiveLayoutInfo.fromSize(const Size(844, 390));
+    final tabletPortrait = ResponsiveLayoutInfo.fromSize(const Size(834, 1194));
     final tabletLandscape = ResponsiveLayoutInfo.fromSize(
       const Size(1194, 834),
     );

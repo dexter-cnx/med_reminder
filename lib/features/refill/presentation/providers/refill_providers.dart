@@ -5,32 +5,31 @@ import '../../domain/entities/refill_event.dart';
 import '../../domain/repositories/refill_repository.dart';
 
 final refillRepositoryProvider = Provider<RefillRepository>(
-  (ref) => throw UnimplementedError(
-    'RefillRepository must be provided by app DI.',
-  ),
+  (ref) =>
+      throw UnimplementedError('RefillRepository must be provided by app DI.'),
 );
 
 final refillFailureProvider = StateProvider<Failure?>((ref) => null);
 
 final refillEventsProvider =
     StateNotifierProvider<RefillViewModel, List<RefillEvent>>(
-  (ref) => RefillViewModel(
-    ref.watch(refillRepositoryProvider),
-    onFailure: (failure) {
-      Future<void>.microtask(() {
-        ref.read(refillFailureProvider.notifier).state = failure;
-      });
-    },
-  ),
-);
+      (ref) => RefillViewModel(
+        ref.watch(refillRepositoryProvider),
+        onFailure: (failure) {
+          Future<void>.microtask(() {
+            ref.read(refillFailureProvider.notifier).state = failure;
+          });
+        },
+      ),
+    );
 
 class RefillViewModel extends StateNotifier<List<RefillEvent>> {
   RefillViewModel(
     RefillRepository repository, {
     required void Function(Failure failure) onFailure,
-  })  : _repository = repository,
-        _onFailure = onFailure,
-        super(_load(repository, onFailure));
+  }) : _repository = repository,
+       _onFailure = onFailure,
+       super(_load(repository, onFailure));
 
   final RefillRepository _repository;
   final void Function(Failure failure) _onFailure;
@@ -40,12 +39,12 @@ class RefillViewModel extends StateNotifier<List<RefillEvent>> {
     void Function(Failure failure) onFailure,
   ) {
     return repository.readAll().fold(
-          onSuccess: (events) => List<RefillEvent>.unmodifiable(events),
-          onFailure: (failure) {
-            onFailure(failure);
-            return const <RefillEvent>[];
-          },
-        );
+      onSuccess: (events) => List<RefillEvent>.unmodifiable(events),
+      onFailure: (failure) {
+        onFailure(failure);
+        return const <RefillEvent>[];
+      },
+    );
   }
 
   Future<bool> append(RefillEvent event) async {

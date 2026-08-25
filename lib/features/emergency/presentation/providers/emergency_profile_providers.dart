@@ -17,35 +17,36 @@ final emergencyProfileFailureProvider = StateProvider<Failure?>((ref) => null);
 
 final emergencyProfileProvider =
     StateNotifierProvider<EmergencyProfileViewModel, EmergencyProfile?>(
-  (ref) => EmergencyProfileViewModel(
-    ref.watch(emergencyProfileRepositoryProvider),
-    onFailure: (failure) {
-      Future<void>.microtask(() {
-        ref.read(emergencyProfileFailureProvider.notifier).state = failure;
-      });
-    },
-  ),
-);
+      (ref) => EmergencyProfileViewModel(
+        ref.watch(emergencyProfileRepositoryProvider),
+        onFailure: (failure) {
+          Future<void>.microtask(() {
+            ref.read(emergencyProfileFailureProvider.notifier).state = failure;
+          });
+        },
+      ),
+    );
 
-final emergencyMedicalCardProvider =
-    Provider.autoDispose<EmergencyMedicalCard>((ref) {
-  const builder = BuildEmergencyMedicalCard();
-  return builder(
-    now: DateTime.now(),
-    profile: ref.watch(emergencyProfileProvider),
-    medications: ref.watch(medsProvider),
-    doseLogs: ref.watch(logsProvider),
-    refillEvents: ref.watch(refillEventsProvider),
-  );
-});
+final emergencyMedicalCardProvider = Provider.autoDispose<EmergencyMedicalCard>(
+  (ref) {
+    const builder = BuildEmergencyMedicalCard();
+    return builder(
+      now: DateTime.now(),
+      profile: ref.watch(emergencyProfileProvider),
+      medications: ref.watch(medsProvider),
+      doseLogs: ref.watch(logsProvider),
+      refillEvents: ref.watch(refillEventsProvider),
+    );
+  },
+);
 
 class EmergencyProfileViewModel extends StateNotifier<EmergencyProfile?> {
   EmergencyProfileViewModel(
     EmergencyProfileRepository repository, {
     required void Function(Failure failure) onFailure,
-  })  : _repository = repository,
-        _onFailure = onFailure,
-        super(_load(repository, onFailure));
+  }) : _repository = repository,
+       _onFailure = onFailure,
+       super(_load(repository, onFailure));
 
   final EmergencyProfileRepository _repository;
   final void Function(Failure failure) _onFailure;
@@ -53,14 +54,13 @@ class EmergencyProfileViewModel extends StateNotifier<EmergencyProfile?> {
   static EmergencyProfile? _load(
     EmergencyProfileRepository repository,
     void Function(Failure failure) onFailure,
-  ) =>
-      repository.read().fold(
-            onSuccess: (profile) => profile,
-            onFailure: (failure) {
-              onFailure(failure);
-              return null;
-            },
-          );
+  ) => repository.read().fold(
+    onSuccess: (profile) => profile,
+    onFailure: (failure) {
+      onFailure(failure);
+      return null;
+    },
+  );
 
   Future<bool> save(EmergencyProfile profile) async {
     final normalized = profile.normalized();

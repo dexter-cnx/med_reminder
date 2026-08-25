@@ -38,9 +38,9 @@ class SosActionSheet extends ConsumerWidget {
           children: [
             Text(
               'SOS',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             Text(
@@ -50,9 +50,9 @@ class SosActionSheet extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               <String>[
-                if (contactName.isNotEmpty) contactName,
-                if (phone.isNotEmpty) phone,
-              ].join(' · ').isEmpty
+                    if (contactName.isNotEmpty) contactName,
+                    if (phone.isNotEmpty) phone,
+                  ].join(' · ').isEmpty
                   ? '—'
                   : <String>[
                       if (contactName.isNotEmpty) contactName,
@@ -65,9 +65,7 @@ class SosActionSheet extends ConsumerWidget {
                   ? () => ref.read(emergencyContactLauncherProvider).call(phone)
                   : null,
               icon: const Icon(Icons.call_outlined),
-              label: Text(
-                hasPhone ? phone : 'emergency_contact_phone'.tr(),
-              ),
+              label: Text(hasPhone ? phone : 'emergency_contact_phone'.tr()),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(

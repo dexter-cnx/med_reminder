@@ -8,18 +8,16 @@ class AppointmentRecord {
   final Map<String, dynamic> value;
 
   factory AppointmentRecord.fromEntity(DoctorAppointment appointment) =>
-      AppointmentRecord(
-        <String, dynamic>{
-          'schemaVersion': schemaVersion,
-          'id': appointment.id,
-          'title': appointment.title,
-          'startsAt': appointment.startsAt.toIso8601String(),
-          'endsAt': appointment.endsAt?.toIso8601String(),
-          'location': appointment.location,
-          'note': appointment.note,
-          'externalCalendarEventId': appointment.externalCalendarEventId,
-        },
-      );
+      AppointmentRecord(<String, dynamic>{
+        'schemaVersion': schemaVersion,
+        'id': appointment.id,
+        'title': appointment.title,
+        'startsAt': appointment.startsAt.toIso8601String(),
+        'endsAt': appointment.endsAt?.toIso8601String(),
+        'location': appointment.location,
+        'note': appointment.note,
+        'externalCalendarEventId': appointment.externalCalendarEventId,
+      });
 
   DoctorAppointment toEntity() {
     final id = value['id'];

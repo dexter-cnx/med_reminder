@@ -10,42 +10,43 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_snap
 
 void main() {
   test(
-      'collector rewrites medication image paths to deterministic archive paths',
-      () async {
-    final source = _FakeAttachmentSource(<String, Uint8List>{
-      '/documents/med_photos/photo.PNG': Uint8List.fromList(<int>[1, 2, 3]),
-    });
-    final collector = MedicationPhotoAttachmentCollector(source: source);
-    final snapshot = _snapshot(
-      BackupRecord(
-        namespace: MedicationBackupDataPort.medicationNamespace,
-        id: 'med 1/alpha',
-        payload: <String, Object?>{
-          'version': 1,
-          'id': 'med 1/alpha',
-          'imagePath': '/documents/med_photos/photo.PNG',
+    'collector rewrites medication image paths to deterministic archive paths',
+    () async {
+      final source = _FakeAttachmentSource(<String, Uint8List>{
+        '/documents/med_photos/photo.PNG': Uint8List.fromList(<int>[1, 2, 3]),
+      });
+      final collector = MedicationPhotoAttachmentCollector(source: source);
+      final snapshot = _snapshot(
+        BackupRecord(
+          namespace: MedicationBackupDataPort.medicationNamespace,
+          id: 'med 1/alpha',
+          payload: <String, Object?>{
+            'version': 1,
+            'id': 'med 1/alpha',
+            'imagePath': '/documents/med_photos/photo.PNG',
+          },
+        ),
+      );
+
+      final result = await collector.collect(snapshot);
+
+      result.fold(
+        onSuccess: (bundle) {
+          expect(bundle.attachments, hasLength(1));
+          expect(
+            bundle.attachments.single.archivePath,
+            'attachments/medication/med%201%2Falpha.png',
+          );
+          expect(bundle.attachments.single.bytes, <int>[1, 2, 3]);
+          expect(
+            bundle.snapshot.records.single.payload['imagePath'],
+            'attachments/medication/med%201%2Falpha.png',
+          );
         },
-      ),
-    );
-
-    final result = await collector.collect(snapshot);
-
-    result.fold(
-      onSuccess: (bundle) {
-        expect(bundle.attachments, hasLength(1));
-        expect(
-          bundle.attachments.single.archivePath,
-          'attachments/medication/med%201%2Falpha.png',
-        );
-        expect(bundle.attachments.single.bytes, <int>[1, 2, 3]);
-        expect(
-          bundle.snapshot.records.single.payload['imagePath'],
-          'attachments/medication/med%201%2Falpha.png',
-        );
-      },
-      onFailure: (failure) => fail(failure.toString()),
-    );
-  });
+        onFailure: (failure) => fail(failure.toString()),
+      );
+    },
+  );
 
   test('attachment bytes cannot be mutated through a returned view', () async {
     final source = _FakeAttachmentSource(<String, Uint8List>{
@@ -128,10 +129,10 @@ void main() {
 }
 
 BackupSnapshot _snapshot(BackupRecord record) => BackupSnapshot(
-      schemaVersion: BackupSnapshot.currentSchemaVersion,
-      exportedAt: DateTime.utc(2026, 8, 24),
-      records: <BackupRecord>[record],
-    );
+  schemaVersion: BackupSnapshot.currentSchemaVersion,
+  exportedAt: DateTime.utc(2026, 8, 24),
+  records: <BackupRecord>[record],
+);
 
 final class _FakeAttachmentSource implements BackupAttachmentSource {
   const _FakeAttachmentSource(this.values);

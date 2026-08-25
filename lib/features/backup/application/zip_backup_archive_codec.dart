@@ -74,7 +74,8 @@ final class ZipBackupArchiveCodec implements BackupArchiveCodec {
 
       final manifestEntries = archive
           .where(
-              (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName)
+            (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName,
+          )
           .toList(growable: false);
       if (manifestEntries.length != 1 || !manifestEntries.single.isFile) {
         return const Failed<BackupSnapshot>(

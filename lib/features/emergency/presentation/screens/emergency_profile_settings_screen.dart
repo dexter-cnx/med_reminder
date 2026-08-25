@@ -128,7 +128,9 @@ class _EmergencyProfileSettingsScreenState
 
   Future<void> _save() async {
     setState(() => _busy = true);
-    final saved = await ref.read(emergencyProfileProvider.notifier).save(
+    final saved = await ref
+        .read(emergencyProfileProvider.notifier)
+        .save(
           EmergencyProfile(
             displayName: _displayName.text,
             emergencyContactName: _contactName.text,

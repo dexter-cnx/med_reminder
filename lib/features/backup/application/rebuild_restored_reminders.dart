@@ -45,20 +45,22 @@ final class RebuildRestoredReminders {
       final now = _now();
       for (final medication in medications) {
         final remaining = stockResolver(medication, logs);
-        final shouldNotSchedule = medication.isExpired(now) ||
+        final shouldNotSchedule =
+            medication.isExpired(now) ||
             (medication.mode == MedicationMode.untilEmpty && remaining == 0);
         if (shouldNotSchedule) {
-          rebuiltById[medication.id] =
-              medication.copyWith(notificationIds: const <int>[]);
+          rebuiltById[medication.id] = medication.copyWith(
+            notificationIds: const <int>[],
+          );
           continue;
         }
 
         final schedulingSnapshot =
             medication.mode == MedicationMode.untilEmpty &&
-                    remaining != null &&
-                    remaining > 0
-                ? medication.copyWith(initialAmount: remaining)
-                : medication;
+                remaining != null &&
+                remaining > 0
+            ? medication.copyWith(initialAmount: remaining)
+            : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         createdIds.addAll(ids);
         createdIdsByMedication[medication.id] = ids;
@@ -150,9 +152,7 @@ final class RebuildRestoredReminders {
         ),
       );
     }
-    return Failed<void>(
-      Failure(code: failureCode, message: failureMessage),
-    );
+    return Failed<void>(Failure(code: failureCode, message: failureMessage));
   }
 }
 

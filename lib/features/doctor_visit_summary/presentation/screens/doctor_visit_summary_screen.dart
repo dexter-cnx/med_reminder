@@ -57,7 +57,9 @@ class DoctorVisitSummaryScreen extends ConsumerWidget {
               if (summary.upcomingAppointments.isEmpty)
                 Text('doctor_summary_no_appointments'.tr())
               else
-                ...summary.upcomingAppointments.take(3).map(
+                ...summary.upcomingAppointments
+                    .take(3)
+                    .map(
                       (appointment) => ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(Icons.event_outlined),
@@ -96,10 +98,7 @@ class _MedicationSummaryCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             if (genericName.isNotEmpty)
-              Text(
-                genericName,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(genericName, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 8),
             Text(
               'doctor_summary_dose_facts'.tr(
@@ -111,9 +110,7 @@ class _MedicationSummaryCard extends StatelessWidget {
             ),
             Text(
               'doctor_summary_refills'.tr(
-                namedArgs: <String, String>{
-                  'count': '${item.refillQuantity}',
-                },
+                namedArgs: <String, String>{'count': '${item.refillQuantity}'},
               ),
             ),
             const SizedBox(height: 10),
@@ -124,7 +121,9 @@ class _MedicationSummaryCard extends StatelessWidget {
             if (item.checkIns.isEmpty)
               Text('doctor_summary_no_observations'.tr())
             else
-              ...item.checkIns.take(5).map(
+              ...item.checkIns
+                  .take(5)
+                  .map(
                     (checkIn) => Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(_checkInText(context, checkIn)),

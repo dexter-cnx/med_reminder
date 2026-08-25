@@ -15,8 +15,9 @@ final doctorVisitSummaryNowProvider = Provider.autoDispose<DateTime>(
   (ref) => ref.watch(doctorVisitSummaryClockProvider)(),
 );
 
-final doctorVisitSummaryProvider =
-    Provider.autoDispose<DoctorVisitSummary>((ref) {
+final doctorVisitSummaryProvider = Provider.autoDispose<DoctorVisitSummary>((
+  ref,
+) {
   const builder = BuildDoctorVisitSummary();
   return builder(
     now: ref.watch(doctorVisitSummaryNowProvider),

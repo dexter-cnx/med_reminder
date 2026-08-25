@@ -52,8 +52,8 @@ class EmergencyMedicalCardScreen extends ConsumerWidget {
                     profile == null || profile.isEmpty
                         ? 'emergency_profile_empty'.tr()
                         : (profile.displayName.isEmpty
-                            ? 'emergency_profile_title'.tr()
-                            : profile.displayName),
+                              ? 'emergency_profile_title'.tr()
+                              : profile.displayName),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
@@ -132,8 +132,9 @@ class _MedicationSummary extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.medication_outlined),
       title: Text(medication.name),
-      subtitle:
-          medication.genericName.isEmpty ? null : Text(medication.genericName),
+      subtitle: medication.genericName.isEmpty
+          ? null
+          : Text(medication.genericName),
     );
   }
 }

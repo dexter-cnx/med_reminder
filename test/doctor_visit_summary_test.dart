@@ -113,10 +113,10 @@ void main() {
       appointments: const <DoctorAppointment>[],
     );
 
-    expect(
-      summary.medications.single.checkIns.map((item) => item.id),
-      <String>['new', 'old'],
-    );
+    expect(summary.medications.single.checkIns.map((item) => item.id), <String>[
+      'new',
+      'old',
+    ]);
     expect(source.map((item) => item.id), <String>['old', 'new']);
   });
 

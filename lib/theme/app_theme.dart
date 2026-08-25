@@ -87,18 +87,15 @@ class AppThemeDefinition {
 
 class AppThemeCatalog {
   AppThemeCatalog._(List<AppThemeDefinition> themes)
-      : themes = List.unmodifiable(themes),
-        _byId = Map.unmodifiable({for (final theme in themes) theme.id: theme});
+    : themes = List.unmodifiable(themes),
+      _byId = Map.unmodifiable({for (final theme in themes) theme.id: theme});
 
   final List<AppThemeDefinition> themes;
   final Map<String, AppThemeDefinition> _byId;
 
   static const fallback = AppThemeDefinition(
     id: defaultAppThemeId,
-    names: <String, String>{
-      'en': 'Besyu Blue',
-      'th': 'Besyu Blue',
-    },
+    names: <String, String>{'en': 'Besyu Blue', 'th': 'Besyu Blue'},
     seedColor: Color(0xFF4A90D9),
     brightness: Brightness.light,
     surfaceTintStrength: 0.05,
@@ -172,9 +169,7 @@ class AppThemeCatalog {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.surfaceContainerLowest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: scheme.outlineVariant),
@@ -189,9 +184,7 @@ class AppThemeCatalog {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
@@ -199,7 +192,7 @@ class AppThemeCatalog {
 
 class AppThemeController extends StateNotifier<String> {
   AppThemeController(this._settings, this._catalog)
-      : super(_resolveInitialTheme(_settings, _catalog));
+    : super(_resolveInitialTheme(_settings, _catalog));
 
   final Box<dynamic> _settings;
   final AppThemeCatalog _catalog;

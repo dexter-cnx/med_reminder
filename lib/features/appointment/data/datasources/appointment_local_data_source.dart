@@ -17,10 +17,7 @@ class HiveAppointmentLocalDataSource implements AppointmentLocalDataSource {
       .toList(growable: false);
 
   @override
-  Future<void> putAppointmentRecord(
-    String id,
-    Map<String, dynamic> record,
-  ) =>
+  Future<void> putAppointmentRecord(String id, Map<String, dynamic> record) =>
       _box.put(id, record);
 
   @override

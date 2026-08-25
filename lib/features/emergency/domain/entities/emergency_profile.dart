@@ -21,10 +21,10 @@ class EmergencyProfile {
       medicalNotes.isEmpty;
 
   EmergencyProfile normalized() => EmergencyProfile(
-        displayName: displayName.trim(),
-        emergencyContactName: emergencyContactName.trim(),
-        emergencyContactPhone: emergencyContactPhone.trim(),
-        medicationAllergies: medicationAllergies.trim(),
-        medicalNotes: medicalNotes.trim(),
-      );
+    displayName: displayName.trim(),
+    emergencyContactName: emergencyContactName.trim(),
+    emergencyContactPhone: emergencyContactPhone.trim(),
+    medicationAllergies: medicationAllergies.trim(),
+    medicalNotes: medicalNotes.trim(),
+  );
 }

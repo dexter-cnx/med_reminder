@@ -10,7 +10,9 @@ int calculateStockBalance({
   required int initialAmount,
   Iterable<StockEvent> events = const <StockEvent>[],
 }) {
-  return events.where((event) => event.itemId == itemId).fold<int>(
+  return events
+      .where((event) => event.itemId == itemId)
+      .fold<int>(
         initialAmount,
         (balance, event) => balance + event.quantityDelta,
       );

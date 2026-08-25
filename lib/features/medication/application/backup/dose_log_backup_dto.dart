@@ -7,13 +7,13 @@ class DoseLogBackupDto {
   static const int version = 1;
 
   static Map<String, Object?> encode(DoseLog log) => <String, Object?>{
-        'version': version,
-        'id': log.id,
-        'medId': log.medId,
-        'scheduledAt': _encodeLocalDateTime(log.scheduledAt),
-        'takenAt': log.takenAt?.toUtc().toIso8601String(),
-        'status': log.status.name,
-      };
+    'version': version,
+    'id': log.id,
+    'medId': log.medId,
+    'scheduledAt': _encodeLocalDateTime(log.scheduledAt),
+    'takenAt': log.takenAt?.toUtc().toIso8601String(),
+    'status': log.status.name,
+  };
 
   static Result<DoseLog> decode(Map<String, Object?> payload) {
     try {
@@ -35,9 +35,7 @@ class DoseLogBackupDto {
             _requiredString(payload, 'scheduledAt'),
           ),
           takenAt: takenAt == null ? null : DateTime.parse(takenAt),
-          status: DoseStatus.values.byName(
-            _requiredString(payload, 'status'),
-          ),
+          status: DoseStatus.values.byName(_requiredString(payload, 'status')),
         ),
       );
     } on Object {
@@ -51,15 +49,15 @@ class DoseLogBackupDto {
   }
 
   static String _encodeLocalDateTime(DateTime value) => DateTime(
-        value.year,
-        value.month,
-        value.day,
-        value.hour,
-        value.minute,
-        value.second,
-        value.millisecond,
-        value.microsecond,
-      ).toIso8601String();
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+    value.millisecond,
+    value.microsecond,
+  ).toIso8601String();
 
   static DateTime _decodeLocalDateTime(String value) {
     final parsed = DateTime.parse(value);

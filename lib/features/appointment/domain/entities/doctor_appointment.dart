@@ -8,9 +8,9 @@ class DoctorAppointment {
     this.note,
     this.externalCalendarEventId,
   }) : assert(
-          endsAt == null || !endsAt.isBefore(startsAt),
-          'Appointment end must not be before its start.',
-        );
+         endsAt == null || !endsAt.isBefore(startsAt),
+         'Appointment end must not be before its start.',
+       );
 
   final String id;
   final String title;

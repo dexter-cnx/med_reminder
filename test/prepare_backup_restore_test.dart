@@ -10,40 +10,42 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_reco
 import 'package:med_reminder_offline/features/backup/domain/entities/backup_snapshot.dart';
 
 void main() {
-  test('preparation rewrites archive photo paths to reserved final paths',
-      () async {
-    final bundle = _bundle('attachments/medication/med-1.png');
-    final port = _FakeRestorePort(
-      staged: StagedBackupAttachments(
-        stageId: 'stage-1',
-        pathsByArchivePath: const <String, StagedBackupAttachmentPath>{
-          'attachments/medication/med-1.png': StagedBackupAttachmentPath(
-            stagedPath: '/tmp/stage-1/med-1.png',
-            finalPath: '/documents/med_photos/med-1.png',
-          ),
+  test(
+    'preparation rewrites archive photo paths to reserved final paths',
+    () async {
+      final bundle = _bundle('attachments/medication/med-1.png');
+      final port = _FakeRestorePort(
+        staged: StagedBackupAttachments(
+          stageId: 'stage-1',
+          pathsByArchivePath: const <String, StagedBackupAttachmentPath>{
+            'attachments/medication/med-1.png': StagedBackupAttachmentPath(
+              stagedPath: '/tmp/stage-1/med-1.png',
+              finalPath: '/documents/med_photos/med-1.png',
+            ),
+          },
+        ),
+      );
+      final useCase = PrepareBackupRestore(
+        codec: _FakeBundleCodec(bundle),
+        attachmentRestorePort: port,
+      );
+
+      final result = await useCase(Uint8List(0));
+
+      result.fold(
+        onSuccess: (prepared) {
+          expect(prepared.stageId, 'stage-1');
+          expect(
+            prepared.snapshot.records.single.payload['imagePath'],
+            '/documents/med_photos/med-1.png',
+          );
+          expect(port.stageCalls, 1);
+          expect(port.discardCalls, 0);
         },
-      ),
-    );
-    final useCase = PrepareBackupRestore(
-      codec: _FakeBundleCodec(bundle),
-      attachmentRestorePort: port,
-    );
-
-    final result = await useCase(Uint8List(0));
-
-    result.fold(
-      onSuccess: (prepared) {
-        expect(prepared.stageId, 'stage-1');
-        expect(
-          prepared.snapshot.records.single.payload['imagePath'],
-          '/documents/med_photos/med-1.png',
-        );
-        expect(port.stageCalls, 1);
-        expect(port.discardCalls, 0);
-      },
-      onFailure: (failure) => fail(failure.toString()),
-    );
-  });
+        onFailure: (failure) => fail(failure.toString()),
+      );
+    },
+  );
 
   test('preparation stops before staging when archive decode fails', () async {
     final port = _FakeRestorePort(
@@ -91,30 +93,30 @@ void main() {
 }
 
 BackupAttachmentBundle _bundle(String? imagePath) => BackupAttachmentBundle(
-      snapshot: BackupSnapshot(
-        schemaVersion: BackupSnapshot.currentSchemaVersion,
-        exportedAt: DateTime.utc(2026, 8, 25),
-        records: <BackupRecord>[
-          BackupRecord(
-            namespace: 'medication',
-            id: 'med-1',
-            payload: <String, Object?>{
-              'version': 1,
-              'id': 'med-1',
-              'imagePath': imagePath,
-            },
+  snapshot: BackupSnapshot(
+    schemaVersion: BackupSnapshot.currentSchemaVersion,
+    exportedAt: DateTime.utc(2026, 8, 25),
+    records: <BackupRecord>[
+      BackupRecord(
+        namespace: 'medication',
+        id: 'med-1',
+        payload: <String, Object?>{
+          'version': 1,
+          'id': 'med-1',
+          'imagePath': imagePath,
+        },
+      ),
+    ],
+  ),
+  attachments: imagePath == null || imagePath.isEmpty
+      ? const <BackupAttachment>[]
+      : <BackupAttachment>[
+          BackupAttachment(
+            archivePath: imagePath,
+            bytes: Uint8List.fromList(<int>[1, 2, 3]),
           ),
         ],
-      ),
-      attachments: imagePath == null || imagePath.isEmpty
-          ? const <BackupAttachment>[]
-          : <BackupAttachment>[
-              BackupAttachment(
-                archivePath: imagePath,
-                bytes: Uint8List.fromList(<int>[1, 2, 3]),
-              ),
-            ],
-    );
+);
 
 final class _FakeBundleCodec implements BackupBundleArchiveCodec {
   const _FakeBundleCodec(this.bundle);
@@ -124,8 +126,7 @@ final class _FakeBundleCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async =>
-      Success<BackupAttachmentBundle>(bundle);
+  ) async => Success<BackupAttachmentBundle>(bundle);
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) {
@@ -139,10 +140,9 @@ final class _FailingBundleCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async =>
-      const Failed<BackupAttachmentBundle>(
-        Failure(code: 'decode_failed', message: 'Decode failed.'),
-      );
+  ) async => const Failed<BackupAttachmentBundle>(
+    Failure(code: 'decode_failed', message: 'Decode failed.'),
+  );
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) {

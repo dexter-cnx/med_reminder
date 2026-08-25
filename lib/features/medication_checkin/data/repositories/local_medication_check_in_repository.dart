@@ -12,15 +12,16 @@ class LocalMedicationCheckInRepository implements MedicationCheckInRepository {
   @override
   Result<List<MedicationCheckIn>> readAll() {
     try {
-      final items = _dataSource
-          .readCheckInRecords()
-          .map(
-            (record) => MedicationCheckInRecord(
-              Map<String, dynamic>.from(record),
-            ).toEntity(),
-          )
-          .toList(growable: false)
-        ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      final items =
+          _dataSource
+              .readCheckInRecords()
+              .map(
+                (record) => MedicationCheckInRecord(
+                  Map<String, dynamic>.from(record),
+                ).toEntity(),
+              )
+              .toList(growable: false)
+            ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
       return Success<List<MedicationCheckIn>>(items);
     } catch (error) {
       return Failed<List<MedicationCheckIn>>(

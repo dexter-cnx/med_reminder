@@ -8,10 +8,7 @@ import 'backup_bundle_archive_codec.dart';
 import 'medication_backup_data_port.dart';
 
 class PreparedBackupRestore {
-  const PreparedBackupRestore({
-    required this.snapshot,
-    required this.stageId,
-  });
+  const PreparedBackupRestore({required this.snapshot, required this.stageId});
 
   final BackupSnapshot snapshot;
   final String stageId;

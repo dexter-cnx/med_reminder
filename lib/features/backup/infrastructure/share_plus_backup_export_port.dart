@@ -31,17 +31,19 @@ final class SharePlusBackupExportPort implements BackupExportPort {
       final sharedFile = File(p.join(shareDirectory.path, fileName));
       await sharedFile.writeAsBytes(archiveBytes, flush: true);
 
-      final shareResult = await Share.shareXFiles(
-        <XFile>[XFile(sharedFile.path, mimeType: 'application/zip')],
-        subject: 'Besyu backup',
-        sharePositionOrigin: anchor == null
-            ? null
-            : Rect.fromLTWH(
-                anchor.left,
-                anchor.top,
-                anchor.width,
-                anchor.height,
-              ),
+      final shareResult = await SharePlus.instance.share(
+        ShareParams(
+          files: <XFile>[XFile(sharedFile.path, mimeType: 'application/zip')],
+          subject: 'Besyu backup',
+          sharePositionOrigin: anchor == null
+              ? null
+              : Rect.fromLTWH(
+                  anchor.left,
+                  anchor.top,
+                  anchor.width,
+                  anchor.height,
+                ),
+        ),
       );
       if (shareResult.status == ShareResultStatus.dismissed) {
         return const Failed<void>(

@@ -14,19 +14,19 @@ final backupExportPortProvider = Provider<BackupExportPort>(
 
 final backupExportControllerProvider =
     StateNotifierProvider<BackupExportController, bool>(
-  (ref) => BackupExportController(
-    createBundle: ref.watch(createBackupBundleProvider),
-    exportPort: ref.watch(backupExportPortProvider),
-  ),
-);
+      (ref) => BackupExportController(
+        createBundle: ref.watch(createBackupBundleProvider),
+        exportPort: ref.watch(backupExportPortProvider),
+      ),
+    );
 
 final class BackupExportController extends StateNotifier<bool> {
   BackupExportController({
     required this.createBundle,
     required this.exportPort,
     DateTime Function()? now,
-  })  : _now = now ?? DateTime.now,
-        super(false);
+  }) : _now = now ?? DateTime.now,
+       super(false);
 
   final CreateBackupBundle createBundle;
   final BackupExportPort exportPort;

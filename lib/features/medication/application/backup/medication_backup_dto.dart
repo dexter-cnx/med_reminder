@@ -51,9 +51,7 @@ class MedicationBackupDto {
         genericName: _optionalString(payload, 'genericName') ?? '',
         description: _optionalString(payload, 'description') ?? '',
         times: timesValue.map((value) => value as String).toList(),
-        createdAt: _decodeLocalDateTime(
-          _requiredString(payload, 'createdAt'),
-        ),
+        createdAt: _decodeLocalDateTime(_requiredString(payload, 'createdAt')),
         initialAmount: _optionalInt(payload, 'initialAmount'),
         lowThreshold: _optionalInt(payload, 'lowThreshold'),
         imagePath: _optionalString(payload, 'imagePath'),
@@ -78,15 +76,15 @@ class MedicationBackupDto {
   }
 
   static String _encodeLocalDateTime(DateTime value) => DateTime(
-        value.year,
-        value.month,
-        value.day,
-        value.hour,
-        value.minute,
-        value.second,
-        value.millisecond,
-        value.microsecond,
-      ).toIso8601String();
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+    value.millisecond,
+    value.microsecond,
+  ).toIso8601String();
 
   static DateTime _decodeLocalDateTime(String value) {
     final parsed = DateTime.parse(value);

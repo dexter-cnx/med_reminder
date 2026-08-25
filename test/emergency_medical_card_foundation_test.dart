@@ -39,9 +39,9 @@ void main() {
 
     expect(result.isSuccess, isTrue);
     final saved = repository.read().fold<EmergencyProfile?>(
-          onSuccess: (profile) => profile,
-          onFailure: (_) => null,
-        );
+      onSuccess: (profile) => profile,
+      onFailure: (_) => null,
+    );
     expect(saved?.displayName, 'Dexter');
     expect(saved?.emergencyContactPhone, '0812345678');
   });
@@ -130,10 +130,9 @@ void main() {
       refillEvents: refills,
     );
 
-    expect(
-      card.currentMedications.map((item) => item.id),
-      <String>['until-empty'],
-    );
+    expect(card.currentMedications.map((item) => item.id), <String>[
+      'until-empty',
+    ]);
   });
 }
 

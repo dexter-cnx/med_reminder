@@ -7,16 +7,15 @@ class RefillRecord {
 
   final Map<String, dynamic> value;
 
-  factory RefillRecord.fromEntity(RefillEvent event) => RefillRecord(
-        <String, dynamic>{
-          'schemaVersion': schemaVersion,
-          'id': event.id,
-          'medicationId': event.medicationId,
-          'quantity': event.quantity,
-          'createdAt': event.createdAt.toIso8601String(),
-          'note': event.note,
-        },
-      );
+  factory RefillRecord.fromEntity(RefillEvent event) =>
+      RefillRecord(<String, dynamic>{
+        'schemaVersion': schemaVersion,
+        'id': event.id,
+        'medicationId': event.medicationId,
+        'quantity': event.quantity,
+        'createdAt': event.createdAt.toIso8601String(),
+        'note': event.note,
+      });
 
   RefillEvent toEntity() {
     final id = value['id'];

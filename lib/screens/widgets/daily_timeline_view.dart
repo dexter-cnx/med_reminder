@@ -120,11 +120,11 @@ class _TimelineList extends StatelessWidget {
         final item = items[index];
         return switch (item) {
           MedicationDoseTimelineItem() => _DoseTimelineCard(
-              dose: item.dose,
-              onTake: onTake,
-              onSkip: onSkip,
-              onSnooze: onSnooze,
-            ),
+            dose: item.dose,
+            onTake: onTake,
+            onSkip: onSkip,
+            onSnooze: onSnooze,
+          ),
           RefillTimelineItem() => _RefillTimelineCard(item: item),
           AppointmentTimelineItem() => _AppointmentTimelineCard(item: item),
         };
@@ -180,8 +180,8 @@ class _DoseTimelineCard extends StatelessWidget {
             trailing: dose.isTaken
                 ? const Icon(Icons.check_circle)
                 : dose.isSkipped
-                    ? Text('skipped'.tr())
-                    : null,
+                ? Text('skipped'.tr())
+                : null,
           ),
           if (hasActions)
             Padding(
@@ -227,8 +227,9 @@ class _RefillTimelineCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.add_box_outlined),
         title: Text('$hour:$minute · $quantityLabel'),
-        subtitle:
-            subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
+        subtitle: subtitleParts.isEmpty
+            ? null
+            : Text(subtitleParts.join(' · ')),
       ),
     );
   }
@@ -254,8 +255,9 @@ class _AppointmentTimelineCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.event_outlined),
         title: Text('$hour:$minute · ${appointment.title}'),
-        subtitle:
-            subtitleParts.isEmpty ? null : Text(subtitleParts.join(' · ')),
+        subtitle: subtitleParts.isEmpty
+            ? null
+            : Text(subtitleParts.join(' · ')),
       ),
     );
   }

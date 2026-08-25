@@ -15,10 +15,10 @@ class EmergencyProfileRecord {
   final Map<String, dynamic> value;
 
   EmergencyProfile toEntity() => EmergencyProfile(
-        displayName: value['displayName'] as String? ?? '',
-        emergencyContactName: value['emergencyContactName'] as String? ?? '',
-        emergencyContactPhone: value['emergencyContactPhone'] as String? ?? '',
-        medicationAllergies: value['medicationAllergies'] as String? ?? '',
-        medicalNotes: value['medicalNotes'] as String? ?? '',
-      );
+    displayName: value['displayName'] as String? ?? '',
+    emergencyContactName: value['emergencyContactName'] as String? ?? '',
+    emergencyContactPhone: value['emergencyContactPhone'] as String? ?? '',
+    medicationAllergies: value['medicationAllergies'] as String? ?? '',
+    medicalNotes: value['medicalNotes'] as String? ?? '',
+  );
 }
