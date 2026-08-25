@@ -22,4 +22,17 @@ void main() {
     expect(source, isNot(contains('request.body')));
     expect(source, isNot(contains('request.payload')));
   });
+
+  test('Android pending evidence is not presented as AlarmManager truth', () {
+    final source = File(
+      'lib/reminder_reliability_probe_main.dart',
+    ).readAsStringSync();
+
+    expect(
+      source,
+      contains('pluginPersistedScheduledNotificationRegistry'),
+    );
+    expect(source, contains('does not prove AlarmManager restoration'));
+    expect(source, contains("'pendingEvidenceKind': pendingEvidenceKind"));
+  });
 }
