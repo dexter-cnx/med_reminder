@@ -13,9 +13,11 @@ Current behavior:
 - interactive reminder-affecting mutations (take, skip, snooze, medication add/delete, and refill) trigger the same reconciliation controller after persistence;
 - overlapping triggers are coalesced into one queued rerun so a mutation that lands during lifecycle repair is reconciled from the latest state afterward;
 - lifecycle repair retries once immediately after a failed reconciliation before giving up for that trigger;
+- runtime reconciliation and backup reminder rebuild now execute through the same reminder transaction core;
+- backup restore keeps its `backup_restore_*` failure semantics while inheriting the same scheduling, concurrency merge, cleanup, and persistence rules as runtime reconciliation;
 - partial schedules created by a failing per-medication native scheduling call are cancelled before the failure escapes;
 - medication collection changes during reconciliation are merged against the latest repository state so newly added medications are not deleted and removed medications are not resurrected;
-- PRN/as-needed, expired, and empty `untilEmpty` medications are not scheduled;
+- PRN/as-needed, expired, and empty `untilEmpty` medications are not scheduled, including after backup restore;
 - foreground system refresh reads timezone state before reconciliation instead of calling the legacy `rescheduleAll()` path directly;
 - notification-permission and Android exact-alarm permission requests reconcile after the native permission API returns, regardless of whether permission was granted or denied, so the current scheduling mode is reflected immediately;
 - Android foreground refresh reads `areNotificationsEnabled()` and `canScheduleExactNotifications()` before reconciliation, so permission changes made in System Settings are observed without requiring another in-app permission request;
@@ -43,6 +45,7 @@ Current behavior:
 12. Rolling-window projection must never rewrite the persisted medication course start date or duration.
 13. Calendar-day calculations must not depend on elapsed wall-clock hours, so DST transitions cannot move a finite course by one day.
 14. Foreground reminder repair has one lifecycle owner. `HomeScreen` may perform cold-launch repair after mount but must not register its own resume observer.
+15. Backup reminder rebuild must not maintain an independent scheduling algorithm; it must reuse the medication reminder transaction core so PRN and future scheduling rules cannot drift.
 
 ## Recovery model
 
@@ -54,4 +57,4 @@ Android force-stop remains a platform limitation: alarms/notifications may be su
 
 1. Validate reboot, force-stop recovery, timezone changes, permission transitions, rolling-window refill, and long-idle behavior on physical Android/iOS devices.
 2. Add global pending-notification budget allocation if physical iOS validation shows that per-course rolling windows can still exceed the platform queue under high medication/time counts.
-3. Refactor backup reminder rebuild to reuse the medication-level reconciliation core while preserving backup-specific error semantics; the duplicated implementation has already drifted by omitting PRN/as-needed scheduling exclusion.
+3. Add physical-validation evidence/checklists for reminder reliability before changing platform-specific scheduling policy further.
