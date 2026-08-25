@@ -55,7 +55,19 @@ final restoreBackupBundleProvider =
       dataPort: dataPort,
       attachmentRestorePort: attachmentRestorePort,
     ),
-    onSuccess: () async {
+    captureReminderState: () => ref
+        .read(medicationRepositoryProvider)
+        .readAll()
+        .fold(
+          onSuccess: (medications) => Success<List<int>>(
+            <int>[
+              for (final medication in medications)
+                ...medication.notificationIds,
+            ],
+          ),
+          onFailure: (failure) => Failed<List<int>>(failure),
+        ),
+    onSuccess: (previousNotificationIds) async {
       ref.invalidate(logsProvider);
       ref.invalidate(medsProvider);
 
@@ -64,7 +76,7 @@ final restoreBackupBundleProvider =
         doseLogRepository: ref.read(doseLogRepositoryProvider),
         reminderScheduler: ref.read(medicationReminderSchedulerProvider),
         stockResolver: ref.read(medicationStockResolverProvider),
-      )();
+      )(previousNotificationIds: previousNotificationIds);
 
       ref.invalidate(logsProvider);
       ref.invalidate(medsProvider);
