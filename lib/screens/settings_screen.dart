@@ -7,6 +7,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../features/backup/presentation/widgets/reminder_repair_card.dart';
 import '../features/emergency/presentation/screens/emergency_profile_settings_screen.dart';
+import '../features/medication/application/reminder_system_trigger_coordinator.dart';
+import '../features/medication/presentation/providers/reminder_reconciliation_providers.dart';
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
@@ -31,6 +33,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _permissionBusy = false;
 
   Box<dynamic> get _settings => Hive.box<dynamic>('settings');
+
+  ReminderSystemTriggerCoordinator get _systemReminderTriggers =>
+      ReminderSystemTriggerCoordinator(
+        refreshTimezoneIfChanged: NotificationService.refreshTimezoneIfChanged,
+        requestNotificationPermission:
+            NotificationService.requestNotificationPermission,
+        requestExactAlarmPermission:
+            NotificationService.requestExactAlarmPermission,
+        reconcile: ref.read(reminderReconciliationControllerProvider).trigger,
+      );
 
   @override
   void initState() {
@@ -87,7 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _requestNotifications() async {
     await _runPermissionAction(() async {
-      final granted = await NotificationService.requestNotificationPermission();
+      final granted = await _systemReminderTriggers.requestNotifications();
       if (!mounted) return;
       _showMessage(
         (granted
@@ -100,7 +112,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _requestExactAlarm() async {
     await _runPermissionAction(() async {
-      final granted = await NotificationService.requestExactAlarmPermission();
+      final granted = await _systemReminderTriggers.requestExactAlarm();
       if (!mounted) return;
       _showMessage(
         (granted
