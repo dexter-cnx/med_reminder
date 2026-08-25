@@ -326,10 +326,6 @@ final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
   @override
   Future<Result<void>> discard(String stageId) async =>
       const Success<void>(null);
-
-  @override
-  Future<Result<void>> cleanupStaleStages(Duration maxAge) async =>
-      const Success<void>(null);
 }
 
 final class _FakeDataPort implements BackupDataPort {
