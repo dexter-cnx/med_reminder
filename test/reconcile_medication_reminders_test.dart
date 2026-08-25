@@ -7,34 +7,37 @@ import 'package:med_reminder_offline/features/medication/domain/repositories/med
 import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
 
 void main() {
-  test('reconcile cancels old ids, skips PRN, and persists rebuilt ids', () async {
-    final medications = <Medication>[
-      _medication(id: 'scheduled', notificationIds: const <int>[11, 12]),
-      _medication(
-        id: 'prn',
-        dosePlan: MedicationDosePlan.asNeeded,
-        notificationIds: const <int>[21],
-      ),
-    ];
-    final repository = _FakeMedicationRepository(medications);
-    final scheduler = _FakeScheduler();
-    final useCase = ReconcileMedicationReminders(
-      medicationRepository: repository,
-      doseLogRepository: const _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: legacyMedicationStockResolver,
-      now: () => DateTime(2026, 8, 25, 12),
-    );
+  test(
+    'reconcile cancels old ids, skips PRN, and persists rebuilt ids',
+    () async {
+      final medications = <Medication>[
+        _medication(id: 'scheduled', notificationIds: const <int>[11, 12]),
+        _medication(
+          id: 'prn',
+          dosePlan: MedicationDosePlan.asNeeded,
+          notificationIds: const <int>[21],
+        ),
+      ];
+      final repository = _FakeMedicationRepository(medications);
+      final scheduler = _FakeScheduler();
+      final useCase = ReconcileMedicationReminders(
+        medicationRepository: repository,
+        doseLogRepository: const _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: legacyMedicationStockResolver,
+        now: () => DateTime(2026, 8, 25, 12),
+      );
 
-    final result = await useCase();
+      final result = await useCase();
 
-    expect(result.isSuccess, isTrue);
-    expect(scheduler.cancelCalls.first, <int>[11, 12, 21]);
-    expect(scheduler.scheduledMedicationIds, <String>['scheduled']);
-    expect(repository.lastReplaced, hasLength(2));
-    expect(repository.lastReplaced![0].notificationIds, <int>[101]);
-    expect(repository.lastReplaced![1].notificationIds, isEmpty);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(scheduler.cancelCalls.first, <int>[11, 12, 21]);
+      expect(scheduler.scheduledMedicationIds, <String>['scheduled']);
+      expect(repository.lastReplaced, hasLength(2));
+      expect(repository.lastReplaced![0].notificationIds, <int>[101]);
+      expect(repository.lastReplaced![1].notificationIds, isEmpty);
+    },
+  );
 
   test('partial scheduling failure cleans newly created ids', () async {
     final repository = _FakeMedicationRepository(<Medication>[
