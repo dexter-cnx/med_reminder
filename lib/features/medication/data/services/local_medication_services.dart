@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 
 import '../../../../services/notification_service.dart';
 import '../../../../services/photo_service.dart';
+import '../../application/reminder_scheduling_window.dart';
 import '../../domain/entities/medication.dart';
 import '../../domain/services/medication_services.dart';
 
@@ -9,8 +10,17 @@ class LocalMedicationReminderScheduler implements MedicationReminderScheduler {
   const LocalMedicationReminderScheduler();
 
   @override
-  Future<List<int>> schedule(Medication medication) =>
-      NotificationService.scheduleForMed(medication);
+  Future<List<int>> schedule(Medication medication) async {
+    final projected = defaultReminderSchedulingWindow.project(
+      medication,
+      DateTime.now(),
+    );
+    if (projected == null) {
+      await NotificationService.cancelIds(medication.notificationIds);
+      return const <int>[];
+    }
+    return NotificationService.scheduleForMed(projected);
+  }
 
   @override
   Future<void> cancelIds(Iterable<int> ids) =>
