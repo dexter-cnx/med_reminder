@@ -31,7 +31,8 @@ final backupRestorePortProvider =
   },
 );
 
-final backupRestoreMaintenanceProvider = FutureProvider<Result<int>>((ref) async {
+final backupRestoreMaintenanceProvider =
+    FutureProvider<Result<int>>((ref) async {
   final restorePort = await ref.watch(backupRestorePortProvider.future);
   return restorePort.cleanupStaleStages(
     olderThan: const Duration(hours: 24),

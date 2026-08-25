@@ -6,7 +6,8 @@ import 'package:med_reminder_offline/features/medication/domain/repositories/med
 import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
 
 void main() {
-  test('rebuild schedules active medication and persists generated ids', () async {
+  test('rebuild schedules active medication and persists generated ids',
+      () async {
     final medication = _medication(notificationIds: const <int>[]);
     final medications = _FakeMedicationRepository(<Medication>[medication]);
     final scheduler = _FakeReminderScheduler(scheduleIds: const <int>[10, 11]);

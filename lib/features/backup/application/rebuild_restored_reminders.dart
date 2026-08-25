@@ -28,8 +28,7 @@ final class RebuildRestoredReminders {
       return Failed<void>(failure);
     }
 
-    final medications =
-        (medicationsResult as Success<List<Medication>>).value;
+    final medications = (medicationsResult as Success<List<Medication>>).value;
     final logs = (logsResult as Success<List<DoseLog>>).value;
     final rebuilt = <Medication>[];
 
@@ -47,11 +46,12 @@ final class RebuildRestoredReminders {
           continue;
         }
 
-        final schedulingSnapshot = medication.mode == MedicationMode.untilEmpty &&
-                remaining != null &&
-                remaining > 0
-            ? medication.copyWith(initialAmount: remaining)
-            : medication;
+        final schedulingSnapshot =
+            medication.mode == MedicationMode.untilEmpty &&
+                    remaining != null &&
+                    remaining > 0
+                ? medication.copyWith(initialAmount: remaining)
+                : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         rebuilt.add(medication.copyWith(notificationIds: ids));
       }

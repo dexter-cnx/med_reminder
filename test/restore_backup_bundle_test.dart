@@ -40,7 +40,8 @@ void main() {
     expect(refreshed, isFalse);
   });
 
-  test('coordinator awaits post-restore repair after durable restore', () async {
+  test('coordinator awaits post-restore repair after durable restore',
+      () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(events: events);
     final dataPort = _FakeDataPort(events: events);
@@ -68,7 +69,8 @@ void main() {
     );
   });
 
-  test('post-restore repair failure does not roll durable restore back', () async {
+  test('post-restore repair failure does not roll durable restore back',
+      () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(events: events);
     final dataPort = _FakeDataPort(events: events);
