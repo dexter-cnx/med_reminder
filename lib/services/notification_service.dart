@@ -155,7 +155,11 @@ class NotificationService {
 
     final ids = <int>[];
     try {
-      for (var timeIndex = 0; timeIndex < medication.times.length; timeIndex++) {
+      for (
+        var timeIndex = 0;
+        timeIndex < medication.times.length;
+        timeIndex++
+      ) {
         final parts = medication.times[timeIndex].split(':');
         if (parts.length != 2) continue;
         final hour = int.tryParse(parts[0]);

@@ -39,56 +39,65 @@ void main() {
     },
   );
 
-  test('reconcile preserves medication added while scheduling is in flight', () async {
-    final original = _medication(id: 'one', notificationIds: const <int>[1]);
-    final added = _medication(id: 'added', notificationIds: const <int>[77]);
-    final repository = _SequencedMedicationRepository(<List<Medication>>[
-      <Medication>[original],
-      <Medication>[original, added],
-    ]);
-    final scheduler = _FakeScheduler();
-    final useCase = ReconcileMedicationReminders(
-      medicationRepository: repository,
-      doseLogRepository: const _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: legacyMedicationStockResolver,
-      now: () => DateTime(2026, 8, 25, 12),
-    );
+  test(
+    'reconcile preserves medication added while scheduling is in flight',
+    () async {
+      final original = _medication(id: 'one', notificationIds: const <int>[1]);
+      final added = _medication(id: 'added', notificationIds: const <int>[77]);
+      final repository = _SequencedMedicationRepository(<List<Medication>>[
+        <Medication>[original],
+        <Medication>[original, added],
+      ]);
+      final scheduler = _FakeScheduler();
+      final useCase = ReconcileMedicationReminders(
+        medicationRepository: repository,
+        doseLogRepository: const _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: legacyMedicationStockResolver,
+        now: () => DateTime(2026, 8, 25, 12),
+      );
 
-    final result = await useCase();
+      final result = await useCase();
 
-    expect(result.isSuccess, isTrue);
-    expect(repository.lastReplaced, hasLength(2));
-    expect(repository.lastReplaced![0].id, 'one');
-    expect(repository.lastReplaced![0].notificationIds, <int>[101]);
-    expect(repository.lastReplaced![1].id, 'added');
-    expect(repository.lastReplaced![1].notificationIds, <int>[77]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(repository.lastReplaced, hasLength(2));
+      expect(repository.lastReplaced![0].id, 'one');
+      expect(repository.lastReplaced![0].notificationIds, <int>[101]);
+      expect(repository.lastReplaced![1].id, 'added');
+      expect(repository.lastReplaced![1].notificationIds, <int>[77]);
+    },
+  );
 
-  test('reconcile does not restore medication removed while scheduling', () async {
-    final removed = _medication(id: 'removed', notificationIds: const <int>[1]);
-    final repository = _SequencedMedicationRepository(<List<Medication>>[
-      <Medication>[removed],
-      const <Medication>[],
-    ]);
-    final scheduler = _FakeScheduler();
-    final useCase = ReconcileMedicationReminders(
-      medicationRepository: repository,
-      doseLogRepository: const _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: legacyMedicationStockResolver,
-      now: () => DateTime(2026, 8, 25, 12),
-    );
+  test(
+    'reconcile does not restore medication removed while scheduling',
+    () async {
+      final removed = _medication(
+        id: 'removed',
+        notificationIds: const <int>[1],
+      );
+      final repository = _SequencedMedicationRepository(<List<Medication>>[
+        <Medication>[removed],
+        const <Medication>[],
+      ]);
+      final scheduler = _FakeScheduler();
+      final useCase = ReconcileMedicationReminders(
+        medicationRepository: repository,
+        doseLogRepository: const _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: legacyMedicationStockResolver,
+        now: () => DateTime(2026, 8, 25, 12),
+      );
 
-    final result = await useCase();
+      final result = await useCase();
 
-    expect(result.isSuccess, isTrue);
-    expect(repository.lastReplaced, isEmpty);
-    expect(scheduler.cancelCalls, <List<int>>[
-      <int>[1],
-      <int>[101],
-    ]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(repository.lastReplaced, isEmpty);
+      expect(scheduler.cancelCalls, <List<int>>[
+        <int>[1],
+        <int>[101],
+      ]);
+    },
+  );
 
   test('partial scheduling failure cleans newly created ids', () async {
     final repository = _FakeMedicationRepository(<Medication>[
