@@ -42,7 +42,8 @@ final backupRestoreMaintenanceProvider =
   );
 });
 
-final reminderRepairControllerProvider = Provider<ReminderRepairController>(
+final reminderRepairControllerProvider =
+    StateNotifierProvider<ReminderRepairController, bool>(
   (ref) => ReminderRepairController(
     medicationRepository: ref.watch(medicationRepositoryProvider),
     doseLogRepository: ref.watch(doseLogRepositoryProvider),
@@ -55,14 +56,14 @@ final reminderRepairControllerProvider = Provider<ReminderRepairController>(
   ),
 );
 
-final class ReminderRepairController {
+final class ReminderRepairController extends StateNotifier<bool> {
   ReminderRepairController({
     required this.medicationRepository,
     required this.doseLogRepository,
     required this.reminderScheduler,
     required this.stockResolver,
     required this.refreshState,
-  });
+  }) : super(false);
 
   final MedicationRepository medicationRepository;
   final DoseLogRepository doseLogRepository;
@@ -71,31 +72,45 @@ final class ReminderRepairController {
   final void Function() refreshState;
 
   Future<Result<void>> repair() async {
-    final notificationIdsResult =
-        medicationRepository.readAll().fold<Result<List<int>>>(
-              onSuccess: (medications) => Success<List<int>>(
-                <int>[
-                  for (final medication in medications)
-                    ...medication.notificationIds,
-                ],
-              ),
-              onFailure: (failure) => Failed<List<int>>(failure),
-            );
-    if (notificationIdsResult case Failed<List<int>>(:final failure)) {
-      return Failed<void>(failure);
+    if (state) {
+      return const Failed<void>(
+        Failure(
+          code: 'backup_restore_reminder_repair_in_progress',
+          message: 'Medication reminder repair is already in progress.',
+        ),
+      );
     }
 
-    final previousNotificationIds =
-        (notificationIdsResult as Success<List<int>>).value;
-    final result = await RebuildRestoredReminders(
-      medicationRepository: medicationRepository,
-      doseLogRepository: doseLogRepository,
-      reminderScheduler: reminderScheduler,
-      stockResolver: stockResolver,
-    )(previousNotificationIds: previousNotificationIds);
+    state = true;
+    try {
+      final notificationIdsResult =
+          medicationRepository.readAll().fold<Result<List<int>>>(
+                onSuccess: (medications) => Success<List<int>>(
+                  <int>[
+                    for (final medication in medications)
+                      ...medication.notificationIds,
+                  ],
+                ),
+                onFailure: (failure) => Failed<List<int>>(failure),
+              );
+      if (notificationIdsResult case Failed<List<int>>(:final failure)) {
+        return Failed<void>(failure);
+      }
 
-    refreshState();
-    return result;
+      final previousNotificationIds =
+          (notificationIdsResult as Success<List<int>>).value;
+      final result = await RebuildRestoredReminders(
+        medicationRepository: medicationRepository,
+        doseLogRepository: doseLogRepository,
+        reminderScheduler: reminderScheduler,
+        stockResolver: stockResolver,
+      )(previousNotificationIds: previousNotificationIds);
+
+      refreshState();
+      return result;
+    } finally {
+      state = false;
+    }
   }
 }
 
