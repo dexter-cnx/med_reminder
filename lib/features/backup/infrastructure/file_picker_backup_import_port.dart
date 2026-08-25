@@ -56,7 +56,7 @@ final class FilePickerBackupImportPort implements BackupImportPort {
         );
       }
       return Success<BackupImportSelection?>(
-        BackupImportSelection(fileName: file.name, bytes: bytes),
+        BackupImportSelection.takeOwnership(fileName: file.name, bytes: bytes),
       );
     } on Object {
       return const Failed<BackupImportSelection?>(
