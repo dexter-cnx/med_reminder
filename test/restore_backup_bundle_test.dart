@@ -78,41 +78,44 @@ void main() {
     },
   );
 
-  test('reminder capture failure discards prepared stage before commit', () async {
-    final events = <String>[];
-    final attachments = _FakeAttachmentRestorePort(events: events);
-    final dataPort = _FakeDataPort(events: events);
-    final restore = RestoreBackupBundle(
-      prepare: PrepareBackupRestore(
-        codec: _SuccessfulCodec(_bundle()),
-        attachmentRestorePort: attachments,
-      ),
-      commit: CommitPreparedBackupRestore(
-        dataPort: dataPort,
-        attachmentRestorePort: attachments,
-      ),
-      captureReminderState: () {
-        events.add('capture');
-        return const Failed<List<int>>(
-          Failure(
-            code: 'reminder_state_capture_failed',
-            message: 'Reminder state could not be captured.',
-          ),
-        );
-      },
-    );
+  test(
+    'reminder capture failure discards prepared stage before commit',
+    () async {
+      final events = <String>[];
+      final attachments = _FakeAttachmentRestorePort(events: events);
+      final dataPort = _FakeDataPort(events: events);
+      final restore = RestoreBackupBundle(
+        prepare: PrepareBackupRestore(
+          codec: _SuccessfulCodec(_bundle()),
+          attachmentRestorePort: attachments,
+        ),
+        commit: CommitPreparedBackupRestore(
+          dataPort: dataPort,
+          attachmentRestorePort: attachments,
+        ),
+        captureReminderState: () {
+          events.add('capture');
+          return const Failed<List<int>>(
+            Failure(
+              code: 'reminder_state_capture_failed',
+              message: 'Reminder state could not be captured.',
+            ),
+          );
+        },
+      );
 
-    final result = await restore(Uint8List(0));
+      final result = await restore(Uint8List(0));
 
-    expect(result, isA<Failed<void>>());
-    expect(
-      (result as Failed<void>).failure.code,
-      'reminder_state_capture_failed',
-    );
-    expect(events, <String>['stage', 'capture', 'discard:stage-1']);
-    expect(attachments.commitCalls, 0);
-    expect(dataPort.restoreCalls, 0);
-  });
+      expect(result, isA<Failed<void>>());
+      expect(
+        (result as Failed<void>).failure.code,
+        'reminder_state_capture_failed',
+      );
+      expect(events, <String>['stage', 'capture', 'discard:stage-1']);
+      expect(attachments.commitCalls, 0);
+      expect(dataPort.restoreCalls, 0);
+    },
+  );
 
   test(
     'reminder capture cleanup failure surfaces explicit stage failure',

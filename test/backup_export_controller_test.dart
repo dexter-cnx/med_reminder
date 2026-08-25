@@ -38,50 +38,62 @@ void main() {
     expect(port.lastFileName, 'besyu-backup-20260825-140509.zip');
   });
 
-  test('share transport failure is preserved and busy state is cleared', () async {
-    final port = _FakeExportPort(
-      result: const Failed<void>(
-        Failure(
-          code: 'backup_export_share_failed',
-          message: 'Share transport failed.',
+  test(
+    'share transport failure is preserved and busy state is cleared',
+    () async {
+      final port = _FakeExportPort(
+        result: const Failed<void>(
+          Failure(
+            code: 'backup_export_share_failed',
+            message: 'Share transport failed.',
+          ),
         ),
-      ),
-    );
-    final controller = BackupExportController(
-      createBundle: _successfulCreateBundle(),
-      exportPort: port,
-    );
+      );
+      final controller = BackupExportController(
+        createBundle: _successfulCreateBundle(),
+        exportPort: port,
+      );
 
-    final result = await controller.shareBackup();
+      final result = await controller.shareBackup();
 
-    expect(result, isA<Failed<void>>());
-    expect((result as Failed<void>).failure.code, 'backup_export_share_failed');
-    expect(controller.state, isFalse);
-    expect(port.shareCalls, 1);
-  });
+      expect(result, isA<Failed<void>>());
+      expect(
+        (result as Failed<void>).failure.code,
+        'backup_export_share_failed',
+      );
+      expect(controller.state, isFalse);
+      expect(port.shareCalls, 1);
+    },
+  );
 
-  test('concurrent export is rejected without starting a second transfer', () async {
-    final completer = Completer<Result<void>>();
-    final port = _FakeExportPort(completer: completer);
-    final controller = BackupExportController(
-      createBundle: _successfulCreateBundle(),
-      exportPort: port,
-    );
+  test(
+    'concurrent export is rejected without starting a second transfer',
+    () async {
+      final completer = Completer<Result<void>>();
+      final port = _FakeExportPort(completer: completer);
+      final controller = BackupExportController(
+        createBundle: _successfulCreateBundle(),
+        exportPort: port,
+      );
 
-    final first = controller.shareBackup();
-    await Future<void>.delayed(Duration.zero);
-    expect(controller.state, isTrue);
+      final first = controller.shareBackup();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state, isTrue);
 
-    final second = await controller.shareBackup();
+      final second = await controller.shareBackup();
 
-    expect(second, isA<Failed<void>>());
-    expect((second as Failed<void>).failure.code, 'backup_export_in_progress');
-    expect(port.shareCalls, 1);
+      expect(second, isA<Failed<void>>());
+      expect(
+        (second as Failed<void>).failure.code,
+        'backup_export_in_progress',
+      );
+      expect(port.shareCalls, 1);
 
-    completer.complete(const Success<void>(null));
-    expect((await first).isSuccess, isTrue);
-    expect(controller.state, isFalse);
-  });
+      completer.complete(const Success<void>(null));
+      expect((await first).isSuccess, isTrue);
+      expect(controller.state, isFalse);
+    },
+  );
 }
 
 CreateBackupBundle _successfulCreateBundle() {
