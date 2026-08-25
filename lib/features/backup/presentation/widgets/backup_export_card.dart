@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/backup_export_port.dart';
 import '../providers/backup_export_providers.dart';
 
 class BackupExportCard extends ConsumerWidget {
@@ -12,9 +13,19 @@ class BackupExportCard extends ConsumerWidget {
     final isThai = Localizations.localeOf(context).languageCode == 'th';
 
     Future<void> export() async {
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box?.localToGlobal(Offset.zero);
+      final anchor = box == null || origin == null
+          ? null
+          : BackupShareAnchor(
+              left: origin.dx,
+              top: origin.dy,
+              width: box.size.width,
+              height: box.size.height,
+            );
       final result = await ref
           .read(backupExportControllerProvider.notifier)
-          .shareBackup();
+          .shareBackup(anchor: anchor);
       if (!context.mounted) return;
       final message = result.fold(
         onSuccess: (_) => isThai
