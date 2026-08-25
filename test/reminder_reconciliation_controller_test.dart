@@ -38,46 +38,52 @@ void main() {
     },
   );
 
-  test('transient reconciliation failure is retried before completion', () async {
-    var calls = 0;
-    var successes = 0;
-    final controller = ReminderReconciliationController(
-      reconcile: () async {
-        calls++;
-        if (calls == 1) {
+  test(
+    'transient reconciliation failure is retried before completion',
+    () async {
+      var calls = 0;
+      var successes = 0;
+      final controller = ReminderReconciliationController(
+        reconcile: () async {
+          calls++;
+          if (calls == 1) {
+            return const Failed<void>(
+              Failure(code: 'transient_failure', message: 'failed once'),
+            );
+          }
+          return const Success<void>(null);
+        },
+        onSuccess: () => successes++,
+      );
+
+      await controller.trigger();
+
+      expect(calls, 2);
+      expect(successes, 1);
+    },
+  );
+
+  test(
+    'persistent reconciliation failure does not publish refreshed state',
+    () async {
+      var calls = 0;
+      var successes = 0;
+      final controller = ReminderReconciliationController(
+        reconcile: () async {
+          calls++;
           return const Failed<void>(
-            Failure(code: 'transient_failure', message: 'failed once'),
+            Failure(code: 'test_failure', message: 'failed'),
           );
-        }
-        return const Success<void>(null);
-      },
-      onSuccess: () => successes++,
-    );
+        },
+        onSuccess: () => successes++,
+      );
 
-    await controller.trigger();
+      await controller.trigger();
 
-    expect(calls, 2);
-    expect(successes, 1);
-  });
-
-  test('persistent reconciliation failure does not publish refreshed state', () async {
-    var calls = 0;
-    var successes = 0;
-    final controller = ReminderReconciliationController(
-      reconcile: () async {
-        calls++;
-        return const Failed<void>(
-          Failure(code: 'test_failure', message: 'failed'),
-        );
-      },
-      onSuccess: () => successes++,
-    );
-
-    await controller.trigger();
-
-    expect(calls, 2);
-    expect(successes, 0);
-  });
+      expect(calls, 2);
+      expect(successes, 0);
+    },
+  );
 
   test('queued trigger still runs after a retry succeeds', () async {
     final firstAttemptStarted = Completer<void>();
