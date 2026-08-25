@@ -7,6 +7,25 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/medication.dart';
 
+final class ReminderPermissionState {
+  const ReminderPermissionState({
+    required this.notificationsEnabled,
+    required this.exactAlarmsEnabled,
+  });
+
+  final bool? notificationsEnabled;
+  final bool? exactAlarmsEnabled;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ReminderPermissionState &&
+      other.notificationsEnabled == notificationsEnabled &&
+      other.exactAlarmsEnabled == exactAlarmsEnabled;
+
+  @override
+  int get hashCode => Object.hash(notificationsEnabled, exactAlarmsEnabled);
+}
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -14,6 +33,7 @@ class NotificationService {
   static Future<void>? _initializing;
   static bool _timezoneReady = false;
   static String? _timezoneName;
+  static ReminderPermissionState? _permissionState;
   static AndroidScheduleMode _androidScheduleMode =
       AndroidScheduleMode.inexactAllowWhileIdle;
 
@@ -59,6 +79,7 @@ class NotificationService {
 
     await _initTimezone().timeout(_nativeTimeout);
     _initialized = true;
+    await refreshPermissionStateIfChanged();
   }
 
   static Future<bool> requestNotificationPermission() async {
@@ -101,6 +122,26 @@ class NotificationService {
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
     return granted == true;
+  }
+
+  static Future<bool> refreshPermissionStateIfChanged() async {
+    await init();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin == null) return false;
+
+    final next = ReminderPermissionState(
+      notificationsEnabled: await androidPlugin.areNotificationsEnabled(),
+      exactAlarmsEnabled: await androidPlugin.canScheduleExactNotifications(),
+    );
+    final changed = next != _permissionState;
+    _permissionState = next;
+    _androidScheduleMode = next.exactAlarmsEnabled == true
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    return changed;
   }
 
   static Future<String> _readTimezoneName() async {

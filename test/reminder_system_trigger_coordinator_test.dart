@@ -2,27 +2,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/features/medication/application/reminder_system_trigger_coordinator.dart';
 
 void main() {
-  test('resume refreshes timezone before reconciliation', () async {
-    final events = <String>[];
-    final coordinator = ReminderSystemTriggerCoordinator(
-      refreshTimezoneIfChanged: () async {
-        events.add('timezone');
-        return true;
-      },
-      requestNotificationPermission: () async => true,
-      requestExactAlarmPermission: () async => true,
-      reconcile: () async => events.add('reconcile'),
-    );
+  test(
+    'resume refreshes timezone and permissions before reconciliation',
+    () async {
+      final events = <String>[];
+      final coordinator = ReminderSystemTriggerCoordinator(
+        refreshTimezoneIfChanged: () async {
+          events.add('timezone');
+          return true;
+        },
+        refreshPermissionStateIfChanged: () async {
+          events.add('permissions');
+          return true;
+        },
+        requestNotificationPermission: () async => true,
+        requestExactAlarmPermission: () async => true,
+        reconcile: () async => events.add('reconcile'),
+      );
 
-    await coordinator.onResume();
+      await coordinator.onResume();
 
-    expect(events, <String>['timezone', 'reconcile']);
-  });
+      expect(events, <String>['timezone', 'permissions', 'reconcile']);
+    },
+  );
 
   test('notification permission result is preserved and reconciled', () async {
+    var permissionRefreshes = 0;
     var reconciliations = 0;
     final coordinator = ReminderSystemTriggerCoordinator(
       refreshTimezoneIfChanged: () async => false,
+      refreshPermissionStateIfChanged: () async {
+        permissionRefreshes++;
+        return true;
+      },
       requestNotificationPermission: () async => false,
       requestExactAlarmPermission: () async => true,
       reconcile: () async => reconciliations++,
@@ -31,13 +43,19 @@ void main() {
     final granted = await coordinator.requestNotifications();
 
     expect(granted, isFalse);
+    expect(permissionRefreshes, 1);
     expect(reconciliations, 1);
   });
 
   test('exact-alarm permission result is preserved and reconciled', () async {
+    var permissionRefreshes = 0;
     var reconciliations = 0;
     final coordinator = ReminderSystemTriggerCoordinator(
       refreshTimezoneIfChanged: () async => false,
+      refreshPermissionStateIfChanged: () async {
+        permissionRefreshes++;
+        return true;
+      },
       requestNotificationPermission: () async => true,
       requestExactAlarmPermission: () async => false,
       reconcile: () async => reconciliations++,
@@ -46,19 +64,26 @@ void main() {
     final granted = await coordinator.requestExactAlarm();
 
     expect(granted, isFalse);
+    expect(permissionRefreshes, 1);
     expect(reconciliations, 1);
   });
 
   test('failed native permission request does not reconcile', () async {
+    var permissionRefreshes = 0;
     var reconciliations = 0;
     final coordinator = ReminderSystemTriggerCoordinator(
       refreshTimezoneIfChanged: () async => false,
+      refreshPermissionStateIfChanged: () async {
+        permissionRefreshes++;
+        return true;
+      },
       requestNotificationPermission: () async => throw StateError('failed'),
       requestExactAlarmPermission: () async => true,
       reconcile: () async => reconciliations++,
     );
 
     await expectLater(coordinator.requestNotifications(), throwsStateError);
+    expect(permissionRefreshes, 0);
     expect(reconciliations, 0);
   });
 }
