@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/result/result.dart';
@@ -154,8 +152,8 @@ final class BackupImportController extends StateNotifier<BackupImportState> {
     state = const BackupImportState();
   }
 
-  Failed<T> _inProgress<T>() => const Failed<T>(
-        Failure(
+  Failed<T> _inProgress<T>() => Failed<T>(
+        const Failure(
           code: 'backup_import_in_progress',
           message: 'Backup import is already in progress.',
         ),
