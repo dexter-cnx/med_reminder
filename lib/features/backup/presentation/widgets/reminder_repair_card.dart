@@ -9,9 +9,8 @@ class ReminderRepairCard extends ConsumerWidget {
   bool _isThai(BuildContext context) =>
       Localizations.localeOf(context).languageCode == 'th';
 
-  String _title(BuildContext context) => _isThai(context)
-      ? 'ซ่อมการแจ้งเตือนยา'
-      : 'Repair medication reminders';
+  String _title(BuildContext context) =>
+      _isThai(context) ? 'ซ่อมการแจ้งเตือนยา' : 'Repair medication reminders';
   String _description(BuildContext context) => _isThai(context)
       ? 'สร้างการแจ้งเตือนใหม่จากข้อมูลยาปัจจุบัน โดยไม่เปลี่ยนข้อมูลยาที่บันทึกไว้'
       : 'Rebuild reminders from current medication data without changing your saved medication records.';
@@ -47,7 +46,8 @@ class ReminderRepairCard extends ConsumerWidget {
   }
 
   Future<void> _repair(BuildContext context, WidgetRef ref) async {
-    final result = await ref.read(reminderRepairControllerProvider.notifier).repair();
+    final result =
+        await ref.read(reminderRepairControllerProvider.notifier).repair();
     if (!context.mounted) return;
     final message = result.fold(
       onSuccess: (_) => _success(context),
