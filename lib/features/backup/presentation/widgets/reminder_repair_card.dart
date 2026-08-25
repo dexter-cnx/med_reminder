@@ -15,7 +15,8 @@ class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
 
   bool get _isThai => Localizations.localeOf(context).languageCode == 'th';
 
-  String get _title => _isThai ? 'ซ่อมการแจ้งเตือนยา' : 'Repair medication reminders';
+  String get _title =>
+      _isThai ? 'ซ่อมการแจ้งเตือนยา' : 'Repair medication reminders';
   String get _description => _isThai
       ? 'สร้างการแจ้งเตือนใหม่จากข้อมูลยาปัจจุบัน โดยไม่เปลี่ยนข้อมูลยาที่บันทึกไว้'
       : 'Rebuild reminders from current medication data without changing your saved medication records.';
@@ -76,7 +77,8 @@ class _ReminderRepairCardState extends ConsumerState<ReminderRepairCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_title, style: Theme.of(context).textTheme.titleMedium),
+                      Text(_title,
+                          style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(_description),
                     ],
