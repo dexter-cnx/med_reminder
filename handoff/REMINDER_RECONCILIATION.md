@@ -16,7 +16,11 @@ Current behavior:
 - medication collection changes during reconciliation are merged against the latest repository state so newly added medications are not deleted and removed medications are not resurrected;
 - PRN/as-needed, expired, and empty `untilEmpty` medications are not scheduled;
 - foreground system refresh reads timezone state before reconciliation instead of calling the legacy `rescheduleAll()` path directly;
-- notification-permission and Android exact-alarm permission requests reconcile after the native permission API returns, regardless of whether permission was granted or denied, so the current scheduling mode is reflected immediately.
+- notification-permission and Android exact-alarm permission requests reconcile after the native permission API returns, regardless of whether permission was granted or denied, so the current scheduling mode is reflected immediately;
+- finite `MedicationMode.days` courses are projected into a 14-calendar-day rolling native scheduling window before reaching `NotificationService`;
+- in-progress finite courses restart their scheduling projection from the current calendar date while preserving the original persisted course definition;
+- future finite courses consume the days before their start from the same 14-day horizon, and courses starting outside the horizon are not scheduled yet;
+- `forever` and `untilEmpty` schedules retain their repeating-notification behavior and are not expanded into per-day future notifications.
 
 ## Reliability invariants
 
@@ -28,10 +32,13 @@ Current behavior:
 6. Notification IDs remain rebuildable derived state; medication and dose-log repositories remain the source of truth.
 7. Timezone and permission transitions must route through the same reconciliation controller rather than independent scheduling code.
 8. Permission request results must be preserved for onboarding UX while reconciliation repairs derived notification state afterward.
+9. Finite courses must never expand unboundedly into native pending notifications; only the configured rolling calendar window may be scheduled.
+10. Rolling-window projection must never rewrite the persisted medication course start date or duration.
+11. Calendar-day calculations must not depend on elapsed wall-clock hours, so DST transitions cannot move a finite course by one day.
 
 ## Next slices
 
 1. Detect notification/exact-alarm permission changes that happen outside the in-app request flow when platform APIs expose the state, then reconcile on the next foreground transition.
-2. Validate reboot, force-stop recovery, timezone changes, permission transitions, and long-idle behavior on physical Android/iOS devices.
-3. Define and validate the rolling scheduling-window policy before relying on bounded future schedules for long-idle devices.
+2. Validate reboot, force-stop recovery, timezone changes, permission transitions, rolling-window refill, and long-idle behavior on physical Android/iOS devices.
+3. Add global pending-notification budget allocation if physical iOS validation shows that per-course rolling windows can still exceed the platform queue under high medication/time counts.
 4. Consider consolidating duplicate resume observers after physical lifecycle validation confirms ordering across supported platforms.
