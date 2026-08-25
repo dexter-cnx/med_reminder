@@ -2,13 +2,15 @@
 
 ## Status
 
-The backup/restore pipeline now covers versioned medication data, deterministic ZIP archives, photo attachment staging/commit/rollback, Riverpod composition, restored-state refresh, post-transaction reminder rebuild, and stale-stage maintenance triggered from app composition.
+The backup/restore pipeline now covers versioned medication data, deterministic ZIP archives, photo attachment staging/commit/rollback, Riverpod composition, restored-state refresh, post-transaction reminder rebuild, stale-stage maintenance, manual reminder repair UX, and an attachment-complete export coordinator.
 
 Implemented:
 
 - versioned `BackupSnapshot` / `BackupRecord` models and Medication/DoseLog DTOs;
 - deterministic JSON manifest and ZIP bundle codecs with attachment/path validation;
 - `MedicationPhotoAttachmentCollector` and immutable backup attachments;
+- `CreateBackupBundle` as capture → medication-photo collection → ZIP encoding, so exported backups match the bundle restore format and do not silently omit referenced medication photos;
+- Riverpod `createBackupBundleProvider` composition using `FileBackupAttachmentSource` and `ZipBackupBundleArchiveCodec`;
 - `BackupAttachmentRestorePort` stage / commit / rollback / discard semantics;
 - `FileBackupAttachmentRestorePort` with isolated staging, collision-safe `med_photos` destinations, symlink-aware containment, persistent stage metadata, and stale-stage cleanup;
 - `PrepareBackupRestore` and `CommitPreparedBackupRestore` with repository/file compensation rules;
@@ -19,7 +21,8 @@ Implemented:
 - explicit post-restore reminder repair failures without rolling durable restored data/files back;
 - stale restore staging cleanup triggered when the operational Home composition is first mounted in an app ProviderScope;
 - maintenance cleanup remains asynchronous and non-blocking so cleanup failure cannot turn into startup/UI failure;
-- focused tests for transaction ordering, rollback policy, filesystem safety, state refresh, and reminder rebuild behavior;
+- manual reminder repair in Settings with provider-owned busy state and user-facing failure semantics;
+- focused tests for transaction ordering, rollback policy, filesystem safety, state refresh, reminder rebuild behavior, and bundle export orchestration;
 - pinned `archive` 4.0.9 dependency.
 
 No share sheet or file picker is introduced yet.
@@ -27,7 +30,21 @@ No share sheet or file picker is introduced yet.
 ## Boundary
 
 ```text
-Presentation
+Export presentation (next slice)
+        ↓
+createBackupBundleProvider
+        ↓
+CreateBackupBundle
+        ↓
+MedicationBackupDataPort.capture()
+        ↓
+MedicationPhotoAttachmentCollector
+        ↓
+ZipBackupBundleArchiveCodec.encodeBundle()
+        ↓
+complete local ZIP bytes
+
+Import presentation (next slice)
         ↓
 restoreBackupBundleProvider
         ↓
@@ -86,12 +103,12 @@ A partially applied data/file restore is not acceptable. A reminder repair failu
 - Backup remains offline-first.
 - No archive is uploaded by Besyu.
 - Sensitive health data or attachment paths/content must not be logged to analytics or crash breadcrumbs.
-- A future export share action hands the generated local archive to the OS share sheet; the user chooses the destination.
+- Export/share will hand generated local ZIP bytes to the OS-selected destination; Besyu does not choose or upload a remote destination itself.
 - Encryption/password protection remains a separate product/security decision.
 
 ## Next slices
 
-1. Add retry/repair UX for `backup_restore_reminder_rebuild_failed`, `backup_restore_reminder_state_persist_failed`, and `backup_restore_reminder_cleanup_failed`.
-2. Add export/share and import/file-selection presentation now that transactional restore and reminder repair semantics are defined.
-3. Expand integration coverage for interrupted restores and reminder repair retries.
+1. Add the export/share presentation on top of `createBackupBundleProvider`, writing only a temporary/share-selected local file.
+2. Add import/file-selection presentation that reads selected ZIP bytes and calls `restoreBackupBundleProvider` with explicit replace-all confirmation.
+3. Expand integration coverage for interrupted restores and file-transfer cancellation/error cases.
 4. Consider whether resume-triggered maintenance is needed in addition to once-per-app-session cleanup after observing real-world restore/import usage.
