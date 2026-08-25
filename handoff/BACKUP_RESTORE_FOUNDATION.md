@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore pipeline now covers versioned medication data, deterministic ZIP archives, photo attachment staging/commit/rollback, Riverpod composition, restored-state refresh, post-transaction reminder rebuild, stale-stage maintenance, manual reminder repair UX, attachment-complete export coordination, and OS share-sheet export presentation.
+The backup/restore pipeline now covers versioned medication data, deterministic ZIP archives, photo attachment staging/commit/rollback, Riverpod composition, restored-state refresh, post-transaction reminder rebuild, stale-stage maintenance, manual reminder repair UX, attachment-complete export coordination, OS share-sheet export, and validated import/replace-all presentation.
 
 Implemented:
 
@@ -17,6 +17,12 @@ Implemented:
 - Settings export card with offline/privacy copy and user-controlled destination selection;
 - shared ZIP files retained for 24 hours so Android share recipients can consume the URI asynchronously, with stale files removed best-effort on a later export;
 - dismissed share sheets return `backup_export_cancelled` instead of being reported as successful exports;
+- `BackupImportPort` and `FilePickerBackupImportPort` for selecting one ZIP archive through the native file picker;
+- import archives capped at 256 MiB before/after byte loading to bound the current in-memory restore architecture;
+- provider-owned `BackupImportController` that decodes and validates the selected ZIP before any restore mutation and exposes a medication/dose-log/photo preview;
+- explicit replace-all confirmation showing file/export metadata and record counts before `RestoreBackupBundle` is invoked;
+- picker cancellation is a normal no-op; selecting a file alone never changes application data;
+- post-restore reminder failures are surfaced as “data restored, reminders need repair” instead of incorrectly presenting the whole restore as rolled back;
 - `BackupAttachmentRestorePort` stage / commit / rollback / discard semantics;
 - `FileBackupAttachmentRestorePort` with isolated staging, collision-safe `med_photos` destinations, symlink-aware containment, persistent stage metadata, and stale-stage cleanup;
 - `PrepareBackupRestore` and `CommitPreparedBackupRestore` with repository/file compensation rules;
@@ -30,8 +36,6 @@ Implemented:
 - manual reminder repair in Settings with provider-owned busy state and user-facing failure semantics;
 - focused tests for transaction ordering, rollback policy, filesystem safety, state refresh, reminder rebuild behavior, and bundle export orchestration;
 - pinned `archive` 4.0.9 dependency.
-
-No import file picker is introduced yet.
 
 ## Boundary
 
@@ -56,7 +60,19 @@ SharePlusBackupExportPort
         ↓
 retained temporary ZIP → OS share sheet → user-selected destination
 
-Import presentation (next slice)
+Settings import card
+        ↓
+backupImportControllerProvider
+        ↓
+FilePickerBackupImportPort
+        ↓
+selected ZIP bytes
+        ↓
+ZipBackupBundleArchiveCodec.decodeBundle()
+        ↓
+validated preview (exportedAt + medication/log/photo counts)
+        ↓
+explicit replace-all confirmation
         ↓
 restoreBackupBundleProvider
         ↓
@@ -87,7 +103,7 @@ backupRestoreMaintenanceProvider
 FileBackupAttachmentRestorePort.cleanupStaleStages(24h)
 ```
 
-`backup.json` remains authoritative for backed-up application data. Archive-relative attachment paths, temporary stage paths, and exported notification IDs are never authoritative live state.
+`backup.json` remains authoritative for backed-up application data. Archive-relative attachment paths, temporary stage paths, exported notification IDs, and picker cache paths are never authoritative live state.
 
 ## Restore safety
 
@@ -95,18 +111,21 @@ Restore uses replace-all semantics for the first product version.
 
 The restore transaction preserves these invariants:
 
-1. validate archive structure and schema before mutation;
-2. stage every referenced file and reserve final photo paths before repository replacement;
-3. if staging/rewrite fails, discard the stage and leave repositories untouched;
-4. commit staged files before repository replacement;
-5. if file commit fails, do not mutate repositories;
-6. if repository replacement fails and repository rollback is complete, remove committed restore files;
-7. if repository rollback itself fails, preserve committed photos because surviving records may reference them;
-8. refresh Riverpod medication/log state after durable restore so stale in-memory state cannot overwrite restored repositories;
-9. rebuild reminders only after data/files are durably restored;
-10. reminder rebuild failure does not roll restored data/files back; it returns a dedicated repair failure so the UI can tell the user reminders need retry/repair;
-11. notification IDs remain derived operational state and are regenerated locally;
-12. stale-stage cleanup removes only staging directories older than 24 hours and is maintenance-only/non-blocking.
+1. selecting a file does not mutate repositories or live photos;
+2. decode/validate the selected ZIP before presenting the replace-all action;
+3. require an explicit replace-all confirmation before invoking the restore coordinator;
+4. validate archive structure and schema again inside the transactional restore path before mutation;
+5. stage every referenced file and reserve final photo paths before repository replacement;
+6. if staging/rewrite fails, discard the stage and leave repositories untouched;
+7. commit staged files before repository replacement;
+8. if file commit fails, do not mutate repositories;
+9. if repository replacement fails and repository rollback is complete, remove committed restore files;
+10. if repository rollback itself fails, preserve committed photos because surviving records may reference them;
+11. refresh Riverpod medication/log state after durable restore so stale in-memory state cannot overwrite restored repositories;
+12. rebuild reminders only after data/files are durably restored;
+13. reminder rebuild failure does not roll restored data/files back; it returns a dedicated repair failure so the UI can tell the user reminders need retry/repair;
+14. notification IDs remain derived operational state and are regenerated locally;
+15. stale-stage cleanup removes only staging directories older than 24 hours and is maintenance-only/non-blocking.
 
 A partially applied data/file restore is not acceptable. A reminder repair failure is different: application data is already durably restored and must remain so.
 
@@ -118,11 +137,12 @@ A partially applied data/file restore is not acceptable. A reminder repair failu
 - Export/share writes a ZIP under app temporary storage and hands it to the OS share sheet; the user chooses the destination.
 - Shared ZIP files are retained for 24 hours because receiving apps may consume the shared URI after the share intent returns; later exports remove stale files best-effort.
 - Dismissing the share sheet is treated as cancellation and is not presented as a successful backup export.
+- Import uses the OS file picker and reads the selected ZIP locally; selecting or cancelling never uploads data.
 - Encryption/password protection remains a separate product/security decision.
 
 ## Next slices
 
-1. Add import/file-selection presentation that reads selected ZIP bytes and calls `restoreBackupBundleProvider` with explicit replace-all confirmation.
-2. Add cancellation/error UX for file picking and restore confirmation.
-3. Expand integration coverage for interrupted restores and file-transfer cancellation/error cases.
+1. Add focused controller/widget coverage for picker cancellation, preview confirmation, and partial reminder-repair outcomes.
+2. Expand integration coverage for interrupted restores and file-transfer cancellation/error cases.
+3. Consider moving large archives away from whole-file in-memory restore if real backups approach the current 256 MiB import guard.
 4. Consider whether resume-triggered maintenance is needed in addition to once-per-app-session cleanup after observing real-world restore/import usage.
