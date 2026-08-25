@@ -133,7 +133,7 @@ final class FileBackupAttachmentRestorePort
         final stagedFile = File(entry.stagedPath);
         final finalFile = File(entry.finalPath);
         if (!await stagedFile.exists() || await finalFile.exists()) {
-          throw FileSystemException('Stage cannot be committed.');
+          throw const FileSystemException('Stage cannot be committed.');
         }
       }
 
