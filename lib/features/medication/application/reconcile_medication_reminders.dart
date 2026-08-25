@@ -31,10 +31,13 @@ final class ReconcileMedicationReminders {
 
     final medications = (medicationsResult as Success<List<Medication>>).value;
     final logs = (logsResult as Success<List<DoseLog>>).value;
+    final sourceById = <String, Medication>{
+      for (final medication in medications) medication.id: medication,
+    };
     final previousIds = <int>[
       for (final medication in medications) ...medication.notificationIds,
     ];
-    final rebuilt = <Medication>[];
+    final createdIdsByMedication = <String, List<int>>{};
     final createdIds = <int>[];
 
     try {
@@ -47,7 +50,7 @@ final class ReconcileMedicationReminders {
             medication.isExpired(now) ||
             (medication.mode == MedicationMode.untilEmpty && remaining == 0);
         if (shouldNotSchedule) {
-          rebuilt.add(medication.copyWith(notificationIds: const <int>[]));
+          createdIdsByMedication[medication.id] = const <int>[];
           continue;
         }
 
@@ -59,7 +62,7 @@ final class ReconcileMedicationReminders {
             : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         createdIds.addAll(ids);
-        rebuilt.add(medication.copyWith(notificationIds: ids));
+        createdIdsByMedication[medication.id] = ids;
       }
     } on Object {
       return _cleanupCreated(
@@ -71,9 +74,53 @@ final class ReconcileMedicationReminders {
       );
     }
 
-    final persisted = await medicationRepository.replaceAll(rebuilt);
-    if (persisted case Failed<void>(:final failure)) {
+    final latestResult = medicationRepository.readAll();
+    if (latestResult case Failed<List<Medication>>(:final failure)) {
       return _cleanupCreated(createdIds, failure);
+    }
+    final latest = (latestResult as Success<List<Medication>>).value;
+    final latestIds = latest.map((medication) => medication.id).toSet();
+    final merged = <Medication>[];
+    final retainedCreatedIds = <int>[];
+    final staleCreatedIds = <int>[];
+
+    for (final medication in latest) {
+      final source = sourceById[medication.id];
+      final ids = createdIdsByMedication[medication.id] ?? const <int>[];
+      if (source == null || !_sameReminderDefinition(source, medication)) {
+        staleCreatedIds.addAll(ids);
+        merged.add(medication);
+        continue;
+      }
+
+      retainedCreatedIds.addAll(ids);
+      merged.add(medication.copyWith(notificationIds: ids));
+    }
+
+    for (final entry in createdIdsByMedication.entries) {
+      if (!latestIds.contains(entry.key)) {
+        staleCreatedIds.addAll(entry.value);
+      }
+    }
+
+    try {
+      if (staleCreatedIds.isNotEmpty) {
+        await reminderScheduler.cancelIds(staleCreatedIds);
+      }
+    } on Object {
+      return _cleanupCreated(
+        retainedCreatedIds,
+        const Failure(
+          code: 'medication_reminder_reconcile_cleanup_failed',
+          message:
+              'Obsolete reconciled medication reminders could not be cleaned up.',
+        ),
+      );
+    }
+
+    final persisted = await medicationRepository.replaceAll(merged);
+    if (persisted case Failed<void>(:final failure)) {
+      return _cleanupCreated(retainedCreatedIds, failure);
     }
     return const Success<void>(null);
   }
@@ -95,4 +142,22 @@ final class ReconcileMedicationReminders {
     }
     return Failed<void>(failure);
   }
+}
+
+bool _sameReminderDefinition(Medication before, Medication after) =>
+    before.name == after.name &&
+    before.times.length == after.times.length &&
+    _sameStrings(before.times, after.times) &&
+    before.createdAt == after.createdAt &&
+    before.initialAmount == after.initialAmount &&
+    before.dosagePerTime == after.dosagePerTime &&
+    before.mode == after.mode &&
+    before.dosePlan == after.dosePlan &&
+    before.daysCount == after.daysCount;
+
+bool _sameStrings(List<String> left, List<String> right) {
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }
