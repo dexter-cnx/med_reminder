@@ -1,8 +1,25 @@
+import '../domain/entities/medication.dart';
+
 final class ReminderSchedulingWindow {
   const ReminderSchedulingWindow({this.maxCalendarDays = 14})
     : assert(maxCalendarDays > 0);
 
   final int maxCalendarDays;
+
+  Medication? project(Medication medication, DateTime now) {
+    if (medication.mode != MedicationMode.days) return medication;
+    final totalDays = medication.daysCount ?? 0;
+    final slice = finiteCourseSlice(
+      courseStart: medication.createdAt,
+      totalDays: totalDays,
+      now: now,
+    );
+    if (slice == null) return null;
+    return medication.copyWith(
+      createdAt: slice.start,
+      daysCount: slice.dayCount,
+    );
+  }
 
   ReminderDaySlice? finiteCourseSlice({
     required DateTime courseStart,
