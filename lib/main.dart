@@ -13,9 +13,11 @@ import 'features/appointment/presentation/providers/appointment_providers.dart';
 import 'features/emergency/data/datasources/emergency_profile_local_data_source.dart';
 import 'features/emergency/data/repositories/local_emergency_profile_repository.dart';
 import 'features/emergency/presentation/providers/emergency_profile_providers.dart';
+import 'features/medication/application/reminder_system_trigger_coordinator.dart';
 import 'features/medication/data/datasources/medication_local_data_source.dart';
 import 'features/medication/data/repositories/local_medication_repository.dart';
 import 'features/medication/data/services/local_medication_services.dart';
+import 'features/medication/presentation/providers/reminder_reconciliation_providers.dart';
 import 'features/medication/presentation/viewmodels/medication_view_model.dart';
 import 'features/medication_checkin/data/datasources/medication_check_in_local_data_source.dart';
 import 'features/medication_checkin/data/repositories/local_medication_check_in_repository.dart';
@@ -342,6 +344,16 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  ReminderSystemTriggerCoordinator get _systemReminderTriggers =>
+      ReminderSystemTriggerCoordinator(
+        refreshTimezoneIfChanged: NotificationService.refreshTimezoneIfChanged,
+        requestNotificationPermission:
+            NotificationService.requestNotificationPermission,
+        requestExactAlarmPermission:
+            NotificationService.requestExactAlarmPermission,
+        reconcile: ref.read(reminderReconciliationControllerProvider).trigger,
+      );
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -351,22 +363,24 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_refreshTimezone());
+      unawaited(_refreshSystemReminderState());
     }
   }
 
-  Future<void> _refreshTimezone() async {
+  Future<void> _refreshSystemReminderState() async {
     try {
-      final changed = await NotificationService.refreshTimezoneIfChanged();
-      if (!changed || !mounted) return;
-      await ref
-          .read(medsProvider.notifier)
-          .rescheduleAll(ref.read(logsProvider));
+      await _systemReminderTriggers.onResume();
     } catch (error, stackTrace) {
-      debugPrint('Timezone refresh failed: $error');
+      debugPrint('Reminder system-state refresh failed: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
   }
+
+  Future<bool> _requestNotificationPermission() =>
+      _systemReminderTriggers.requestNotifications();
+
+  Future<bool> _requestExactAlarmPermission() =>
+      _systemReminderTriggers.requestExactAlarm();
 
   Future<void> _completeOnboarding() async {
     await widget.onCompleteOnboarding();
@@ -389,10 +403,9 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
           ? const HomeScreen()
           : OnboardingScreen(
               onLanguageSelected: widget.onLanguageSelected,
-              onRequestNotifications:
-                  NotificationService.requestNotificationPermission,
+              onRequestNotifications: _requestNotificationPermission,
               onRequestExactAlarm: Platform.isAndroid
-                  ? NotificationService.requestExactAlarmPermission
+                  ? _requestExactAlarmPermission
                   : null,
               showExactAlarmStep: Platform.isAndroid,
               onComplete: _completeOnboarding,
