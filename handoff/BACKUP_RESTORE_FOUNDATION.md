@@ -2,7 +2,7 @@
 
 ## Status
 
-The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, deterministic JSON/ZIP codecs, photo-attachment collection + ZIP preflight, staged restore preparation, transactional commit/rollback coordination, and a concrete file-backed attachment restore port.
+The backup/restore work now has the application boundary, feature-owned versioned DTO adapters, a concrete Medication/DoseLog data port, deterministic JSON/ZIP codecs, photo-attachment collection + ZIP preflight, staged restore preparation, transactional commit/rollback coordination, a concrete file-backed attachment restore port, and Riverpod composition for the end-to-end restore pipeline.
 
 Implemented:
 
@@ -21,40 +21,34 @@ Implemented:
 - committed attachment rollback on ordinary application-data restore failure;
 - committed photos are deliberately preserved when the data port reports `backup_restore_rollback_failed`, because surviving records may still reference the new final paths;
 - `FileBackupAttachmentRestorePort` using isolated temporary stage directories and collision-safe final `med_photos` destinations;
-- file-backed commit preflight before promotion, rollback/discard behavior, and persistent stage metadata;
-- stage metadata path validation so corrupted metadata cannot move/delete files outside the stage root or managed `med_photos` directory;
-- stale-stage cleanup that removes expired staging directories only and never prunes live medication photos;
-- focused in-memory and real-temporary-file tests for stage, commit, rollback, discard, metadata path safety, and stale cleanup;
+- file-backed commit preflight before promotion, rollback/discard behavior, persistent stage metadata, symlink-aware path containment, and stale-stage cleanup;
+- `RestoreBackupBundle` as the single decode → prepare → commit coordinator;
+- Riverpod providers that compose repositories, the ZIP bundle codec, application documents/support paths, the file-backed restore port, and the restore coordinator without exposing filesystem details to UI;
+- focused in-memory and real-temporary-file tests for stage, commit, rollback, discard, metadata path safety, stale cleanup, and coordinator ordering;
 - pinned `archive` 4.0.9 dependency.
 
-No share sheet, file picker, restore-flow DI wiring, or reminder rebuild integration is introduced yet.
+No share sheet, file picker, reminder rebuild integration, or presentation-triggered stale-stage cleanup is introduced yet.
 
 ## Boundary
 
 ```text
-Feature-owned application data
+Presentation
         ↓
-BackupDataPort / versioned DTOs
+restoreBackupBundleProvider
         ↓
-BackupSnapshot
-        ↓
-MedicationPhotoAttachmentCollector
-        ↓
-BackupAttachmentBundle
-        ↓
-ZipBackupBundleArchiveCodec
-        ↓
-validated offline ZIP
+RestoreBackupBundle
         ↓
 PrepareBackupRestore
         ↓
-FileBackupAttachmentRestorePort.stage()
+ZipBackupBundleArchiveCodec + FileBackupAttachmentRestorePort.stage()
         ↓
 prepared snapshot with reserved final photo paths
         ↓
+CommitPreparedBackupRestore
+        ↓
 FileBackupAttachmentRestorePort.commit()
         ↓
-BackupDataPort.restoreAtomically()
+MedicationBackupDataPort.restoreAtomically()
         ↓
 success OR safe attachment rollback/preservation policy
 ```
@@ -75,7 +69,7 @@ The restore transaction preserves these invariants:
 6. if file commit fails, do not mutate repositories;
 7. if repository replacement fails after file commit and repository rollback is complete, remove committed restore files;
 8. if repository rollback itself fails, preserve committed restore photos because partially restored records may still reference them;
-9. constrain persisted stage metadata paths to the managed staging root and `med_photos` root;
+9. constrain persisted stage metadata paths to the managed staging root and `med_photos` root, including symlink traversal rejection;
 10. clean interrupted stale stages without touching live medication photos;
 11. rebuild derived reminder schedules only after the complete transaction succeeds.
 
@@ -91,8 +85,8 @@ A partially applied restore is not acceptable. When complete consistency cannot 
 
 ## Next slices
 
-1. Wire the file-backed restore port and prepare/commit use cases through Riverpod DI without exposing filesystem details to presentation.
-2. Add a single restore coordinator for decode → stage → commit → data restore and run stale-stage cleanup at an appropriate app lifecycle boundary.
-3. Rebuild reminder schedules only after the complete restore transaction succeeds; notification IDs remain derived state.
-4. Add export/share and import/file-selection presentation after the transactional round-trip is wired end-to-end.
-5. Expand integration coverage for destination conflicts, interrupted restores, and reminder rebuild failure policy.
+1. Add reminder rebuild as a post-transaction step; notification IDs remain derived state and must never be restored as authoritative data.
+2. Define failure policy when reminder rebuild fails after data/files are already restored.
+3. Trigger stale-stage cleanup from an appropriate app lifecycle boundary using the already-wired restore port provider.
+4. Add export/share and import/file-selection presentation after reminder rebuild behavior is finalized.
+5. Expand integration coverage for destination conflicts, interrupted restores, stale-stage startup cleanup, and reminder rebuild failure policy.
