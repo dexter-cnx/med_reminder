@@ -3,6 +3,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/result/result.dart';
+import '../../../medication/application/build_today_doses.dart';
+import '../../../medication/domain/repositories/medication_repository.dart';
+import '../../../medication/domain/services/medication_services.dart';
 import '../../../medication/presentation/viewmodels/medication_view_model.dart';
 import '../../application/commit_prepared_backup_restore.dart';
 import '../../application/medication_backup_data_port.dart';
@@ -38,6 +41,63 @@ final backupRestoreMaintenanceProvider =
     olderThan: const Duration(hours: 24),
   );
 });
+
+final reminderRepairControllerProvider = Provider<ReminderRepairController>(
+  (ref) => ReminderRepairController(
+    medicationRepository: ref.watch(medicationRepositoryProvider),
+    doseLogRepository: ref.watch(doseLogRepositoryProvider),
+    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+    stockResolver: ref.watch(medicationStockResolverProvider),
+    refreshState: () {
+      ref.invalidate(logsProvider);
+      ref.invalidate(medsProvider);
+    },
+  ),
+);
+
+final class ReminderRepairController {
+  ReminderRepairController({
+    required this.medicationRepository,
+    required this.doseLogRepository,
+    required this.reminderScheduler,
+    required this.stockResolver,
+    required this.refreshState,
+  });
+
+  final MedicationRepository medicationRepository;
+  final DoseLogRepository doseLogRepository;
+  final MedicationReminderScheduler reminderScheduler;
+  final MedicationStockResolver stockResolver;
+  final void Function() refreshState;
+
+  Future<Result<void>> repair() async {
+    final notificationIdsResult =
+        medicationRepository.readAll().fold<Result<List<int>>>(
+              onSuccess: (medications) => Success<List<int>>(
+                <int>[
+                  for (final medication in medications)
+                    ...medication.notificationIds,
+                ],
+              ),
+              onFailure: (failure) => Failed<List<int>>(failure),
+            );
+    if (notificationIdsResult case Failed<List<int>>(:final failure)) {
+      return Failed<void>(failure);
+    }
+
+    final previousNotificationIds =
+        (notificationIdsResult as Success<List<int>>).value;
+    final result = await RebuildRestoredReminders(
+      medicationRepository: medicationRepository,
+      doseLogRepository: doseLogRepository,
+      reminderScheduler: reminderScheduler,
+      stockResolver: stockResolver,
+    )(previousNotificationIds: previousNotificationIds);
+
+    refreshState();
+    return result;
+  }
+}
 
 final restoreBackupBundleProvider =
     FutureProvider<RestoreBackupBundle>((ref) async {

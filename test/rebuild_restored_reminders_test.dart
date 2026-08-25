@@ -117,6 +117,67 @@ void main() {
     );
     expect(scheduler.cancelledBatches.last, <int>[10, 11]);
   });
+
+  test('concurrent medication add is preserved when repair persists ids',
+      () async {
+    final medications = _FakeMedicationRepository(<Medication>[_medication()]);
+    late _FakeReminderScheduler scheduler;
+    scheduler = _FakeReminderScheduler(
+      scheduleIds: const <int>[10],
+      onSchedule: (_) {
+        medications.current = <Medication>[
+          _medication(),
+          _medication(id: 'med-2', notificationIds: const <int>[99]),
+        ];
+      },
+    );
+    final useCase = RebuildRestoredReminders(
+      medicationRepository: medications,
+      doseLogRepository: _FakeDoseLogRepository(),
+      reminderScheduler: scheduler,
+      stockResolver: (medication, logs) => medication.initialAmount,
+      now: () => DateTime(2026, 8, 25),
+    );
+
+    final result = await useCase();
+
+    expect(result.isSuccess, isTrue);
+    expect(
+        medications.replaced.map((med) => med.id), <String>['med-1', 'med-2']);
+    expect(medications.replaced[0].notificationIds, <int>[10]);
+    expect(medications.replaced[1].notificationIds, <int>[99]);
+  });
+
+  test(
+      'concurrent reminder-affecting edit keeps latest state and drops stale ids',
+      () async {
+    final medications = _FakeMedicationRepository(<Medication>[_medication()]);
+    final scheduler = _FakeReminderScheduler(
+      scheduleIds: const <int>[10],
+      onSchedule: (_) {
+        medications.current = <Medication>[
+          _medication(
+            times: const <String>['09:00'],
+            notificationIds: const <int>[99],
+          ),
+        ];
+      },
+    );
+    final useCase = RebuildRestoredReminders(
+      medicationRepository: medications,
+      doseLogRepository: _FakeDoseLogRepository(),
+      reminderScheduler: scheduler,
+      stockResolver: (medication, logs) => medication.initialAmount,
+      now: () => DateTime(2026, 8, 25),
+    );
+
+    final result = await useCase();
+
+    expect(result.isSuccess, isTrue);
+    expect(medications.replaced.single.times, <String>['09:00']);
+    expect(medications.replaced.single.notificationIds, <int>[99]);
+    expect(scheduler.cancelledBatches.last, <int>[10]);
+  });
 }
 
 Medication _medication({
@@ -124,12 +185,13 @@ Medication _medication({
   MedicationMode mode = MedicationMode.forever,
   int? daysCount,
   DateTime? createdAt,
+  List<String> times = const <String>['08:00'],
   List<int> notificationIds = const <int>[],
 }) =>
     Medication(
       id: id,
       name: 'Medicine',
-      times: const <String>['08:00'],
+      times: times,
       createdAt: createdAt ?? DateTime(2026, 8, 25),
       initialAmount: 10,
       mode: mode,
@@ -176,10 +238,12 @@ final class _FakeReminderScheduler implements MedicationReminderScheduler {
   _FakeReminderScheduler({
     this.scheduleIds = const <int>[1],
     this.throwOnScheduleCall,
+    this.onSchedule,
   });
 
   final List<int> scheduleIds;
   final int? throwOnScheduleCall;
+  final void Function(Medication medication)? onSchedule;
   final List<String> scheduledIds = <String>[];
   final List<List<int>> cancelledBatches = <List<int>>[];
   int _scheduleCalls = 0;
@@ -191,6 +255,7 @@ final class _FakeReminderScheduler implements MedicationReminderScheduler {
       throw StateError('schedule failed');
     }
     scheduledIds.add(medication.id);
+    onSchedule?.call(medication);
     return scheduleIds;
   }
 
