@@ -11,7 +11,8 @@ import 'package:med_reminder_offline/features/backup/domain/entities/backup_snap
 import 'package:med_reminder_offline/features/backup/presentation/providers/backup_import_providers.dart';
 
 void main() {
-  test('selecting a valid archive previews it without loading restore', () async {
+  test('selecting a valid archive previews it without loading restore',
+      () async {
     const codec = ZipBackupBundleArchiveCodec();
     final exportedAt = DateTime.utc(2026, 8, 25, 4, 30);
     final encoded = await codec.encodeBundle(

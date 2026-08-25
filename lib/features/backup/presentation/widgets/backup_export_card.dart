@@ -70,7 +70,9 @@ class BackupExportCard extends ConsumerWidget {
             builder: (dialogContext) => AlertDialog(
               icon: const Icon(Icons.warning_amber_rounded),
               title: Text(
-                isThai ? 'แทนที่ข้อมูลด้วยไฟล์สำรอง?' : 'Replace data with backup?',
+                isThai
+                    ? 'แทนที่ข้อมูลด้วยไฟล์สำรอง?'
+                    : 'Replace data with backup?',
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -87,7 +89,10 @@ class BackupExportCard extends ConsumerWidget {
                       isThai
                           ? 'ควรส่งออกข้อมูลปัจจุบันก่อน หากต้องการเก็บสำเนาไว้ การดำเนินการนี้ย้อนกลับจากในแอปไม่ได้'
                           : 'Export your current data first if you need a copy. This action cannot be undone inside the app.',
-                      style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(dialogContext)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -122,7 +127,8 @@ class BackupExportCard extends ConsumerWidget {
                 ),
                 FilledButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: Text(isThai ? 'แทนที่และกู้คืน' : 'Replace and restore'),
+                  child:
+                      Text(isThai ? 'แทนที่และกู้คืน' : 'Replace and restore'),
                 ),
               ],
             ),
@@ -254,7 +260,9 @@ class BackupExportCard extends ConsumerWidget {
                       : const Icon(Icons.folder_open_outlined),
                   label: Text(
                     importState.busy
-                        ? (isThai ? 'กำลังตรวจสอบหรือกู้คืน…' : 'Validating or restoring…')
+                        ? (isThai
+                            ? 'กำลังตรวจสอบหรือกู้คืน…'
+                            : 'Validating or restoring…')
                         : (isThai ? 'เลือกไฟล์สำรอง' : 'Choose backup file'),
                   ),
                 ),

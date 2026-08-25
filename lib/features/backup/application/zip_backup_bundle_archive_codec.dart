@@ -263,8 +263,7 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
           return _invalidZip();
         }
 
-        final generalPurposeFlags =
-            data.getUint16(offset + 8, Endian.little);
+        final generalPurposeFlags = data.getUint16(offset + 8, Endian.little);
         final compressedSize = data.getUint32(offset + 20, Endian.little);
         final uncompressedSize = data.getUint32(offset + 24, Endian.little);
         final fileNameLength = data.getUint16(offset + 28, Endian.little);
@@ -292,11 +291,8 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
           }
         }
 
-        final nextOffset = offset +
-            46 +
-            fileNameLength +
-            extraFieldLength +
-            fileCommentLength;
+        final nextOffset =
+            offset + 46 + fileNameLength + extraFieldLength + fileCommentLength;
         if (nextOffset <= offset || nextOffset > bytes.length) {
           return _invalidZip();
         }

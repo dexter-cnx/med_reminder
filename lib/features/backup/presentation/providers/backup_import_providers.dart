@@ -104,7 +104,8 @@ final class BackupImportController extends StateNotifier<BackupImportState> {
         medicationCount: bundle.snapshot.records
             .where(
               (record) =>
-                  record.namespace == MedicationBackupDataPort.medicationNamespace,
+                  record.namespace ==
+                  MedicationBackupDataPort.medicationNamespace,
             )
             .length,
         doseLogCount: bundle.snapshot.records
