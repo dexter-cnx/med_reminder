@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../providers/repository_providers.dart';
+import '../../../medication/presentation/viewmodels/medication_view_model.dart';
 import '../../application/commit_prepared_backup_restore.dart';
 import '../../application/medication_backup_data_port.dart';
 import '../../application/prepare_backup_restore.dart';
@@ -45,5 +46,9 @@ final restoreBackupBundleProvider =
       dataPort: dataPort,
       attachmentRestorePort: attachmentRestorePort,
     ),
+    onSuccess: () {
+      ref.invalidate(logsProvider);
+      ref.invalidate(medsProvider);
+    },
   );
 });
