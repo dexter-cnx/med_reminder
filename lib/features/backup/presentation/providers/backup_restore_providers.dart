@@ -17,7 +17,8 @@ final backupDataPortProvider = Provider<MedicationBackupDataPort>(
   ),
 );
 
-final backupRestorePortProvider = FutureProvider<FileBackupAttachmentRestorePort>(
+final backupRestorePortProvider =
+    FutureProvider<FileBackupAttachmentRestorePort>(
   (ref) async {
     final documents = await getApplicationDocumentsDirectory();
     final support = await getApplicationSupportDirectory();
@@ -28,9 +29,11 @@ final backupRestorePortProvider = FutureProvider<FileBackupAttachmentRestorePort
   },
 );
 
-final restoreBackupBundleProvider = FutureProvider<RestoreBackupBundle>((ref) async {
+final restoreBackupBundleProvider =
+    FutureProvider<RestoreBackupBundle>((ref) async {
   final dataPort = ref.watch(backupDataPortProvider);
-  final attachmentRestorePort = await ref.watch(backupRestorePortProvider.future);
+  final attachmentRestorePort =
+      await ref.watch(backupRestorePortProvider.future);
   const codec = ZipBackupBundleArchiveCodec();
 
   return RestoreBackupBundle(
