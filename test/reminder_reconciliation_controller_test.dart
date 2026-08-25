@@ -38,16 +38,77 @@ void main() {
     },
   );
 
-  test('failed reconciliation does not publish refreshed state', () async {
+  test('transient reconciliation failure is retried before completion', () async {
+    var calls = 0;
     var successes = 0;
     final controller = ReminderReconciliationController(
-      reconcile: () async =>
-          const Failed<void>(Failure(code: 'test_failure', message: 'failed')),
+      reconcile: () async {
+        calls++;
+        if (calls == 1) {
+          return const Failed<void>(
+            Failure(code: 'transient_failure', message: 'failed once'),
+          );
+        }
+        return const Success<void>(null);
+      },
       onSuccess: () => successes++,
     );
 
     await controller.trigger();
 
+    expect(calls, 2);
+    expect(successes, 1);
+  });
+
+  test('persistent reconciliation failure does not publish refreshed state', () async {
+    var calls = 0;
+    var successes = 0;
+    final controller = ReminderReconciliationController(
+      reconcile: () async {
+        calls++;
+        return const Failed<void>(
+          Failure(code: 'test_failure', message: 'failed'),
+        );
+      },
+      onSuccess: () => successes++,
+    );
+
+    await controller.trigger();
+
+    expect(calls, 2);
     expect(successes, 0);
+  });
+
+  test('queued trigger still runs after a retry succeeds', () async {
+    final firstAttemptStarted = Completer<void>();
+    final releaseFirstAttempt = Completer<void>();
+    var calls = 0;
+    var successes = 0;
+
+    final controller = ReminderReconciliationController(
+      reconcile: () async {
+        calls++;
+        if (calls == 1) {
+          firstAttemptStarted.complete();
+          await releaseFirstAttempt.future;
+          return const Failed<void>(
+            Failure(code: 'transient_failure', message: 'failed once'),
+          );
+        }
+        return const Success<void>(null);
+      },
+      onSuccess: () => successes++,
+    );
+
+    final lifecycle = controller.trigger();
+    await firstAttemptStarted.future;
+    final mutationRepair = controller.trigger();
+    releaseFirstAttempt.complete();
+
+    await Future.wait(<Future<void>>[lifecycle, mutationRepair]);
+
+    // first run: failed attempt + successful retry; queued mutation: one success
+    expect(calls, 3);
+    expect(successes, 2);
   });
 }
