@@ -1,22 +1,37 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 
 import '../../../core/result/result.dart';
 import '../application/backup_import_port.dart';
 
+typedef BackupArchivePicker = Future<PickedBackupArchive?> Function();
+
+final class PickedBackupArchive {
+  const PickedBackupArchive({
+    required this.name,
+    required this.length,
+    required this.readAsBytes,
+  });
+
+  final String name;
+  final Future<int> Function() length;
+  final Future<Uint8List> Function() readAsBytes;
+}
+
 final class FilePickerBackupImportPort implements BackupImportPort {
   const FilePickerBackupImportPort({
     this.maximumArchiveBytes = 256 * 1024 * 1024,
-  });
+    BackupArchivePicker? picker,
+  }) : _picker = picker ?? _pickArchive;
 
   final int maximumArchiveBytes;
+  final BackupArchivePicker _picker;
 
   @override
   Future<Result<BackupImportSelection?>> pickArchive() async {
     try {
-      final file = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: const <String>['zip'],
-      );
+      final file = await _picker();
       if (file == null) {
         return const Success<BackupImportSelection?>(null);
       }
@@ -51,5 +66,18 @@ final class FilePickerBackupImportPort implements BackupImportPort {
         ),
       );
     }
+  }
+
+  static Future<PickedBackupArchive?> _pickArchive() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const <String>['zip'],
+    );
+    if (file == null) return null;
+    return PickedBackupArchive(
+      name: file.name,
+      length: file.length,
+      readAsBytes: file.readAsBytes,
+    );
   }
 }

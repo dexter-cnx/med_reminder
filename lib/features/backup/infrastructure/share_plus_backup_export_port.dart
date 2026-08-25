@@ -9,10 +9,24 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/result/result.dart';
 import '../application/backup_export_port.dart';
 
+enum BackupShareStatus { success, dismissed, unavailable }
+
+typedef BackupTemporaryDirectoryProvider = Future<Directory> Function();
+typedef BackupShareInvoker =
+    Future<BackupShareStatus> Function(File file, BackupShareAnchor? anchor);
+
 final class SharePlusBackupExportPort implements BackupExportPort {
-  const SharePlusBackupExportPort();
+  const SharePlusBackupExportPort({
+    BackupTemporaryDirectoryProvider? temporaryDirectoryProvider,
+    BackupShareInvoker? shareInvoker,
+  }) : _temporaryDirectoryProvider =
+           temporaryDirectoryProvider ?? getTemporaryDirectory,
+       _shareInvoker = shareInvoker ?? _shareWithPlatform;
 
   static const _retention = Duration(hours: 24);
+
+  final BackupTemporaryDirectoryProvider _temporaryDirectoryProvider;
+  final BackupShareInvoker _shareInvoker;
 
   @override
   Future<Result<void>> shareArchive(
@@ -21,7 +35,7 @@ final class SharePlusBackupExportPort implements BackupExportPort {
     BackupShareAnchor? anchor,
   }) async {
     try {
-      final temporaryDirectory = await getTemporaryDirectory();
+      final temporaryDirectory = await _temporaryDirectoryProvider();
       final shareDirectory = Directory(
         p.join(temporaryDirectory.path, 'besyu_backup_share'),
       );
@@ -31,21 +45,8 @@ final class SharePlusBackupExportPort implements BackupExportPort {
       final sharedFile = File(p.join(shareDirectory.path, fileName));
       await sharedFile.writeAsBytes(archiveBytes, flush: true);
 
-      final shareResult = await SharePlus.instance.share(
-        ShareParams(
-          files: <XFile>[XFile(sharedFile.path, mimeType: 'application/zip')],
-          subject: 'Besyu backup',
-          sharePositionOrigin: anchor == null
-              ? null
-              : Rect.fromLTWH(
-                  anchor.left,
-                  anchor.top,
-                  anchor.width,
-                  anchor.height,
-                ),
-        ),
-      );
-      if (shareResult.status == ShareResultStatus.dismissed) {
+      final shareStatus = await _shareInvoker(sharedFile, anchor);
+      if (shareStatus == BackupShareStatus.dismissed) {
         return const Failed<void>(
           Failure(
             code: 'backup_export_cancelled',
@@ -54,7 +55,7 @@ final class SharePlusBackupExportPort implements BackupExportPort {
           ),
         );
       }
-      if (shareResult.status == ShareResultStatus.unavailable) {
+      if (shareStatus == BackupShareStatus.unavailable) {
         return const Failed<void>(
           Failure(
             code: 'backup_export_share_unavailable',
@@ -88,5 +89,30 @@ final class SharePlusBackupExportPort implements BackupExportPort {
     } on Object {
       // Best-effort retention cleanup must never block a new export.
     }
+  }
+
+  static Future<BackupShareStatus> _shareWithPlatform(
+    File file,
+    BackupShareAnchor? anchor,
+  ) async {
+    final result = await SharePlus.instance.share(
+      ShareParams(
+        files: <XFile>[XFile(file.path, mimeType: 'application/zip')],
+        subject: 'Besyu backup',
+        sharePositionOrigin: anchor == null
+            ? null
+            : Rect.fromLTWH(
+                anchor.left,
+                anchor.top,
+                anchor.width,
+                anchor.height,
+              ),
+      ),
+    );
+    return switch (result.status) {
+      ShareResultStatus.dismissed => BackupShareStatus.dismissed,
+      ShareResultStatus.unavailable => BackupShareStatus.unavailable,
+      _ => BackupShareStatus.success,
+    };
   }
 }
