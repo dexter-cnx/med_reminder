@@ -37,14 +37,23 @@ Future<Map<String, Object?>> _captureReminderReliabilitySnapshot() async {
     exactAlarmsEnabled = await android.canScheduleExactNotifications();
   }
 
+  final pendingEvidenceKind = Platform.isAndroid
+      ? 'pluginPersistedScheduledNotificationRegistry'
+      : 'platformPendingNotificationRequests';
+
   return <String, Object?>{
     'capturedAtUtc': DateTime.now().toUtc().toIso8601String(),
     'platform': Platform.operatingSystem,
     'timezone': timezone.identifier,
+    'pendingEvidenceKind': pendingEvidenceKind,
     'pendingNotificationCount': pending.length,
     'pendingNotificationIds': pendingIds,
     'notificationsEnabled': notificationsEnabled,
     'exactAlarmsEnabled': exactAlarmsEnabled,
+    if (Platform.isAndroid)
+      'androidPendingEvidenceWarning':
+          'pendingNotificationRequests reflects the plugin persisted schedule '
+          'registry; it does not prove AlarmManager restoration or delivery.',
   };
 }
 
@@ -67,7 +76,9 @@ class _ReminderReliabilityProbeApp extends StatelessWidget {
               children: [
                 const Text(
                   'Read-only diagnostic snapshot. It does not rebuild reminders '
-                  'or request permissions.',
+                  'or request permissions. On Android, pending IDs reflect the '
+                  'notification plugin registry and do not prove AlarmManager '
+                  'restoration.',
                 ),
                 const SizedBox(height: 16),
                 Expanded(
