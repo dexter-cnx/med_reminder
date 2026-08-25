@@ -8,9 +8,7 @@ import 'package:med_reminder_offline/features/backup/infrastructure/share_plus_b
 
 void main() {
   test('file picker cancellation is a normal no-op', () async {
-    const port = FilePickerBackupImportPort(
-      picker: _cancelPicker,
-    );
+    const port = FilePickerBackupImportPort(picker: _cancelPicker);
 
     final result = await port.pickArchive();
 
@@ -68,25 +66,34 @@ void main() {
     );
 
     expect(result, isA<Failed<void>>());
-    expect((result as Failed<void>).failure.code, 'backup_export_share_unavailable');
+    expect(
+      (result as Failed<void>).failure.code,
+      'backup_export_share_unavailable',
+    );
   });
 
-  test('share transport exception maps to backup_export_share_failed', () async {
-    final root = await Directory.systemTemp.createTemp('backup_share_test_');
-    addTearDown(() async => root.delete(recursive: true));
-    final port = SharePlusBackupExportPort(
-      temporaryDirectoryProvider: () async => root,
-      shareInvoker: (_, __) async => throw StateError('share failed'),
-    );
+  test(
+    'share transport exception maps to backup_export_share_failed',
+    () async {
+      final root = await Directory.systemTemp.createTemp('backup_share_test_');
+      addTearDown(() async => root.delete(recursive: true));
+      final port = SharePlusBackupExportPort(
+        temporaryDirectoryProvider: () async => root,
+        shareInvoker: (_, __) async => throw StateError('share failed'),
+      );
 
-    final result = await port.shareArchive(
-      Uint8List.fromList(<int>[4, 5]),
-      fileName: 'besyu.zip',
-    );
+      final result = await port.shareArchive(
+        Uint8List.fromList(<int>[4, 5]),
+        fileName: 'besyu.zip',
+      );
 
-    expect(result, isA<Failed<void>>());
-    expect((result as Failed<void>).failure.code, 'backup_export_share_failed');
-  });
+      expect(result, isA<Failed<void>>());
+      expect(
+        (result as Failed<void>).failure.code,
+        'backup_export_share_failed',
+      );
+    },
+  );
 }
 
 Future<PickedBackupArchive?> _cancelPicker() async => null;
