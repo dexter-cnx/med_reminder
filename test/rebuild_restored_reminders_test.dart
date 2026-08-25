@@ -6,7 +6,8 @@ import 'package:med_reminder_offline/features/medication/domain/repositories/med
 import 'package:med_reminder_offline/features/medication/domain/services/medication_services.dart';
 
 void main() {
-  test('rebuild cancels pre-restore ids, schedules active medication, and persists generated ids',
+  test(
+      'rebuild cancels pre-restore ids, schedules active medication, and persists generated ids',
       () async {
     final medication = _medication(notificationIds: const <int>[]);
     final medications = _FakeMedicationRepository(<Medication>[medication]);
@@ -55,7 +56,8 @@ void main() {
     expect(medications.replaced.single.notificationIds, isEmpty);
   });
 
-  test('later scheduler failure cancels ids created earlier in rebuild', () async {
+  test('later scheduler failure cancels ids created earlier in rebuild',
+      () async {
     final medications = _FakeMedicationRepository(<Medication>[
       _medication(id: 'med-1'),
       _medication(id: 'med-2'),
