@@ -80,7 +80,7 @@ void main() {
     expect(window.project(medication, DateTime(2026, 8, 25)), isNull);
   });
 
-  test('preserves a future finite course start while bounding its length', () {
+  test('future course consumes days before its start from the window', () {
     final medication = Medication(
       id: 'future',
       name: 'Future course',
@@ -94,6 +94,31 @@ void main() {
 
     expect(projected, isNotNull);
     expect(projected!.createdAt, DateTime(2026, 8, 28));
-    expect(projected.daysCount, 14);
+    expect(projected.daysCount, 11);
+  });
+
+  test('does not schedule a course starting outside the window', () {
+    final medication = Medication(
+      id: 'future',
+      name: 'Future course',
+      times: const <String>['08:00'],
+      createdAt: DateTime(2026, 9, 8),
+      mode: MedicationMode.days,
+      daysCount: 20,
+    );
+
+    expect(window.project(medication, DateTime(2026, 8, 25)), isNull);
+  });
+
+  test('finite slice is based on calendar dates rather than time-of-day', () {
+    final slice = window.finiteCourseSlice(
+      courseStart: DateTime(2026, 8, 20, 23, 59),
+      totalDays: 10,
+      now: DateTime(2026, 8, 25, 0, 1),
+    );
+
+    expect(slice, isNotNull);
+    expect(slice!.start, DateTime(2026, 8, 25));
+    expect(slice.dayCount, 5);
   });
 }
