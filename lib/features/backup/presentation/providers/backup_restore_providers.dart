@@ -8,17 +8,30 @@ import '../../../medication/domain/repositories/medication_repository.dart';
 import '../../../medication/domain/services/medication_services.dart';
 import '../../../medication/presentation/viewmodels/medication_view_model.dart';
 import '../../application/commit_prepared_backup_restore.dart';
+import '../../application/create_backup_bundle.dart';
 import '../../application/medication_backup_data_port.dart';
+import '../../application/medication_photo_attachment_collector.dart';
 import '../../application/prepare_backup_restore.dart';
 import '../../application/rebuild_restored_reminders.dart';
 import '../../application/restore_backup_bundle.dart';
 import '../../application/zip_backup_bundle_archive_codec.dart';
 import '../../infrastructure/file_backup_attachment_restore_port.dart';
+import '../../infrastructure/file_backup_attachment_source.dart';
 
 final backupDataPortProvider = Provider<MedicationBackupDataPort>(
   (ref) => MedicationBackupDataPort(
     medicationRepository: ref.watch(medicationRepositoryProvider),
     doseLogRepository: ref.watch(doseLogRepositoryProvider),
+  ),
+);
+
+final createBackupBundleProvider = Provider<CreateBackupBundle>(
+  (ref) => CreateBackupBundle(
+    dataPort: ref.watch(backupDataPortProvider),
+    attachmentCollector: const MedicationPhotoAttachmentCollector(
+      source: FileBackupAttachmentSource(),
+    ),
+    codec: const ZipBackupBundleArchiveCodec(),
   ),
 );
 
