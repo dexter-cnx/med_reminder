@@ -15,6 +15,7 @@ void main() {
   test('coordinator stops before staging when decode fails', () async {
     final attachments = _FakeAttachmentRestorePort();
     final dataPort = _FakeDataPort();
+    var refreshed = false;
     final restore = RestoreBackupBundle(
       prepare: PrepareBackupRestore(
         codec: const _FailingCodec(),
@@ -24,6 +25,7 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
+      onSuccess: () => refreshed = true,
     );
 
     final result = await restore(Uint8List(0));
@@ -32,11 +34,14 @@ void main() {
     expect(attachments.stageCalls, 0);
     expect(attachments.commitCalls, 0);
     expect(dataPort.restoreCalls, 0);
+    expect(refreshed, isFalse);
   });
 
-  test('coordinator stages, commits files, then restores data', () async {
-    final attachments = _FakeAttachmentRestorePort();
-    final dataPort = _FakeDataPort();
+  test('coordinator stages, commits files, restores data, then refreshes state',
+      () async {
+    final events = <String>[];
+    final attachments = _FakeAttachmentRestorePort(events: events);
+    final dataPort = _FakeDataPort(events: events);
     final restore = RestoreBackupBundle(
       prepare: PrepareBackupRestore(
         codec: _SuccessfulCodec(_bundle()),
@@ -46,6 +51,7 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
+      onSuccess: () => events.add('refresh'),
     );
 
     final result = await restore(Uint8List(0));
@@ -54,7 +60,42 @@ void main() {
     expect(attachments.stageCalls, 1);
     expect(attachments.commitCalls, 1);
     expect(dataPort.restoreCalls, 1);
-    expect(attachments.events, <String>['stage', 'commit:stage-1']);
+    expect(
+      events,
+      <String>['stage', 'commit:stage-1', 'restore', 'refresh'],
+    );
+  });
+
+  test('coordinator does not refresh state when data restore fails', () async {
+    final events = <String>[];
+    final attachments = _FakeAttachmentRestorePort(events: events);
+    final dataPort = _FakeDataPort(
+      events: events,
+      restoreResult: const Failed<void>(
+        Failure(code: 'restore_failed', message: 'Restore failed.'),
+      ),
+    );
+    final restore = RestoreBackupBundle(
+      prepare: PrepareBackupRestore(
+        codec: _SuccessfulCodec(_bundle()),
+        attachmentRestorePort: attachments,
+      ),
+      commit: CommitPreparedBackupRestore(
+        dataPort: dataPort,
+        attachmentRestorePort: attachments,
+      ),
+      onSuccess: () => events.add('refresh'),
+    );
+
+    final result = await restore(Uint8List(0));
+
+    expect(result.isFailure, isTrue);
+    expect(events, <String>[
+      'stage',
+      'commit:stage-1',
+      'restore',
+      'rollback:stage-1',
+    ]);
   });
 }
 
@@ -102,9 +143,12 @@ final class _FailingCodec implements BackupBundleArchiveCodec {
 }
 
 final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
+  _FakeAttachmentRestorePort({List<String>? events})
+      : events = events ?? <String>[];
+
   int stageCalls = 0;
   int commitCalls = 0;
-  final List<String> events = <String>[];
+  final List<String> events;
 
   @override
   Future<Result<StagedBackupAttachments>> stage(
@@ -128,8 +172,10 @@ final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
   }
 
   @override
-  Future<Result<void>> rollback(String stageId) async =>
-      const Success<void>(null);
+  Future<Result<void>> rollback(String stageId) async {
+    events.add('rollback:$stageId');
+    return const Success<void>(null);
+  }
 
   @override
   Future<Result<void>> discard(String stageId) async =>
@@ -137,6 +183,13 @@ final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
 }
 
 final class _FakeDataPort implements BackupDataPort {
+  _FakeDataPort({
+    List<String>? events,
+    this.restoreResult = const Success<void>(null),
+  }) : events = events ?? <String>[];
+
+  final List<String> events;
+  final Result<void> restoreResult;
   int restoreCalls = 0;
 
   @override
@@ -151,6 +204,7 @@ final class _FakeDataPort implements BackupDataPort {
   @override
   Future<Result<void>> restoreAtomically(BackupSnapshot snapshot) async {
     restoreCalls++;
-    return const Success<void>(null);
+    events.add('restore');
+    return restoreResult;
   }
 }
