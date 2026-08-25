@@ -14,8 +14,11 @@ final class ReminderSystemTriggerCoordinator {
   final Future<void> Function() reconcile;
 
   Future<void> onResume() async {
-    await refreshTimezoneIfChanged();
-    await refreshPermissionStateIfChanged?.call();
+    await _bestEffortRefresh(refreshTimezoneIfChanged);
+    final permissionRefresh = refreshPermissionStateIfChanged;
+    if (permissionRefresh != null) {
+      await _bestEffortRefresh(permissionRefresh);
+    }
     await reconcile();
   }
 
@@ -31,5 +34,14 @@ final class ReminderSystemTriggerCoordinator {
     await refreshPermissionStateIfChanged?.call();
     await reconcile();
     return granted;
+  }
+}
+
+Future<void> _bestEffortRefresh(Future<bool> Function() refresh) async {
+  try {
+    await refresh();
+  } on Object {
+    // Foreground reconciliation remains the recovery path even when a platform
+    // state probe fails. The next resume can retry the failed probe.
   }
 }

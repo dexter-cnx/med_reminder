@@ -26,6 +26,48 @@ void main() {
     },
   );
 
+  test('resume still reconciles after timezone refresh fails', () async {
+    final events = <String>[];
+    final coordinator = ReminderSystemTriggerCoordinator(
+      refreshTimezoneIfChanged: () async {
+        events.add('timezone');
+        throw StateError('timezone failed');
+      },
+      refreshPermissionStateIfChanged: () async {
+        events.add('permissions');
+        return false;
+      },
+      requestNotificationPermission: () async => true,
+      requestExactAlarmPermission: () async => true,
+      reconcile: () async => events.add('reconcile'),
+    );
+
+    await coordinator.onResume();
+
+    expect(events, <String>['timezone', 'permissions', 'reconcile']);
+  });
+
+  test('resume still reconciles after permission refresh fails', () async {
+    final events = <String>[];
+    final coordinator = ReminderSystemTriggerCoordinator(
+      refreshTimezoneIfChanged: () async {
+        events.add('timezone');
+        return false;
+      },
+      refreshPermissionStateIfChanged: () async {
+        events.add('permissions');
+        throw StateError('permissions failed');
+      },
+      requestNotificationPermission: () async => true,
+      requestExactAlarmPermission: () async => true,
+      reconcile: () async => events.add('reconcile'),
+    );
+
+    await coordinator.onResume();
+
+    expect(events, <String>['timezone', 'permissions', 'reconcile']);
+  });
+
   test('notification permission result is preserved and reconciled', () async {
     var permissionRefreshes = 0;
     var reconciliations = 0;
