@@ -33,7 +33,11 @@ final class RebuildRestoredReminders {
 
     final medications = (medicationsResult as Success<List<Medication>>).value;
     final logs = (logsResult as Success<List<DoseLog>>).value;
-    final rebuilt = <Medication>[];
+    final rebuiltById = <String, Medication>{};
+    final sourceById = <String, Medication>{
+      for (final medication in medications) medication.id: medication,
+    };
+    final createdIdsByMedication = <String, List<int>>{};
     final createdIds = <int>[];
 
     try {
@@ -44,9 +48,8 @@ final class RebuildRestoredReminders {
         final shouldNotSchedule = medication.isExpired(now) ||
             (medication.mode == MedicationMode.untilEmpty && remaining == 0);
         if (shouldNotSchedule) {
-          rebuilt.add(
-            medication.copyWith(notificationIds: const <int>[]),
-          );
+          rebuiltById[medication.id] =
+              medication.copyWith(notificationIds: const <int>[]);
           continue;
         }
 
@@ -58,7 +61,9 @@ final class RebuildRestoredReminders {
                 : medication;
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         createdIds.addAll(ids);
-        rebuilt.add(medication.copyWith(notificationIds: ids));
+        createdIdsByMedication[medication.id] = ids;
+        rebuiltById[medication.id] =
+            medication.copyWith(notificationIds: ids);
       }
     } on Object {
       return _cleanupCreatedIds(
@@ -69,10 +74,58 @@ final class RebuildRestoredReminders {
       );
     }
 
-    final persisted = await medicationRepository.replaceAll(rebuilt);
-    if (persisted case Failed<void>()) {
+    final latestResult = medicationRepository.readAll();
+    if (latestResult case Failed<List<Medication>>()) {
       return _cleanupCreatedIds(
         createdIds,
+        failureCode: 'backup_restore_reminder_state_persist_failed',
+        failureMessage:
+            'Backup data was restored, but rebuilt reminder state could not be saved.',
+      );
+    }
+
+    final latest = (latestResult as Success<List<Medication>>).value;
+    final merged = <Medication>[];
+    final retainedCreatedIds = <int>[];
+    final staleCreatedIds = <int>[];
+
+    for (final medication in latest) {
+      final source = sourceById[medication.id];
+      final rebuilt = rebuiltById[medication.id];
+      final ids = createdIdsByMedication[medication.id] ?? const <int>[];
+      if (source == null || rebuilt == null ||
+          !_sameReminderDefinition(source, medication)) {
+        staleCreatedIds.addAll(ids);
+        merged.add(medication);
+        continue;
+      }
+
+      retainedCreatedIds.addAll(ids);
+      merged.add(medication.copyWith(notificationIds: rebuilt.notificationIds));
+    }
+
+    final latestIds = latest.map((medication) => medication.id).toSet();
+    for (final entry in createdIdsByMedication.entries) {
+      if (!latestIds.contains(entry.key)) staleCreatedIds.addAll(entry.value);
+    }
+
+    try {
+      if (staleCreatedIds.isNotEmpty) {
+        await reminderScheduler.cancelIds(staleCreatedIds);
+      }
+    } on Object {
+      return _cleanupCreatedIds(
+        retainedCreatedIds,
+        failureCode: 'backup_restore_reminder_cleanup_failed',
+        failureMessage:
+            'Backup data was restored, but obsolete rebuilt reminders could not be cleaned up.',
+      );
+    }
+
+    final persisted = await medicationRepository.replaceAll(merged);
+    if (persisted case Failed<void>()) {
+      return _cleanupCreatedIds(
+        retainedCreatedIds,
         failureCode: 'backup_restore_reminder_state_persist_failed',
         failureMessage:
             'Backup data was restored, but rebuilt reminder state could not be saved.',
@@ -101,4 +154,22 @@ final class RebuildRestoredReminders {
       Failure(code: failureCode, message: failureMessage),
     );
   }
+}
+
+bool _sameReminderDefinition(Medication before, Medication after) =>
+    before.name == after.name &&
+    before.times.length == after.times.length &&
+    _sameStrings(before.times, after.times) &&
+    before.createdAt == after.createdAt &&
+    before.initialAmount == after.initialAmount &&
+    before.dosagePerTime == after.dosagePerTime &&
+    before.mode == after.mode &&
+    before.dosePlan == after.dosePlan &&
+    before.daysCount == after.daysCount;
+
+bool _sameStrings(List<String> left, List<String> right) {
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }
