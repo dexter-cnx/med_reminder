@@ -130,7 +130,8 @@ void main() {
     );
     final metadata = File(p.join(staging.path, staged.stageId, 'stage.json'));
     final outside = p.join(root.path, 'outside.jpg');
-    final decoded = jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
+    final decoded =
+        jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
     final entries = decoded['entries'] as List<dynamic>;
     (entries.single as Map<String, dynamic>)['finalPath'] = outside;
     await metadata.writeAsString(jsonEncode(decoded));
@@ -171,7 +172,8 @@ void main() {
     await link.create(outsideDirectory.path);
 
     final metadata = File(p.join(staging.path, staged.stageId, 'stage.json'));
-    final decoded = jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
+    final decoded =
+        jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
     final entries = decoded['entries'] as List<dynamic>;
     (entries.single as Map<String, dynamic>)['finalPath'] =
         p.join(link.path, 'victim.jpg');
@@ -185,7 +187,8 @@ void main() {
       onFailure: (failure) =>
           expect(failure.code, 'backup_restore_stage_invalid'),
     );
-    expect(await File(p.join(outsideDirectory.path, 'victim.jpg')).exists(), isFalse);
+    expect(await File(p.join(outsideDirectory.path, 'victim.jpg')).exists(),
+        isFalse);
   });
 
   test('stage returns cleanup failure instead of throwing', () async {

@@ -321,7 +321,8 @@ final class FileBackupAttachmentRestorePort
     );
     if (rootType == FileSystemEntityType.link) return false;
 
-    final canonicalRoot = await Directory(normalizedRoot).resolveSymbolicLinks();
+    final canonicalRoot =
+        await Directory(normalizedRoot).resolveSymbolicLinks();
     final parent = p.dirname(normalizedCandidate);
     final relativeParent = p.relative(parent, from: normalizedRoot);
     var current = normalizedRoot;
@@ -331,7 +332,8 @@ final class FileBackupAttachmentRestorePort
         final type = await FileSystemEntity.type(current, followLinks: false);
         if (type == FileSystemEntityType.link) return false;
         if (type == FileSystemEntityType.directory) {
-          final canonicalCurrent = await Directory(current).resolveSymbolicLinks();
+          final canonicalCurrent =
+              await Directory(current).resolveSymbolicLinks();
           if (canonicalCurrent != canonicalRoot &&
               !p.isWithin(canonicalRoot, canonicalCurrent)) {
             return false;
