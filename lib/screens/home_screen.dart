@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -10,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../features/appointment/presentation/screens/appointment_screen.dart';
 import '../features/emergency/presentation/screens/emergency_medical_card_screen.dart';
 import '../features/emergency/presentation/widgets/sos_action_sheet.dart';
+import '../features/medication/presentation/providers/reminder_reconciliation_providers.dart';
 import '../features/medication_checkin/presentation/widgets/medication_check_in_panel.dart';
 import '../features/refill/presentation/widgets/refill_panel.dart';
 import '../models/medication.dart';
@@ -29,8 +31,42 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   var _tab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_reconcileReminders());
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_reconcileReminders());
+    }
+  }
+
+  Future<void> _reconcileReminders() async {
+    try {
+      await ref.read(reminderReconciliationControllerProvider).trigger();
+    } catch (_) {
+      // Reconciliation is repair work. A platform notification failure must not
+      // make Home unusable; the controller retries before the next lifecycle
+      // opportunity can queue another repair.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +159,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       dose.medication.id,
       dose.scheduledAt,
     );
+    await _reconcileReminders();
     await _syncCompanions();
   }
 
@@ -134,6 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       dose.medication.id,
       dose.scheduledAt,
     );
+    await _reconcileReminders();
   }
 
   Future<void> _snooze(ScheduledDose dose) async {
@@ -146,6 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       dosage: dose.medication.dosagePerTime,
       scheduledDose: dose.scheduledAt,
     );
+    await _reconcileReminders();
   }
 
   Future<void> _syncCompanions() async {
@@ -165,6 +204,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     if (draft == null) return;
     await ref.read(medsProvider.notifier).add(draft);
+    await _reconcileReminders();
     await _syncCompanions();
     try {
       await LiveActivityService.start(
@@ -219,8 +259,14 @@ class _MedicationList extends ConsumerWidget {
                           isScrollControlled: true,
                           builder: (_) => RefillPanel(medication: med),
                         );
+                        await ref
+                            .read(reminderReconciliationControllerProvider)
+                            .trigger();
                       case _MedicationAction.delete:
                         await ref.read(medsProvider.notifier).remove(med.id);
+                        await ref
+                            .read(reminderReconciliationControllerProvider)
+                            .trigger();
                     }
                   },
                   itemBuilder: (context) => <PopupMenuEntry<_MedicationAction>>[
