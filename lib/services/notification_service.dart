@@ -55,10 +55,6 @@ class NotificationService {
         .initialize(const InitializationSettings(android: android, iOS: ios))
         .timeout(_nativeTimeout);
 
-    // Permission prompts are deliberately not part of startup. On modern
-    // Android they can background the Flutter activity while the debugger is
-    // still attaching; on iOS they also provide a better UX after an explicit
-    // explanation. The onboarding flow calls the methods below instead.
     _androidScheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
     await _initTimezone().timeout(_nativeTimeout);
@@ -148,9 +144,6 @@ class NotificationService {
     await init();
     await cancelIds(medication.notificationIds);
 
-    // PRN / as-needed medications must never generate time-based reminders.
-    // Cancelling first also clears any persisted legacy notification IDs when
-    // an existing scheduled medication is converted to PRN.
     if (!medication.hasScheduledDoses) {
       return const <int>[];
     }
@@ -161,37 +154,66 @@ class NotificationService {
     }
 
     final ids = <int>[];
-    for (var timeIndex = 0; timeIndex < medication.times.length; timeIndex++) {
-      final parts = medication.times[timeIndex].split(':');
-      if (parts.length != 2) continue;
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-      if (hour == null || minute == null || hour > 23 || minute > 59) continue;
+    try {
+      for (var timeIndex = 0; timeIndex < medication.times.length; timeIndex++) {
+        final parts = medication.times[timeIndex].split(':');
+        if (parts.length != 2) continue;
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null || hour > 23 || minute > 59) {
+          continue;
+        }
 
-      if (medication.mode == MedicationMode.days) {
-        final count = medication.daysCount ?? 0;
-        final startDate = tz.TZDateTime(
-          tz.local,
-          medication.createdAt.year,
-          medication.createdAt.month,
-          medication.createdAt.day,
-        );
-        final now = tz.TZDateTime.now(tz.local);
-
-        for (var dayOffset = 0; dayOffset < count; dayOffset++) {
-          final date = startDate.add(Duration(days: dayOffset));
-          final scheduled = tz.TZDateTime(
+        if (medication.mode == MedicationMode.days) {
+          final count = medication.daysCount ?? 0;
+          final startDate = tz.TZDateTime(
             tz.local,
-            date.year,
-            date.month,
-            date.day,
+            medication.createdAt.year,
+            medication.createdAt.month,
+            medication.createdAt.day,
+          );
+          final now = tz.TZDateTime.now(tz.local);
+
+          for (var dayOffset = 0; dayOffset < count; dayOffset++) {
+            final date = startDate.add(Duration(days: dayOffset));
+            final scheduled = tz.TZDateTime(
+              tz.local,
+              date.year,
+              date.month,
+              date.day,
+              hour,
+              minute,
+            );
+            if (!scheduled.isAfter(now)) continue;
+            final id = _stableNotificationId(
+              '${medication.id}:$timeIndex:$dayOffset',
+            );
+            ids.add(id);
+            await _plugin.zonedSchedule(
+              id,
+              'Time to take medication 💊',
+              '${medication.name} ${medication.dosagePerTime}',
+              scheduled,
+              _doseDetails,
+              androidScheduleMode: _androidScheduleMode,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
+            );
+          }
+        } else {
+          final now = tz.TZDateTime.now(tz.local);
+          var scheduled = tz.TZDateTime(
+            tz.local,
+            now.year,
+            now.month,
+            now.day,
             hour,
             minute,
           );
-          if (!scheduled.isAfter(now)) continue;
-          final id = _stableNotificationId(
-            '${medication.id}:$timeIndex:$dayOffset',
-          );
+          if (!scheduled.isAfter(now)) {
+            scheduled = scheduled.add(const Duration(days: 1));
+          }
+          final id = _stableNotificationId('${medication.id}:$timeIndex:daily');
           ids.add(id);
           await _plugin.zonedSchedule(
             id,
@@ -202,37 +224,15 @@ class NotificationService {
             androidScheduleMode: _androidScheduleMode,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.time,
           );
         }
-      } else {
-        final now = tz.TZDateTime.now(tz.local);
-        var scheduled = tz.TZDateTime(
-          tz.local,
-          now.year,
-          now.month,
-          now.day,
-          hour,
-          minute,
-        );
-        if (!scheduled.isAfter(now)) {
-          scheduled = scheduled.add(const Duration(days: 1));
-        }
-        final id = _stableNotificationId('${medication.id}:$timeIndex:daily');
-        ids.add(id);
-        await _plugin.zonedSchedule(
-          id,
-          'Time to take medication 💊',
-          '${medication.name} ${medication.dosagePerTime}',
-          scheduled,
-          _doseDetails,
-          androidScheduleMode: _androidScheduleMode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.time,
-        );
       }
+      return ids;
+    } on Object {
+      await cancelIds(ids);
+      rethrow;
     }
-    return ids;
   }
 
   static Future<void> scheduleSnooze({
