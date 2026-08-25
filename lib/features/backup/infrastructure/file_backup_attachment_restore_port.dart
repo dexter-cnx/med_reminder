@@ -32,9 +32,7 @@ final class FileBackupAttachmentRestorePort
   ) async {
     final stageId = _uuid.v4();
     final stageDirectory = Directory(p.join(stagingRootPath, stageId));
-    final finalDirectory = Directory(
-      p.join(documentsPath, PhotoService.photoDirectoryName),
-    );
+    final finalDirectory = Directory(_photoDirectoryPath);
 
     try {
       await stageDirectory.create(recursive: true);
@@ -59,10 +57,7 @@ final class FileBackupAttachmentRestorePort
           );
         }
 
-        await File(stagedPath).writeAsBytes(
-          attachment.bytes,
-          flush: true,
-        );
+        await File(stagedPath).writeAsBytes(attachment.bytes, flush: true);
         final staged = StagedBackupAttachmentPath(
           stagedPath: stagedPath,
           finalPath: finalPath,
@@ -135,7 +130,8 @@ final class FileBackupAttachmentRestorePort
           return const Failed<void>(
             Failure(
               code: 'backup_restore_attachment_commit_rollback_failed',
-              message: 'Backup photo commit failed and partial files could not be rolled back.',
+              message:
+                  'Backup photo commit failed and partial files could not be rolled back.',
             ),
           );
         }
@@ -226,11 +222,17 @@ final class FileBackupAttachmentRestorePort
     }
   }
 
+  String get _photoDirectoryPath =>
+      p.join(documentsPath, PhotoService.photoDirectoryName);
+
   Directory _stageDirectory(String stageId) =>
       Directory(p.join(stagingRootPath, stageId));
 
   Future<Result<_StageMetadata>> _readMetadata(String stageId) async {
     try {
+      if (!_isSafeStageId(stageId)) {
+        throw const FormatException('Invalid stage id.');
+      }
       final stageDirectory = _stageDirectory(stageId);
       final metadataFile = File(p.join(stageDirectory.path, _metadataFileName));
       if (!await metadataFile.exists()) {
@@ -255,6 +257,10 @@ final class FileBackupAttachmentRestorePort
         if (stagedPath is! String || finalPath is! String) {
           throw const FormatException('Invalid paths.');
         }
+        if (!_isPathWithin(stageDirectory.path, stagedPath) ||
+            !_isPathWithin(_photoDirectoryPath, finalPath)) {
+          throw const FormatException('Stage metadata path escapes restore roots.');
+        }
         entries.add(_StageEntry(stagedPath: stagedPath, finalPath: finalPath));
       }
       return Success<_StageMetadata>(_StageMetadata(entries));
@@ -266,6 +272,20 @@ final class FileBackupAttachmentRestorePort
         ),
       );
     }
+  }
+
+  static bool _isSafeStageId(String stageId) =>
+      stageId.isNotEmpty &&
+      !stageId.contains('/') &&
+      !stageId.contains('\\') &&
+      stageId != '.' &&
+      stageId != '..';
+
+  static bool _isPathWithin(String root, String candidate) {
+    final normalizedRoot = p.normalize(p.absolute(root));
+    final normalizedCandidate = p.normalize(p.absolute(candidate));
+    return normalizedCandidate != normalizedRoot &&
+        p.isWithin(normalizedRoot, normalizedCandidate);
   }
 
   static String _safeExtension(String archivePath) {
