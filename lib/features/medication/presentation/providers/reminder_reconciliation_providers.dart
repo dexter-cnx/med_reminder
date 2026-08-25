@@ -29,11 +29,14 @@ final class ReminderReconciliationController {
   ReminderReconciliationController({
     required Future<Result<void>> Function() reconcile,
     required void Function() onSuccess,
-  }) : _reconcile = reconcile,
+    this.maxAttemptsPerRun = 2,
+  }) : assert(maxAttemptsPerRun > 0),
+       _reconcile = reconcile,
        _onSuccess = onSuccess;
 
   final Future<Result<void>> Function() _reconcile;
   final void Function() _onSuccess;
+  final int maxAttemptsPerRun;
 
   Future<void>? _running;
   bool _runAgain = false;
@@ -55,8 +58,22 @@ final class ReminderReconciliationController {
   Future<void> _drain() async {
     do {
       _runAgain = false;
-      final result = await _reconcile();
+      final result = await _reconcileWithRetry();
       if (result.isSuccess) _onSuccess();
     } while (_runAgain);
+  }
+
+  Future<Result<void>> _reconcileWithRetry() async {
+    Result<void> result = const Failed<void>(
+      Failure(
+        code: 'medication_reminder_reconcile_not_started',
+        message: 'Medication reminder reconciliation did not start.',
+      ),
+    );
+    for (var attempt = 0; attempt < maxAttemptsPerRun; attempt++) {
+      result = await _reconcile();
+      if (result.isSuccess) return result;
+    }
+    return result;
   }
 }
