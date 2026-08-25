@@ -26,20 +26,31 @@ final class RestoreBackupBundle {
     if (prepared case Failed<PreparedBackupRestore>(:final failure)) {
       return Failed<void>(failure);
     }
+    final preparedRestore = (prepared as Success<PreparedBackupRestore>).value;
 
     var previousNotificationIds = const <int>[];
     final capture = captureReminderState;
     if (capture != null) {
       final captured = capture();
       if (captured case Failed<List<int>>(:final failure)) {
+        final discard = await prepare.attachmentRestorePort.discard(
+          preparedRestore.stageId,
+        );
+        if (discard case Failed<void>()) {
+          return const Failed<void>(
+            Failure(
+              code: 'backup_restore_stage_cleanup_failed',
+              message:
+                  'Reminder state capture failed and staged backup attachments could not be cleaned up.',
+            ),
+          );
+        }
         return Failed<void>(failure);
       }
       previousNotificationIds = (captured as Success<List<int>>).value;
     }
 
-    final committed = await commit(
-      (prepared as Success<PreparedBackupRestore>).value,
-    );
+    final committed = await commit(preparedRestore);
     if (committed case Failed<void>()) return committed;
 
     final successCallback = onSuccess;

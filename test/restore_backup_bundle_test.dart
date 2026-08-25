@@ -79,6 +79,86 @@ void main() {
   );
 
   test(
+    'reminder capture failure discards prepared stage before commit',
+    () async {
+      final events = <String>[];
+      final attachments = _FakeAttachmentRestorePort(events: events);
+      final dataPort = _FakeDataPort(events: events);
+      final restore = RestoreBackupBundle(
+        prepare: PrepareBackupRestore(
+          codec: _SuccessfulCodec(_bundle()),
+          attachmentRestorePort: attachments,
+        ),
+        commit: CommitPreparedBackupRestore(
+          dataPort: dataPort,
+          attachmentRestorePort: attachments,
+        ),
+        captureReminderState: () {
+          events.add('capture');
+          return const Failed<List<int>>(
+            Failure(
+              code: 'reminder_state_capture_failed',
+              message: 'Reminder state could not be captured.',
+            ),
+          );
+        },
+      );
+
+      final result = await restore(Uint8List(0));
+
+      expect(result, isA<Failed<void>>());
+      expect(
+        (result as Failed<void>).failure.code,
+        'reminder_state_capture_failed',
+      );
+      expect(events, <String>['stage', 'capture', 'discard:stage-1']);
+      expect(attachments.commitCalls, 0);
+      expect(dataPort.restoreCalls, 0);
+    },
+  );
+
+  test(
+    'reminder capture cleanup failure surfaces explicit stage failure',
+    () async {
+      final events = <String>[];
+      final attachments = _FakeAttachmentRestorePort(
+        events: events,
+        discardResult: const Failed<void>(
+          Failure(code: 'discard_failed', message: 'Discard failed.'),
+        ),
+      );
+      final dataPort = _FakeDataPort(events: events);
+      final restore = RestoreBackupBundle(
+        prepare: PrepareBackupRestore(
+          codec: _SuccessfulCodec(_bundle()),
+          attachmentRestorePort: attachments,
+        ),
+        commit: CommitPreparedBackupRestore(
+          dataPort: dataPort,
+          attachmentRestorePort: attachments,
+        ),
+        captureReminderState: () => const Failed<List<int>>(
+          Failure(
+            code: 'reminder_state_capture_failed',
+            message: 'Reminder state could not be captured.',
+          ),
+        ),
+      );
+
+      final result = await restore(Uint8List(0));
+
+      expect(result, isA<Failed<void>>());
+      expect(
+        (result as Failed<void>).failure.code,
+        'backup_restore_stage_cleanup_failed',
+      );
+      expect(events, <String>['stage', 'discard:stage-1']);
+      expect(attachments.commitCalls, 0);
+      expect(dataPort.restoreCalls, 0);
+    },
+  );
+
+  test(
     'post-restore repair failure does not roll durable restore back',
     () async {
       final events = <String>[];
@@ -194,12 +274,15 @@ final class _FailingCodec implements BackupBundleArchiveCodec {
 }
 
 final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
-  _FakeAttachmentRestorePort({List<String>? events})
-    : events = events ?? <String>[];
+  _FakeAttachmentRestorePort({
+    List<String>? events,
+    this.discardResult = const Success<void>(null),
+  }) : events = events ?? <String>[];
 
   int stageCalls = 0;
   int commitCalls = 0;
   final List<String> events;
+  final Result<void> discardResult;
 
   @override
   Future<Result<StagedBackupAttachments>> stage(
@@ -229,8 +312,10 @@ final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
   }
 
   @override
-  Future<Result<void>> discard(String stageId) async =>
-      const Success<void>(null);
+  Future<Result<void>> discard(String stageId) async {
+    events.add('discard:$stageId');
+    return discardResult;
+  }
 }
 
 final class _FakeDataPort implements BackupDataPort {
