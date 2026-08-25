@@ -25,7 +25,7 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () async {
+      onSuccess: (_) async {
         refreshed = true;
         return const Success<void>(null);
       },
@@ -40,7 +40,7 @@ void main() {
     expect(refreshed, isFalse);
   });
 
-  test('coordinator awaits post-restore repair after durable restore',
+  test('captures old reminder ids before commit and passes them to repair',
       () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(events: events);
@@ -54,8 +54,12 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () async {
-        events.add('repair');
+      captureReminderState: () {
+        events.add('capture');
+        return const Success<List<int>>(<int>[41, 42]);
+      },
+      onSuccess: (previousIds) async {
+        events.add('repair:${previousIds.join(',')}');
         return const Success<void>(null);
       },
     );
@@ -65,7 +69,13 @@ void main() {
     expect(result.isSuccess, isTrue);
     expect(
       events,
-      <String>['stage', 'commit:stage-1', 'restore', 'repair'],
+      <String>[
+        'stage',
+        'capture',
+        'commit:stage-1',
+        'restore',
+        'repair:41,42',
+      ],
     );
   });
 
@@ -83,7 +93,7 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () async {
+      onSuccess: (_) async {
         events.add('repair');
         return const Failed<void>(
           Failure(
@@ -126,7 +136,7 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () async {
+      onSuccess: (_) async {
         events.add('repair');
         return const Success<void>(null);
       },
