@@ -142,12 +142,14 @@ void main() {
     final result = await useCase();
 
     expect(result.isSuccess, isTrue);
-    expect(medications.replaced.map((med) => med.id), <String>['med-1', 'med-2']);
+    expect(
+        medications.replaced.map((med) => med.id), <String>['med-1', 'med-2']);
     expect(medications.replaced[0].notificationIds, <int>[10]);
     expect(medications.replaced[1].notificationIds, <int>[99]);
   });
 
-  test('concurrent reminder-affecting edit keeps latest state and drops stale ids',
+  test(
+      'concurrent reminder-affecting edit keeps latest state and drops stale ids',
       () async {
     final medications = _FakeMedicationRepository(<Medication>[_medication()]);
     final scheduler = _FakeReminderScheduler(

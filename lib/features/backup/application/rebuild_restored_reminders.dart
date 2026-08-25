@@ -62,8 +62,7 @@ final class RebuildRestoredReminders {
         final ids = await reminderScheduler.schedule(schedulingSnapshot);
         createdIds.addAll(ids);
         createdIdsByMedication[medication.id] = ids;
-        rebuiltById[medication.id] =
-            medication.copyWith(notificationIds: ids);
+        rebuiltById[medication.id] = medication.copyWith(notificationIds: ids);
       }
     } on Object {
       return _cleanupCreatedIds(
@@ -93,7 +92,8 @@ final class RebuildRestoredReminders {
       final source = sourceById[medication.id];
       final rebuilt = rebuiltById[medication.id];
       final ids = createdIdsByMedication[medication.id] ?? const <int>[];
-      if (source == null || rebuilt == null ||
+      if (source == null ||
+          rebuilt == null ||
           !_sameReminderDefinition(source, medication)) {
         staleCreatedIds.addAll(ids);
         merged.add(medication);
