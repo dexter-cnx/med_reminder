@@ -1,14 +1,39 @@
 final class ReminderSchedulingWindow {
-  const ReminderSchedulingWindow({this.maxDaysAhead = 14})
-    : assert(maxDaysAhead > 0);
+  const ReminderSchedulingWindow({this.maxCalendarDays = 14})
+    : assert(maxCalendarDays > 0);
 
-  final int maxDaysAhead;
+  final int maxCalendarDays;
 
-  bool includes(DateTime scheduled, DateTime now) {
-    if (!scheduled.isAfter(now)) return false;
-    final cutoff = now.add(Duration(days: maxDaysAhead));
-    return !scheduled.isAfter(cutoff);
+  ReminderDaySlice? finiteCourseSlice({
+    required DateTime courseStart,
+    required int totalDays,
+    required DateTime now,
+  }) {
+    if (totalDays <= 0) return null;
+
+    final startDay = _dateOnly(courseStart);
+    final today = _dateOnly(now);
+    final elapsedDays = today.difference(startDay).inDays;
+    final firstRemainingOffset = elapsedDays.clamp(0, totalDays);
+    final remainingDays = totalDays - firstRemainingOffset;
+    if (remainingDays <= 0) return null;
+
+    final windowDays = remainingDays < maxCalendarDays
+        ? remainingDays
+        : maxCalendarDays;
+    final sliceStart = elapsedDays <= 0 ? startDay : today;
+    return ReminderDaySlice(start: sliceStart, dayCount: windowDays);
   }
 }
+
+final class ReminderDaySlice {
+  const ReminderDaySlice({required this.start, required this.dayCount});
+
+  final DateTime start;
+  final int dayCount;
+}
+
+DateTime _dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
 
 const defaultReminderSchedulingWindow = ReminderSchedulingWindow();
