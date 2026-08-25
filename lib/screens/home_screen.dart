@@ -63,7 +63,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       await ref.read(reminderReconciliationControllerProvider).trigger();
     } catch (_) {
       // Reconciliation is repair work. A platform notification failure must not
-      // make Home unusable; the next launch/resume will retry from local state.
+      // make Home unusable; the controller retries before the next lifecycle
+      // opportunity can queue another repair.
     }
   }
 
@@ -158,6 +159,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       dose.medication.id,
       dose.scheduledAt,
     );
+    await _reconcileReminders();
     await _syncCompanions();
   }
 
@@ -169,6 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       dose.medication.id,
       dose.scheduledAt,
     );
+    await _reconcileReminders();
   }
 
   Future<void> _snooze(ScheduledDose dose) async {
@@ -181,6 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       dosage: dose.medication.dosagePerTime,
       scheduledDose: dose.scheduledAt,
     );
+    await _reconcileReminders();
   }
 
   Future<void> _syncCompanions() async {
@@ -200,6 +204,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
     if (draft == null) return;
     await ref.read(medsProvider.notifier).add(draft);
+    await _reconcileReminders();
     await _syncCompanions();
     try {
       await LiveActivityService.start(
@@ -254,8 +259,14 @@ class _MedicationList extends ConsumerWidget {
                           isScrollControlled: true,
                           builder: (_) => RefillPanel(medication: med),
                         );
+                        await ref
+                            .read(reminderReconciliationControllerProvider)
+                            .trigger();
                       case _MedicationAction.delete:
                         await ref.read(medsProvider.notifier).remove(med.id);
+                        await ref
+                            .read(reminderReconciliationControllerProvider)
+                            .trigger();
                     }
                   },
                   itemBuilder: (context) => <PopupMenuEntry<_MedicationAction>>[
