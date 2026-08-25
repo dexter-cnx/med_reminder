@@ -30,16 +30,25 @@ final class ReminderSchedulingWindow {
 
     final startDay = _dateOnly(courseStart);
     final today = _dateOnly(now);
-    final elapsedDays = today.difference(startDay).inDays;
-    final firstRemainingOffset = elapsedDays.clamp(0, totalDays);
-    final remainingDays = totalDays - firstRemainingOffset;
-    if (remainingDays <= 0) return null;
+    final elapsedDays = _calendarDaysBetween(startDay, today);
 
+    if (elapsedDays >= totalDays) return null;
+
+    if (elapsedDays < 0) {
+      final daysUntilStart = -elapsedDays;
+      final availableWindowDays = maxCalendarDays - daysUntilStart;
+      if (availableWindowDays <= 0) return null;
+      final windowDays = totalDays < availableWindowDays
+          ? totalDays
+          : availableWindowDays;
+      return ReminderDaySlice(start: startDay, dayCount: windowDays);
+    }
+
+    final remainingDays = totalDays - elapsedDays;
     final windowDays = remainingDays < maxCalendarDays
         ? remainingDays
         : maxCalendarDays;
-    final sliceStart = elapsedDays <= 0 ? startDay : today;
-    return ReminderDaySlice(start: sliceStart, dayCount: windowDays);
+    return ReminderDaySlice(start: today, dayCount: windowDays);
   }
 }
 
@@ -52,5 +61,11 @@ final class ReminderDaySlice {
 
 DateTime _dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
+
+int _calendarDaysBetween(DateTime from, DateTime to) {
+  final fromUtc = DateTime.utc(from.year, from.month, from.day);
+  final toUtc = DateTime.utc(to.year, to.month, to.day);
+  return toUtc.difference(fromUtc).inDays;
+}
 
 const defaultReminderSchedulingWindow = ReminderSchedulingWindow();
