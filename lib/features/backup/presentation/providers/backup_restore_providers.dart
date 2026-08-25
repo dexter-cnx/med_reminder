@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../core/result/result.dart';
 import '../../../medication/presentation/viewmodels/medication_view_model.dart';
 import '../../application/commit_prepared_backup_restore.dart';
 import '../../application/medication_backup_data_port.dart';
 import '../../application/prepare_backup_restore.dart';
+import '../../application/rebuild_restored_reminders.dart';
 import '../../application/restore_backup_bundle.dart';
 import '../../application/zip_backup_bundle_archive_codec.dart';
 import '../../infrastructure/file_backup_attachment_restore_port.dart';
@@ -29,6 +31,14 @@ final backupRestorePortProvider =
   },
 );
 
+final backupRestoreMaintenanceProvider =
+    FutureProvider<Result<int>>((ref) async {
+  final restorePort = await ref.watch(backupRestorePortProvider.future);
+  return restorePort.cleanupStaleStages(
+    olderThan: const Duration(hours: 24),
+  );
+});
+
 final restoreBackupBundleProvider =
     FutureProvider<RestoreBackupBundle>((ref) async {
   final dataPort = ref.watch(backupDataPortProvider);
@@ -45,9 +55,30 @@ final restoreBackupBundleProvider =
       dataPort: dataPort,
       attachmentRestorePort: attachmentRestorePort,
     ),
-    onSuccess: () {
+    captureReminderState: () =>
+        ref.read(medicationRepositoryProvider).readAll().fold(
+              onSuccess: (medications) => Success<List<int>>(
+                <int>[
+                  for (final medication in medications)
+                    ...medication.notificationIds,
+                ],
+              ),
+              onFailure: (failure) => Failed<List<int>>(failure),
+            ),
+    onSuccess: (previousNotificationIds) async {
       ref.invalidate(logsProvider);
       ref.invalidate(medsProvider);
+
+      final rebuild = await RebuildRestoredReminders(
+        medicationRepository: ref.read(medicationRepositoryProvider),
+        doseLogRepository: ref.read(doseLogRepositoryProvider),
+        reminderScheduler: ref.read(medicationReminderSchedulerProvider),
+        stockResolver: ref.read(medicationStockResolverProvider),
+      )(previousNotificationIds: previousNotificationIds);
+
+      ref.invalidate(logsProvider);
+      ref.invalidate(medsProvider);
+      return rebuild;
     },
   );
 });

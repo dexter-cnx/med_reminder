@@ -25,7 +25,10 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () => refreshed = true,
+      onSuccess: (_) async {
+        refreshed = true;
+        return const Success<void>(null);
+      },
     );
 
     final result = await restore(Uint8List(0));
@@ -37,7 +40,7 @@ void main() {
     expect(refreshed, isFalse);
   });
 
-  test('coordinator stages, commits files, restores data, then refreshes state',
+  test('captures old reminder ids before commit and passes them to repair',
       () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(events: events);
@@ -51,22 +54,71 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () => events.add('refresh'),
+      captureReminderState: () {
+        events.add('capture');
+        return const Success<List<int>>(<int>[41, 42]);
+      },
+      onSuccess: (previousIds) async {
+        events.add('repair:${previousIds.join(',')}');
+        return const Success<void>(null);
+      },
     );
 
     final result = await restore(Uint8List(0));
 
     expect(result.isSuccess, isTrue);
-    expect(attachments.stageCalls, 1);
-    expect(attachments.commitCalls, 1);
-    expect(dataPort.restoreCalls, 1);
     expect(
       events,
-      <String>['stage', 'commit:stage-1', 'restore', 'refresh'],
+      <String>[
+        'stage',
+        'capture',
+        'commit:stage-1',
+        'restore',
+        'repair:41,42',
+      ],
     );
   });
 
-  test('coordinator does not refresh state when data restore fails', () async {
+  test('post-restore repair failure does not roll durable restore back',
+      () async {
+    final events = <String>[];
+    final attachments = _FakeAttachmentRestorePort(events: events);
+    final dataPort = _FakeDataPort(events: events);
+    final restore = RestoreBackupBundle(
+      prepare: PrepareBackupRestore(
+        codec: _SuccessfulCodec(_bundle()),
+        attachmentRestorePort: attachments,
+      ),
+      commit: CommitPreparedBackupRestore(
+        dataPort: dataPort,
+        attachmentRestorePort: attachments,
+      ),
+      onSuccess: (_) async {
+        events.add('repair');
+        return const Failed<void>(
+          Failure(
+            code: 'backup_restore_reminder_rebuild_failed',
+            message: 'Reminder rebuild failed.',
+          ),
+        );
+      },
+    );
+
+    final result = await restore(Uint8List(0));
+
+    result.fold(
+      onSuccess: (_) => fail('Expected repair failure.'),
+      onFailure: (failure) =>
+          expect(failure.code, 'backup_restore_reminder_rebuild_failed'),
+    );
+    expect(
+      events,
+      <String>['stage', 'commit:stage-1', 'restore', 'repair'],
+    );
+    expect(events.where((event) => event.startsWith('rollback:')), isEmpty);
+  });
+
+  test('coordinator skips repair when data restore fails', () async {
     final events = <String>[];
     final attachments = _FakeAttachmentRestorePort(events: events);
     final dataPort = _FakeDataPort(
@@ -84,7 +136,10 @@ void main() {
         dataPort: dataPort,
         attachmentRestorePort: attachments,
       ),
-      onSuccess: () => events.add('refresh'),
+      onSuccess: (_) async {
+        events.add('repair');
+        return const Success<void>(null);
+      },
     );
 
     final result = await restore(Uint8List(0));
