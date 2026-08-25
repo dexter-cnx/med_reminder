@@ -15,6 +15,8 @@ Implemented:
 - provider-owned `BackupExportController` busy state so navigation cannot accidentally start concurrent exports;
 - neutral share-anchor coordinates passed to the adapter so iPad popover presentation stays safe without importing Flutter UI geometry into the application contract;
 - Settings export card with offline/privacy copy and user-controlled destination selection;
+- shared ZIP files retained for 24 hours so Android share recipients can consume the URI asynchronously, with stale files removed best-effort on a later export;
+- dismissed share sheets return `backup_export_cancelled` instead of being reported as successful exports;
 - `BackupAttachmentRestorePort` stage / commit / rollback / discard semantics;
 - `FileBackupAttachmentRestorePort` with isolated staging, collision-safe `med_photos` destinations, symlink-aware containment, persistent stage metadata, and stale-stage cleanup;
 - `PrepareBackupRestore` and `CommitPreparedBackupRestore` with repository/file compensation rules;
@@ -52,7 +54,7 @@ complete local ZIP bytes
         ↓
 SharePlusBackupExportPort
         ↓
-temporary ZIP → OS share sheet → user-selected destination
+retained temporary ZIP → OS share sheet → user-selected destination
 
 Import presentation (next slice)
         ↓
@@ -113,8 +115,9 @@ A partially applied data/file restore is not acceptable. A reminder repair failu
 - Backup remains offline-first.
 - No archive is uploaded by Besyu.
 - Sensitive health data or attachment paths/content must not be logged to analytics or crash breadcrumbs.
-- Export/share writes only a temporary ZIP and hands it to the OS share sheet; the user chooses the destination.
-- Temporary share files are removed on a best-effort basis after the share action completes.
+- Export/share writes a ZIP under app temporary storage and hands it to the OS share sheet; the user chooses the destination.
+- Shared ZIP files are retained for 24 hours because receiving apps may consume the shared URI after the share intent returns; later exports remove stale files best-effort.
+- Dismissing the share sheet is treated as cancellation and is not presented as a successful backup export.
 - Encryption/password protection remains a separate product/security decision.
 
 ## Next slices
