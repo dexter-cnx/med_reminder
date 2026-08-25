@@ -28,9 +28,10 @@ Future<Map<String, Object?>> _captureReminderReliabilitySnapshot() async {
   bool? notificationsEnabled;
   bool? exactAlarmsEnabled;
 
-  final android = plugin.resolvePlatformSpecificImplementation<
-    AndroidFlutterLocalNotificationsPlugin
-  >();
+  final android = plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
   if (android != null) {
     notificationsEnabled = await android.areNotificationsEnabled();
     exactAlarmsEnabled = await android.canScheduleExactNotifications();
@@ -70,9 +71,7 @@ class _ReminderReliabilityProbeApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: SelectableText(snapshot),
-                  ),
+                  child: SingleChildScrollView(child: SelectableText(snapshot)),
                 ),
               ],
             ),
