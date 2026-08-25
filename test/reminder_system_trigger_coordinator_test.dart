@@ -2,26 +2,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/features/medication/application/reminder_system_trigger_coordinator.dart';
 
 void main() {
-  test('resume refreshes timezone and permissions before reconciliation', () async {
-    final events = <String>[];
-    final coordinator = ReminderSystemTriggerCoordinator(
-      refreshTimezoneIfChanged: () async {
-        events.add('timezone');
-        return true;
-      },
-      refreshPermissionStateIfChanged: () async {
-        events.add('permissions');
-        return true;
-      },
-      requestNotificationPermission: () async => true,
-      requestExactAlarmPermission: () async => true,
-      reconcile: () async => events.add('reconcile'),
-    );
+  test(
+    'resume refreshes timezone and permissions before reconciliation',
+    () async {
+      final events = <String>[];
+      final coordinator = ReminderSystemTriggerCoordinator(
+        refreshTimezoneIfChanged: () async {
+          events.add('timezone');
+          return true;
+        },
+        refreshPermissionStateIfChanged: () async {
+          events.add('permissions');
+          return true;
+        },
+        requestNotificationPermission: () async => true,
+        requestExactAlarmPermission: () async => true,
+        reconcile: () async => events.add('reconcile'),
+      );
 
-    await coordinator.onResume();
+      await coordinator.onResume();
 
-    expect(events, <String>['timezone', 'permissions', 'reconcile']);
-  });
+      expect(events, <String>['timezone', 'permissions', 'reconcile']);
+    },
+  );
 
   test('notification permission result is preserved and reconciled', () async {
     var permissionRefreshes = 0;
