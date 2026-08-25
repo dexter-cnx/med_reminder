@@ -28,10 +28,7 @@ void main() {
       'lib/reminder_reliability_probe_main.dart',
     ).readAsStringSync();
 
-    expect(
-      source,
-      contains('pluginPersistedScheduledNotificationRegistry'),
-    );
+    expect(source, contains('pluginPersistedScheduledNotificationRegistry'));
     expect(source, contains('does not prove AlarmManager restoration'));
     expect(source, contains("'pendingEvidenceKind': pendingEvidenceKind"));
   });
