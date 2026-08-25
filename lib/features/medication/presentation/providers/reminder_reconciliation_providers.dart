@@ -17,7 +17,7 @@ final reconcileMedicationRemindersProvider =
 final reminderReconciliationControllerProvider =
     Provider<ReminderReconciliationController>(
       (ref) => ReminderReconciliationController(
-        reconcile: ref.watch(reconcileMedicationRemindersProvider),
+        reconcile: ref.watch(reconcileMedicationRemindersProvider).call,
         onSuccess: () {
           ref.invalidate(medsProvider);
           ref.invalidate(logsProvider);
