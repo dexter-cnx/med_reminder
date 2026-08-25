@@ -47,8 +47,9 @@ class ReminderRepairCard extends ConsumerWidget {
   }
 
   Future<void> _repair(BuildContext context, WidgetRef ref) async {
-    final result =
-        await ref.read(reminderRepairControllerProvider.notifier).repair();
+    final result = await ref
+        .read(reminderRepairControllerProvider.notifier)
+        .repair();
     if (!context.mounted) return;
     final message = result.fold(
       onSuccess: (_) => _success(context),

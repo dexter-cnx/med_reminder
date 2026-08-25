@@ -31,10 +31,10 @@ void main() {
     );
 
     expect(await viewModel.append(newer), isTrue);
-    expect(
-      viewModel.state.map((event) => event.id),
-      <String>['older', 'newer'],
-    );
+    expect(viewModel.state.map((event) => event.id), <String>[
+      'older',
+      'newer',
+    ]);
     expect(repository.values.length, 2);
     expect(failure, isNull);
   });
@@ -116,9 +116,8 @@ class _FailingRefillRepository implements RefillRepository {
       const Success<List<RefillEvent>>(<RefillEvent>[]);
 
   @override
-  Future<Result<void>> append(RefillEvent event) async => const Failed<void>(
-        Failure(code: 'refill_write_failed', message: 'boom'),
-      );
+  Future<Result<void>> append(RefillEvent event) async =>
+      const Failed<void>(Failure(code: 'refill_write_failed', message: 'boom'));
 }
 
 class _MemoryMedicationRepository implements MedicationRepository {

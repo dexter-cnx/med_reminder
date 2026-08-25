@@ -64,7 +64,8 @@ class BackupExportCard extends ConsumerWidget {
       final preview = (selected as Success<BackupImportPreview?>).value;
       if (preview == null) return;
 
-      final confirmed = await showDialog<bool>(
+      final confirmed =
+          await showDialog<bool>(
             context: context,
             barrierDismissible: false,
             builder: (dialogContext) => AlertDialog(
@@ -89,12 +90,8 @@ class BackupExportCard extends ConsumerWidget {
                       isThai
                           ? 'ควรส่งออกข้อมูลปัจจุบันก่อน หากต้องการเก็บสำเนาไว้ การดำเนินการนี้ย้อนกลับจากในแอปไม่ได้'
                           : 'Export your current data first if you need a copy. This action cannot be undone inside the app.',
-                      style: Theme.of(dialogContext)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: Theme.of(dialogContext).textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 16),
                     _PreviewRow(
@@ -127,8 +124,9 @@ class BackupExportCard extends ConsumerWidget {
                 ),
                 FilledButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child:
-                      Text(isThai ? 'แทนที่และกู้คืน' : 'Replace and restore'),
+                  child: Text(
+                    isThai ? 'แทนที่และกู้คืน' : 'Replace and restore',
+                  ),
                 ),
               ],
             ),
@@ -261,8 +259,8 @@ class BackupExportCard extends ConsumerWidget {
                   label: Text(
                     importState.busy
                         ? (isThai
-                            ? 'กำลังตรวจสอบหรือกู้คืน…'
-                            : 'Validating or restoring…')
+                              ? 'กำลังตรวจสอบหรือกู้คืน…'
+                              : 'Validating or restoring…')
                         : (isThai ? 'เลือกไฟล์สำรอง' : 'Choose backup file'),
                   ),
                 ),
@@ -340,10 +338,7 @@ class _PreviewRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
           ),
           Expanded(child: Text(value)),
         ],

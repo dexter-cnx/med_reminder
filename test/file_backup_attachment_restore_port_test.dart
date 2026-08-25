@@ -24,52 +24,57 @@ void main() {
     if (await root.exists()) await root.delete(recursive: true);
   });
 
-  test('stage reserves final med_photos path and commit promotes bytes',
-      () async {
-    final port = FileBackupAttachmentRestorePort(
-      documentsPath: documents.path,
-      stagingRootPath: staging.path,
-    );
+  test(
+    'stage reserves final med_photos path and commit promotes bytes',
+    () async {
+      final port = FileBackupAttachmentRestorePort(
+        documentsPath: documents.path,
+        stagingRootPath: staging.path,
+      );
 
-    final stagedResult = await port.stage(<BackupAttachment>[
-      BackupAttachment(
-        archivePath: 'attachments/medication/med-1.PNG',
-        bytes: Uint8List.fromList(<int>[1, 2, 3]),
-      ),
-    ]);
+      final stagedResult = await port.stage(<BackupAttachment>[
+        BackupAttachment(
+          archivePath: 'attachments/medication/med-1.PNG',
+          bytes: Uint8List.fromList(<int>[1, 2, 3]),
+        ),
+      ]);
 
-    final staged = stagedResult.fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
-    final path = staged.pathsByArchivePath.values.single;
-    expect(path.finalPath, contains('${p.separator}med_photos${p.separator}'));
-    expect(p.extension(path.finalPath), '.png');
-    expect(await File(path.stagedPath).readAsBytes(), <int>[1, 2, 3]);
-    expect(await File(path.finalPath).exists(), isFalse);
+      final staged = stagedResult.fold(
+        onSuccess: (value) => value,
+        onFailure: (failure) => fail(failure.toString()),
+      );
+      final path = staged.pathsByArchivePath.values.single;
+      expect(
+        path.finalPath,
+        contains('${p.separator}med_photos${p.separator}'),
+      );
+      expect(p.extension(path.finalPath), '.png');
+      expect(await File(path.stagedPath).readAsBytes(), <int>[1, 2, 3]);
+      expect(await File(path.finalPath).exists(), isFalse);
 
-    final commit = await port.commit(staged.stageId);
+      final commit = await port.commit(staged.stageId);
 
-    expect(commit.isSuccess, isTrue);
-    expect(await File(path.stagedPath).exists(), isFalse);
-    expect(await File(path.finalPath).readAsBytes(), <int>[1, 2, 3]);
-  });
+      expect(commit.isSuccess, isTrue);
+      expect(await File(path.stagedPath).exists(), isFalse);
+      expect(await File(path.finalPath).readAsBytes(), <int>[1, 2, 3]);
+    },
+  );
 
   test('rollback removes committed files and stage metadata', () async {
     final port = FileBackupAttachmentRestorePort(
       documentsPath: documents.path,
       stagingRootPath: staging.path,
     );
-    final staged = (await port.stage(<BackupAttachment>[
-      BackupAttachment(
-        archivePath: 'attachments/medication/med-1.jpg',
-        bytes: Uint8List.fromList(<int>[4, 5]),
-      ),
-    ]))
-        .fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
+    final staged =
+        (await port.stage(<BackupAttachment>[
+          BackupAttachment(
+            archivePath: 'attachments/medication/med-1.jpg',
+            bytes: Uint8List.fromList(<int>[4, 5]),
+          ),
+        ])).fold(
+          onSuccess: (value) => value,
+          onFailure: (failure) => fail(failure.toString()),
+        );
     final path = staged.pathsByArchivePath.values.single;
     expect((await port.commit(staged.stageId)).isSuccess, isTrue);
 
@@ -83,51 +88,53 @@ void main() {
     );
   });
 
-  test('discard removes an uncommitted stage without touching live photos',
-      () async {
-    final port = FileBackupAttachmentRestorePort(
-      documentsPath: documents.path,
-      stagingRootPath: staging.path,
-    );
-    final live = File(p.join(documents.path, 'med_photos', 'existing.jpg'));
-    await live.parent.create(recursive: true);
-    await live.writeAsBytes(<int>[9]);
-    final staged = (await port.stage(<BackupAttachment>[
-      BackupAttachment(
-        archivePath: 'attachments/medication/med-1.jpg',
-        bytes: Uint8List.fromList(<int>[1]),
-      ),
-    ]))
-        .fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
+  test(
+    'discard removes an uncommitted stage without touching live photos',
+    () async {
+      final port = FileBackupAttachmentRestorePort(
+        documentsPath: documents.path,
+        stagingRootPath: staging.path,
+      );
+      final live = File(p.join(documents.path, 'med_photos', 'existing.jpg'));
+      await live.parent.create(recursive: true);
+      await live.writeAsBytes(<int>[9]);
+      final staged =
+          (await port.stage(<BackupAttachment>[
+            BackupAttachment(
+              archivePath: 'attachments/medication/med-1.jpg',
+              bytes: Uint8List.fromList(<int>[1]),
+            ),
+          ])).fold(
+            onSuccess: (value) => value,
+            onFailure: (failure) => fail(failure.toString()),
+          );
 
-    final result = await port.discard(staged.stageId);
+      final result = await port.discard(staged.stageId);
 
-    expect(result.isSuccess, isTrue);
-    expect(
-      await Directory(p.join(staging.path, staged.stageId)).exists(),
-      isFalse,
-    );
-    expect(await live.readAsBytes(), <int>[9]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(
+        await Directory(p.join(staging.path, staged.stageId)).exists(),
+        isFalse,
+      );
+      expect(await live.readAsBytes(), <int>[9]);
+    },
+  );
 
   test('commit rejects metadata paths escaping managed roots', () async {
     final port = FileBackupAttachmentRestorePort(
       documentsPath: documents.path,
       stagingRootPath: staging.path,
     );
-    final staged = (await port.stage(<BackupAttachment>[
-      BackupAttachment(
-        archivePath: 'attachments/medication/med-1.jpg',
-        bytes: Uint8List.fromList(<int>[1]),
-      ),
-    ]))
-        .fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
+    final staged =
+        (await port.stage(<BackupAttachment>[
+          BackupAttachment(
+            archivePath: 'attachments/medication/med-1.jpg',
+            bytes: Uint8List.fromList(<int>[1]),
+          ),
+        ])).fold(
+          onSuccess: (value) => value,
+          onFailure: (failure) => fail(failure.toString()),
+        );
     final metadata = File(p.join(staging.path, staged.stageId, 'stage.json'));
     final outside = p.join(root.path, 'outside.jpg');
     final decoded =
@@ -154,16 +161,16 @@ void main() {
       documentsPath: documents.path,
       stagingRootPath: staging.path,
     );
-    final staged = (await port.stage(<BackupAttachment>[
-      BackupAttachment(
-        archivePath: 'attachments/medication/med-1.jpg',
-        bytes: Uint8List.fromList(<int>[7]),
-      ),
-    ]))
-        .fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
+    final staged =
+        (await port.stage(<BackupAttachment>[
+          BackupAttachment(
+            archivePath: 'attachments/medication/med-1.jpg',
+            bytes: Uint8List.fromList(<int>[7]),
+          ),
+        ])).fold(
+          onSuccess: (value) => value,
+          onFailure: (failure) => fail(failure.toString()),
+        );
 
     final outsideDirectory = Directory(p.join(root.path, 'outside'));
     await outsideDirectory.create(recursive: true);
@@ -175,8 +182,10 @@ void main() {
     final decoded =
         jsonDecode(await metadata.readAsString()) as Map<String, dynamic>;
     final entries = decoded['entries'] as List<dynamic>;
-    (entries.single as Map<String, dynamic>)['finalPath'] =
-        p.join(link.path, 'victim.jpg');
+    (entries.single as Map<String, dynamic>)['finalPath'] = p.join(
+      link.path,
+      'victim.jpg',
+    );
     await metadata.writeAsString(jsonEncode(decoded));
 
     final result = await port.commit(staged.stageId);
@@ -187,8 +196,10 @@ void main() {
       onFailure: (failure) =>
           expect(failure.code, 'backup_restore_stage_invalid'),
     );
-    expect(await File(p.join(outsideDirectory.path, 'victim.jpg')).exists(),
-        isFalse);
+    expect(
+      await File(p.join(outsideDirectory.path, 'victim.jpg')).exists(),
+      isFalse,
+    );
   });
 
   test('stage returns cleanup failure instead of throwing', () async {
@@ -197,9 +208,8 @@ void main() {
     final port = FileBackupAttachmentRestorePort(
       documentsPath: documents.path,
       stagingRootPath: invalidRoot.path,
-      deleteDirectory: (_) async => throw const FileSystemException(
-        'cleanup failed',
-      ),
+      deleteDirectory: (_) async =>
+          throw const FileSystemException('cleanup failed'),
     );
 
     final result = await port.stage(<BackupAttachment>[

@@ -52,9 +52,7 @@ class NotificationService {
       requestSoundPermission: false,
     );
     await _plugin
-        .initialize(
-          const InitializationSettings(android: android, iOS: ios),
-        )
+        .initialize(const InitializationSettings(android: android, iOS: ios))
         .timeout(_nativeTimeout);
 
     // Permission prompts are deliberately not part of startup. On modern
@@ -70,14 +68,18 @@ class NotificationService {
   static Future<bool> requestNotificationPermission() async {
     await init();
 
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin != null) {
       return await androidPlugin.requestNotificationsPermission() ?? false;
     }
 
-    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (iosPlugin != null) {
       return await iosPlugin.requestPermissions(
             alert: true,
@@ -92,8 +94,10 @@ class NotificationService {
 
   static Future<bool> requestExactAlarmPermission() async {
     await init();
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (androidPlugin == null) return true;
 
     final granted = await androidPlugin.requestExactAlarmsPermission();
@@ -105,8 +109,9 @@ class NotificationService {
 
   static Future<String> _readTimezoneName() async {
     try {
-      final timezone =
-          await FlutterTimezone.getLocalTimezone().timeout(_nativeTimeout);
+      final timezone = await FlutterTimezone.getLocalTimezone().timeout(
+        _nativeTimeout,
+      );
       return timezone.identifier;
     } catch (_) {
       return 'UTC';

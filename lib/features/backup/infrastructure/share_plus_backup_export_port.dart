@@ -33,9 +33,7 @@ final class SharePlusBackupExportPort implements BackupExportPort {
 
       final shareResult = await SharePlus.instance.share(
         ShareParams(
-          files: <XFile>[
-            XFile(sharedFile.path, mimeType: 'application/zip'),
-          ],
+          files: <XFile>[XFile(sharedFile.path, mimeType: 'application/zip')],
           subject: 'Besyu backup',
           sharePositionOrigin: anchor == null
               ? null

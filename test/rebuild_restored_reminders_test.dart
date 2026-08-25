@@ -7,28 +7,31 @@ import 'package:med_reminder_offline/features/medication/domain/services/medicat
 
 void main() {
   test(
-      'rebuild cancels pre-restore ids, schedules active medication, and persists generated ids',
-      () async {
-    final medication = _medication(notificationIds: const <int>[]);
-    final medications = _FakeMedicationRepository(<Medication>[medication]);
-    final scheduler = _FakeReminderScheduler(scheduleIds: const <int>[10, 11]);
-    final useCase = RebuildRestoredReminders(
-      medicationRepository: medications,
-      doseLogRepository: _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: (medication, logs) => medication.initialAmount,
-      now: () => DateTime(2026, 8, 25),
-    );
+    'rebuild cancels pre-restore ids, schedules active medication, and persists generated ids',
+    () async {
+      final medication = _medication(notificationIds: const <int>[]);
+      final medications = _FakeMedicationRepository(<Medication>[medication]);
+      final scheduler = _FakeReminderScheduler(
+        scheduleIds: const <int>[10, 11],
+      );
+      final useCase = RebuildRestoredReminders(
+        medicationRepository: medications,
+        doseLogRepository: _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: (medication, logs) => medication.initialAmount,
+        now: () => DateTime(2026, 8, 25),
+      );
 
-    final result = await useCase(
-      previousNotificationIds: const <int>[70, 71],
-    );
+      final result = await useCase(
+        previousNotificationIds: const <int>[70, 71],
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(scheduler.cancelledBatches.first, <int>[70, 71]);
-    expect(scheduler.scheduledIds, <String>['med-1']);
-    expect(medications.replaced.single.notificationIds, <int>[10, 11]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(scheduler.cancelledBatches.first, <int>[70, 71]);
+      expect(scheduler.scheduledIds, <String>['med-1']);
+      expect(medications.replaced.single.notificationIds, <int>[10, 11]);
+    },
+  );
 
   test('expired medication is persisted without notification ids', () async {
     final medication = _medication(
@@ -47,48 +50,46 @@ void main() {
       now: () => DateTime(2026, 8, 25),
     );
 
-    final result = await useCase(
-      previousNotificationIds: const <int>[77],
-    );
+    final result = await useCase(previousNotificationIds: const <int>[77]);
 
     expect(result.isSuccess, isTrue);
     expect(scheduler.cancelledBatches.first, <int>[77]);
     expect(medications.replaced.single.notificationIds, isEmpty);
   });
 
-  test('later scheduler failure cancels ids created earlier in rebuild',
-      () async {
-    final medications = _FakeMedicationRepository(<Medication>[
-      _medication(id: 'med-1'),
-      _medication(id: 'med-2'),
-    ]);
-    final scheduler = _FakeReminderScheduler(
-      scheduleIds: const <int>[10],
-      throwOnScheduleCall: 2,
-    );
-    final useCase = RebuildRestoredReminders(
-      medicationRepository: medications,
-      doseLogRepository: _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: (medication, logs) => medication.initialAmount,
-      now: () => DateTime(2026, 8, 25),
-    );
+  test(
+    'later scheduler failure cancels ids created earlier in rebuild',
+    () async {
+      final medications = _FakeMedicationRepository(<Medication>[
+        _medication(id: 'med-1'),
+        _medication(id: 'med-2'),
+      ]);
+      final scheduler = _FakeReminderScheduler(
+        scheduleIds: const <int>[10],
+        throwOnScheduleCall: 2,
+      );
+      final useCase = RebuildRestoredReminders(
+        medicationRepository: medications,
+        doseLogRepository: _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: (medication, logs) => medication.initialAmount,
+        now: () => DateTime(2026, 8, 25),
+      );
 
-    final result = await useCase(
-      previousNotificationIds: const <int>[90],
-    );
+      final result = await useCase(previousNotificationIds: const <int>[90]);
 
-    result.fold(
-      onSuccess: (_) => fail('Expected reminder rebuild failure.'),
-      onFailure: (failure) =>
-          expect(failure.code, 'backup_restore_reminder_rebuild_failed'),
-    );
-    expect(medications.replaceCalls, 0);
-    expect(scheduler.cancelledBatches, <List<int>>[
-      <int>[90],
-      <int>[10],
-    ]);
-  });
+      result.fold(
+        onSuccess: (_) => fail('Expected reminder rebuild failure.'),
+        onFailure: (failure) =>
+            expect(failure.code, 'backup_restore_reminder_rebuild_failed'),
+      );
+      expect(medications.replaceCalls, 0);
+      expect(scheduler.cancelledBatches, <List<int>>[
+        <int>[90],
+        <int>[10],
+      ]);
+    },
+  );
 
   test('persist failure cancels all newly created reminder ids', () async {
     final medications = _FakeMedicationRepository(
@@ -110,74 +111,81 @@ void main() {
 
     result.fold(
       onSuccess: (_) => fail('Expected persist failure.'),
-      onFailure: (failure) => expect(
-        failure.code,
-        'backup_restore_reminder_state_persist_failed',
-      ),
+      onFailure: (failure) =>
+          expect(failure.code, 'backup_restore_reminder_state_persist_failed'),
     );
     expect(scheduler.cancelledBatches.last, <int>[10, 11]);
   });
 
-  test('concurrent medication add is preserved when repair persists ids',
-      () async {
-    final medications = _FakeMedicationRepository(<Medication>[_medication()]);
-    late _FakeReminderScheduler scheduler;
-    scheduler = _FakeReminderScheduler(
-      scheduleIds: const <int>[10],
-      onSchedule: (_) {
-        medications.current = <Medication>[
-          _medication(),
-          _medication(id: 'med-2', notificationIds: const <int>[99]),
-        ];
-      },
-    );
-    final useCase = RebuildRestoredReminders(
-      medicationRepository: medications,
-      doseLogRepository: _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: (medication, logs) => medication.initialAmount,
-      now: () => DateTime(2026, 8, 25),
-    );
+  test(
+    'concurrent medication add is preserved when repair persists ids',
+    () async {
+      final medications = _FakeMedicationRepository(<Medication>[
+        _medication(),
+      ]);
+      late _FakeReminderScheduler scheduler;
+      scheduler = _FakeReminderScheduler(
+        scheduleIds: const <int>[10],
+        onSchedule: (_) {
+          medications.current = <Medication>[
+            _medication(),
+            _medication(id: 'med-2', notificationIds: const <int>[99]),
+          ];
+        },
+      );
+      final useCase = RebuildRestoredReminders(
+        medicationRepository: medications,
+        doseLogRepository: _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: (medication, logs) => medication.initialAmount,
+        now: () => DateTime(2026, 8, 25),
+      );
 
-    final result = await useCase();
+      final result = await useCase();
 
-    expect(result.isSuccess, isTrue);
-    expect(
-        medications.replaced.map((med) => med.id), <String>['med-1', 'med-2']);
-    expect(medications.replaced[0].notificationIds, <int>[10]);
-    expect(medications.replaced[1].notificationIds, <int>[99]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(medications.replaced.map((med) => med.id), <String>[
+        'med-1',
+        'med-2',
+      ]);
+      expect(medications.replaced[0].notificationIds, <int>[10]);
+      expect(medications.replaced[1].notificationIds, <int>[99]);
+    },
+  );
 
   test(
-      'concurrent reminder-affecting edit keeps latest state and drops stale ids',
-      () async {
-    final medications = _FakeMedicationRepository(<Medication>[_medication()]);
-    final scheduler = _FakeReminderScheduler(
-      scheduleIds: const <int>[10],
-      onSchedule: (_) {
-        medications.current = <Medication>[
-          _medication(
-            times: const <String>['09:00'],
-            notificationIds: const <int>[99],
-          ),
-        ];
-      },
-    );
-    final useCase = RebuildRestoredReminders(
-      medicationRepository: medications,
-      doseLogRepository: _FakeDoseLogRepository(),
-      reminderScheduler: scheduler,
-      stockResolver: (medication, logs) => medication.initialAmount,
-      now: () => DateTime(2026, 8, 25),
-    );
+    'concurrent reminder-affecting edit keeps latest state and drops stale ids',
+    () async {
+      final medications = _FakeMedicationRepository(<Medication>[
+        _medication(),
+      ]);
+      final scheduler = _FakeReminderScheduler(
+        scheduleIds: const <int>[10],
+        onSchedule: (_) {
+          medications.current = <Medication>[
+            _medication(
+              times: const <String>['09:00'],
+              notificationIds: const <int>[99],
+            ),
+          ];
+        },
+      );
+      final useCase = RebuildRestoredReminders(
+        medicationRepository: medications,
+        doseLogRepository: _FakeDoseLogRepository(),
+        reminderScheduler: scheduler,
+        stockResolver: (medication, logs) => medication.initialAmount,
+        now: () => DateTime(2026, 8, 25),
+      );
 
-    final result = await useCase();
+      final result = await useCase();
 
-    expect(result.isSuccess, isTrue);
-    expect(medications.replaced.single.times, <String>['09:00']);
-    expect(medications.replaced.single.notificationIds, <int>[99]);
-    expect(scheduler.cancelledBatches.last, <int>[10]);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(medications.replaced.single.times, <String>['09:00']);
+      expect(medications.replaced.single.notificationIds, <int>[99]);
+      expect(scheduler.cancelledBatches.last, <int>[10]);
+    },
+  );
 }
 
 Medication _medication({
@@ -187,17 +195,16 @@ Medication _medication({
   DateTime? createdAt,
   List<String> times = const <String>['08:00'],
   List<int> notificationIds = const <int>[],
-}) =>
-    Medication(
-      id: id,
-      name: 'Medicine',
-      times: times,
-      createdAt: createdAt ?? DateTime(2026, 8, 25),
-      initialAmount: 10,
-      mode: mode,
-      daysCount: daysCount,
-      notificationIds: notificationIds,
-    );
+}) => Medication(
+  id: id,
+  name: 'Medicine',
+  times: times,
+  createdAt: createdAt ?? DateTime(2026, 8, 25),
+  initialAmount: 10,
+  mode: mode,
+  daysCount: daysCount,
+  notificationIds: notificationIds,
+);
 
 final class _FakeMedicationRepository implements MedicationRepository {
   _FakeMedicationRepository(

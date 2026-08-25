@@ -29,8 +29,8 @@ class Medication {
     this.dosePlan = MedicationDosePlan.scheduled,
     this.daysCount,
     List<int> notificationIds = const <int>[],
-  })  : times = List<String>.unmodifiable(times),
-        notificationIds = List<int>.unmodifiable(notificationIds);
+  }) : times = List<String>.unmodifiable(times),
+       notificationIds = List<int>.unmodifiable(notificationIds);
 
   final String id;
 
@@ -77,8 +77,9 @@ class Medication {
   int? remaining(Iterable<DoseLog> logs) {
     final initial = initialAmount;
     if (initial == null) return null;
-    final takenCount =
-        logs.where((log) => log.medId == id && log.isTaken).length;
+    final takenCount = logs
+        .where((log) => log.medId == id && log.isTaken)
+        .length;
     final value = initial - (takenCount * dosagePerTime);
     return value < 0 ? 0 : value;
   }
@@ -102,21 +103,20 @@ class Medication {
     List<int>? notificationIds,
     String? imagePath,
     MedicationDosePlan? dosePlan,
-  }) =>
-      Medication(
-        id: id,
-        name: name,
-        genericName: genericName ?? this.genericName,
-        description: description,
-        initialAmount: initialAmount ?? this.initialAmount,
-        lowThreshold: lowThreshold,
-        imagePath: imagePath ?? this.imagePath,
-        times: times,
-        dosagePerTime: dosagePerTime,
-        mode: mode,
-        dosePlan: dosePlan ?? this.dosePlan,
-        daysCount: daysCount,
-        createdAt: createdAt,
-        notificationIds: notificationIds ?? this.notificationIds,
-      );
+  }) => Medication(
+    id: id,
+    name: name,
+    genericName: genericName ?? this.genericName,
+    description: description,
+    initialAmount: initialAmount ?? this.initialAmount,
+    lowThreshold: lowThreshold,
+    imagePath: imagePath ?? this.imagePath,
+    times: times,
+    dosagePerTime: dosagePerTime,
+    mode: mode,
+    dosePlan: dosePlan ?? this.dosePlan,
+    daysCount: daysCount,
+    createdAt: createdAt,
+    notificationIds: notificationIds ?? this.notificationIds,
+  );
 }

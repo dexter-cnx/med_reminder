@@ -16,9 +16,6 @@ class HiveRefillLocalDataSource implements RefillLocalDataSource {
       .toList(growable: false);
 
   @override
-  Future<void> putRefillRecord(
-    String id,
-    Map<String, dynamic> record,
-  ) =>
+  Future<void> putRefillRecord(String id, Map<String, dynamic> record) =>
       _box.put(id, record);
 }

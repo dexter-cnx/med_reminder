@@ -89,54 +89,53 @@ void main() {
     );
   });
 
-  test('archive encoder normalizes duplicate source paths to one entry',
-      () async {
-    final manifest = await const JsonBackupArchiveCodec().encode(_snapshot());
-    final manifestBytes = manifest.fold(
-      onSuccess: (value) => value,
-      onFailure: (failure) => fail(failure.toString()),
-    );
-    final archive = Archive()
-      ..add(
-        ArchiveFile.bytes(
-          JsonBackupArchiveCodec.manifestFileName,
-          manifestBytes,
-        ),
-      )
-      ..add(
-        ArchiveFile.bytes(
-          JsonBackupArchiveCodec.manifestFileName,
-          manifestBytes,
-        ),
+  test(
+    'archive encoder normalizes duplicate source paths to one entry',
+    () async {
+      final manifest = await const JsonBackupArchiveCodec().encode(_snapshot());
+      final manifestBytes = manifest.fold(
+        onSuccess: (value) => value,
+        onFailure: (failure) => fail(failure.toString()),
       );
-    final bytes = ZipEncoder().encodeBytes(archive);
-    final decodedArchive = ZipDecoder().decodeBytes(bytes, verify: true);
+      final archive = Archive()
+        ..add(
+          ArchiveFile.bytes(
+            JsonBackupArchiveCodec.manifestFileName,
+            manifestBytes,
+          ),
+        )
+        ..add(
+          ArchiveFile.bytes(
+            JsonBackupArchiveCodec.manifestFileName,
+            manifestBytes,
+          ),
+        );
+      final bytes = ZipEncoder().encodeBytes(archive);
+      final decodedArchive = ZipDecoder().decodeBytes(bytes, verify: true);
 
-    expect(
-      decodedArchive
-          .where(
-            (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName,
-          )
-          .length,
-      1,
-    );
+      expect(
+        decodedArchive
+            .where(
+              (entry) => entry.name == JsonBackupArchiveCodec.manifestFileName,
+            )
+            .length,
+        1,
+      );
 
-    final result = await codec.decode(bytes);
-    expect(result.isSuccess, isTrue);
-  });
+      final result = await codec.decode(bytes);
+      expect(result.isSuccess, isTrue);
+    },
+  );
 }
 
 BackupSnapshot _snapshot() => BackupSnapshot(
-      schemaVersion: BackupSnapshot.currentSchemaVersion,
-      exportedAt: DateTime.utc(2026, 8, 24, 12, 30),
-      records: <BackupRecord>[
-        BackupRecord(
-          namespace: 'medication',
-          id: 'med-1',
-          payload: <String, Object?>{
-            'version': 1,
-            'name': 'Example',
-          },
-        ),
-      ],
-    );
+  schemaVersion: BackupSnapshot.currentSchemaVersion,
+  exportedAt: DateTime.utc(2026, 8, 24, 12, 30),
+  records: <BackupRecord>[
+    BackupRecord(
+      namespace: 'medication',
+      id: 'med-1',
+      payload: <String, Object?>{'version': 1, 'name': 'Example'},
+    ),
+  ],
+);

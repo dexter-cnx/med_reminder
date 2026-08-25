@@ -31,11 +31,12 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final events = ref
-        .watch(refillEventsProvider)
-        .where((event) => event.medicationId == widget.medication.id)
-        .toList(growable: false)
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final events =
+        ref
+            .watch(refillEventsProvider)
+            .where((event) => event.medicationId == widget.medication.id)
+            .toList(growable: false)
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final logs = ref.watch(logsProvider);
     final stockResolver = ref.watch(medicationStockResolverProvider);
     final remaining = stockResolver(widget.medication, logs);
@@ -125,9 +126,9 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
   Future<void> _save() async {
     final quantity = int.tryParse(_quantityController.text.trim());
     if (quantity == null || quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('refill_quantity_invalid'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('refill_quantity_invalid'.tr())));
       return;
     }
 
@@ -152,9 +153,9 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
     if (!saved) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('refill_save_failed'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('refill_save_failed'.tr())));
       return;
     }
 
@@ -165,14 +166,15 @@ class _RefillPanelState extends ConsumerState<RefillPanel> {
     _quantityController.clear();
     _noteController.clear();
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('refill_saved'.tr())),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('refill_saved'.tr())));
   }
 
   String _historySubtitle(RefillEvent event) {
     final date = event.createdAt;
-    final timestamp = '${date.year.toString().padLeft(4, '0')}-'
+    final timestamp =
+        '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')} '
         '${date.hour.toString().padLeft(2, '0')}:'

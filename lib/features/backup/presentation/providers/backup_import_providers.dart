@@ -38,12 +38,12 @@ final backupImportPortProvider = Provider<BackupImportPort>(
 
 final backupImportControllerProvider =
     StateNotifierProvider<BackupImportController, BackupImportState>(
-  (ref) => BackupImportController(
-    importPort: ref.watch(backupImportPortProvider),
-    codec: const ZipBackupBundleArchiveCodec(),
-    loadRestore: () => ref.read(restoreBackupBundleProvider.future),
-  ),
-);
+      (ref) => BackupImportController(
+        importPort: ref.watch(backupImportPortProvider),
+        codec: const ZipBackupBundleArchiveCodec(),
+        loadRestore: () => ref.read(restoreBackupBundleProvider.future),
+      ),
+    );
 
 final class BackupImportController extends StateNotifier<BackupImportState> {
   BackupImportController({
@@ -153,9 +153,9 @@ final class BackupImportController extends StateNotifier<BackupImportState> {
   }
 
   Failed<T> _inProgress<T>() => Failed<T>(
-        const Failure(
-          code: 'backup_import_in_progress',
-          message: 'Backup import is already in progress.',
-        ),
-      );
+    const Failure(
+      code: 'backup_import_in_progress',
+      message: 'Backup import is already in progress.',
+    ),
+  );
 }

@@ -83,9 +83,7 @@ void main() {
     final medication = MedicationBackupDto.decode(<String, Object?>{
       'version': 2,
     });
-    final doseLog = DoseLogBackupDto.decode(<String, Object?>{
-      'version': 2,
-    });
+    final doseLog = DoseLogBackupDto.decode(<String, Object?>{'version': 2});
 
     expect(medication.isFailure, isTrue);
     expect(doseLog.isFailure, isTrue);

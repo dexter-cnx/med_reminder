@@ -1,15 +1,12 @@
 import '../domain/entities/medication.dart';
 
-typedef MedicationStockResolver = int? Function(
-  Medication medication,
-  Iterable<DoseLog> logs,
-);
+typedef MedicationStockResolver =
+    int? Function(Medication medication, Iterable<DoseLog> logs);
 
 int? legacyMedicationStockResolver(
   Medication medication,
   Iterable<DoseLog> logs,
-) =>
-    medication.remaining(logs);
+) => medication.remaining(logs);
 
 /// Builds the medication portion of today's operational timeline.
 ///

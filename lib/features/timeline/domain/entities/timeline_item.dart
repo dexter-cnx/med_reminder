@@ -15,16 +15,14 @@ sealed class TimelineItem {
 
 final class MedicationDoseTimelineItem extends TimelineItem {
   MedicationDoseTimelineItem({required this.dose})
-      : super(at: dose.scheduledAt);
+    : super(at: dose.scheduledAt);
 
   final ScheduledDose dose;
 }
 
 final class RefillTimelineItem extends TimelineItem {
-  RefillTimelineItem({
-    required this.event,
-    required this.medicationName,
-  }) : super(at: event.createdAt);
+  RefillTimelineItem({required this.event, required this.medicationName})
+    : super(at: event.createdAt);
 
   final RefillEvent event;
   final String medicationName;
@@ -32,7 +30,7 @@ final class RefillTimelineItem extends TimelineItem {
 
 final class AppointmentTimelineItem extends TimelineItem {
   AppointmentTimelineItem({required this.appointment})
-      : super(at: appointment.startsAt);
+    : super(at: appointment.startsAt);
 
   final DoctorAppointment appointment;
 }

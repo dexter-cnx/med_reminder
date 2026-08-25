@@ -8,45 +8,49 @@ import 'package:med_reminder_offline/features/timeline/application/build_daily_t
 import 'package:med_reminder_offline/features/timeline/domain/entities/timeline_item.dart';
 
 void main() {
-  test('appointment provider updates feed the daily timeline projection',
-      () async {
-    final repository = _MemoryAppointmentRepository();
-    final container = ProviderContainer(
-      overrides: [
-        appointmentRepositoryProvider.overrideWithValue(repository),
-      ],
-    );
-    addTearDown(container.dispose);
+  test(
+    'appointment provider updates feed the daily timeline projection',
+    () async {
+      final repository = _MemoryAppointmentRepository();
+      final container = ProviderContainer(
+        overrides: [
+          appointmentRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    final appointment = DoctorAppointment(
-      id: 'visit-1',
-      title: 'Cardiology follow-up',
-      startsAt: DateTime(2026, 8, 22, 14, 30),
-      location: 'Clinic A',
-    );
+      final appointment = DoctorAppointment(
+        id: 'visit-1',
+        title: 'Cardiology follow-up',
+        startsAt: DateTime(2026, 8, 22, 14, 30),
+        location: 'Clinic A',
+      );
 
-    final saved =
-        await container.read(appointmentsProvider.notifier).upsert(appointment);
+      final saved = await container
+          .read(appointmentsProvider.notifier)
+          .upsert(appointment);
 
-    expect(saved, isTrue);
-    expect(
-        container.read(appointmentsProvider), <DoctorAppointment>[appointment]);
+      expect(saved, isTrue);
+      expect(container.read(appointmentsProvider), <DoctorAppointment>[
+        appointment,
+      ]);
 
-    final timeline = buildDailyTimeline(
-      appointments: container.read(appointmentsProvider),
-      day: DateTime(2026, 8, 22),
-    );
+      final timeline = buildDailyTimeline(
+        appointments: container.read(appointmentsProvider),
+        day: DateTime(2026, 8, 22),
+      );
 
-    expect(timeline, hasLength(1));
-    expect(timeline.single, isA<AppointmentTimelineItem>());
+      expect(timeline, hasLength(1));
+      expect(timeline.single, isA<AppointmentTimelineItem>());
 
-    final deleted = await container
-        .read(appointmentsProvider.notifier)
-        .delete(appointment.id);
+      final deleted = await container
+          .read(appointmentsProvider.notifier)
+          .delete(appointment.id);
 
-    expect(deleted, isTrue);
-    expect(container.read(appointmentsProvider), isEmpty);
-  });
+      expect(deleted, isTrue);
+      expect(container.read(appointmentsProvider), isEmpty);
+    },
+  );
 }
 
 class _MemoryAppointmentRepository implements AppointmentRepository {

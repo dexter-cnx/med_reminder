@@ -66,10 +66,7 @@ void main() {
       onSuccess: (_) => fail('Expected data restore failure.'),
       onFailure: (failure) => expect(failure.code, 'data_restore_failed'),
     );
-    expect(
-      events,
-      <String>['commit:stage-1', 'restore', 'rollback:stage-1'],
-    );
+    expect(events, <String>['commit:stage-1', 'restore', 'rollback:stage-1']);
   });
 
   test('data rollback failure preserves committed files', () async {
@@ -133,13 +130,13 @@ void main() {
 }
 
 PreparedBackupRestore _prepared() => PreparedBackupRestore(
-      snapshot: BackupSnapshot(
-        schemaVersion: BackupSnapshot.currentSchemaVersion,
-        exportedAt: DateTime.utc(2026, 8, 25),
-        records: const [],
-      ),
-      stageId: 'stage-1',
-    );
+  snapshot: BackupSnapshot(
+    schemaVersion: BackupSnapshot.currentSchemaVersion,
+    exportedAt: DateTime.utc(2026, 8, 25),
+    records: const [],
+  ),
+  stageId: 'stage-1',
+);
 
 final class _FakeDataPort implements BackupDataPort {
   _FakeDataPort({
@@ -153,12 +150,12 @@ final class _FakeDataPort implements BackupDataPort {
 
   @override
   Future<Result<BackupSnapshot>> capture() async => Success<BackupSnapshot>(
-        BackupSnapshot(
-          schemaVersion: BackupSnapshot.currentSchemaVersion,
-          exportedAt: DateTime.utc(2026, 8, 25),
-          records: const [],
-        ),
-      );
+    BackupSnapshot(
+      schemaVersion: BackupSnapshot.currentSchemaVersion,
+      exportedAt: DateTime.utc(2026, 8, 25),
+      records: const [],
+    ),
+  );
 
   @override
   Future<Result<void>> restoreAtomically(BackupSnapshot snapshot) async {

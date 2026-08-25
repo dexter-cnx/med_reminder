@@ -40,83 +40,81 @@ void main() {
     expect(refreshed, isFalse);
   });
 
-  test('captures old reminder ids before commit and passes them to repair',
-      () async {
-    final events = <String>[];
-    final attachments = _FakeAttachmentRestorePort(events: events);
-    final dataPort = _FakeDataPort(events: events);
-    final restore = RestoreBackupBundle(
-      prepare: PrepareBackupRestore(
-        codec: _SuccessfulCodec(_bundle()),
-        attachmentRestorePort: attachments,
-      ),
-      commit: CommitPreparedBackupRestore(
-        dataPort: dataPort,
-        attachmentRestorePort: attachments,
-      ),
-      captureReminderState: () {
-        events.add('capture');
-        return const Success<List<int>>(<int>[41, 42]);
-      },
-      onSuccess: (previousIds) async {
-        events.add('repair:${previousIds.join(',')}');
-        return const Success<void>(null);
-      },
-    );
+  test(
+    'captures old reminder ids before commit and passes them to repair',
+    () async {
+      final events = <String>[];
+      final attachments = _FakeAttachmentRestorePort(events: events);
+      final dataPort = _FakeDataPort(events: events);
+      final restore = RestoreBackupBundle(
+        prepare: PrepareBackupRestore(
+          codec: _SuccessfulCodec(_bundle()),
+          attachmentRestorePort: attachments,
+        ),
+        commit: CommitPreparedBackupRestore(
+          dataPort: dataPort,
+          attachmentRestorePort: attachments,
+        ),
+        captureReminderState: () {
+          events.add('capture');
+          return const Success<List<int>>(<int>[41, 42]);
+        },
+        onSuccess: (previousIds) async {
+          events.add('repair:${previousIds.join(',')}');
+          return const Success<void>(null);
+        },
+      );
 
-    final result = await restore(Uint8List(0));
+      final result = await restore(Uint8List(0));
 
-    expect(result.isSuccess, isTrue);
-    expect(
-      events,
-      <String>[
+      expect(result.isSuccess, isTrue);
+      expect(events, <String>[
         'stage',
         'capture',
         'commit:stage-1',
         'restore',
         'repair:41,42',
-      ],
-    );
-  });
+      ]);
+    },
+  );
 
-  test('post-restore repair failure does not roll durable restore back',
-      () async {
-    final events = <String>[];
-    final attachments = _FakeAttachmentRestorePort(events: events);
-    final dataPort = _FakeDataPort(events: events);
-    final restore = RestoreBackupBundle(
-      prepare: PrepareBackupRestore(
-        codec: _SuccessfulCodec(_bundle()),
-        attachmentRestorePort: attachments,
-      ),
-      commit: CommitPreparedBackupRestore(
-        dataPort: dataPort,
-        attachmentRestorePort: attachments,
-      ),
-      onSuccess: (_) async {
-        events.add('repair');
-        return const Failed<void>(
-          Failure(
-            code: 'backup_restore_reminder_rebuild_failed',
-            message: 'Reminder rebuild failed.',
-          ),
-        );
-      },
-    );
+  test(
+    'post-restore repair failure does not roll durable restore back',
+    () async {
+      final events = <String>[];
+      final attachments = _FakeAttachmentRestorePort(events: events);
+      final dataPort = _FakeDataPort(events: events);
+      final restore = RestoreBackupBundle(
+        prepare: PrepareBackupRestore(
+          codec: _SuccessfulCodec(_bundle()),
+          attachmentRestorePort: attachments,
+        ),
+        commit: CommitPreparedBackupRestore(
+          dataPort: dataPort,
+          attachmentRestorePort: attachments,
+        ),
+        onSuccess: (_) async {
+          events.add('repair');
+          return const Failed<void>(
+            Failure(
+              code: 'backup_restore_reminder_rebuild_failed',
+              message: 'Reminder rebuild failed.',
+            ),
+          );
+        },
+      );
 
-    final result = await restore(Uint8List(0));
+      final result = await restore(Uint8List(0));
 
-    result.fold(
-      onSuccess: (_) => fail('Expected repair failure.'),
-      onFailure: (failure) =>
-          expect(failure.code, 'backup_restore_reminder_rebuild_failed'),
-    );
-    expect(
-      events,
-      <String>['stage', 'commit:stage-1', 'restore', 'repair'],
-    );
-    expect(events.where((event) => event.startsWith('rollback:')), isEmpty);
-  });
+      result.fold(
+        onSuccess: (_) => fail('Expected repair failure.'),
+        onFailure: (failure) =>
+            expect(failure.code, 'backup_restore_reminder_rebuild_failed'),
+      );
+      expect(events, <String>['stage', 'commit:stage-1', 'restore', 'repair']);
+      expect(events.where((event) => event.startsWith('rollback:')), isEmpty);
+    },
+  );
 
   test('coordinator skips repair when data restore fails', () async {
     final events = <String>[];
@@ -155,13 +153,13 @@ void main() {
 }
 
 BackupAttachmentBundle _bundle() => BackupAttachmentBundle(
-      snapshot: BackupSnapshot(
-        schemaVersion: BackupSnapshot.currentSchemaVersion,
-        exportedAt: DateTime.utc(2026, 8, 25),
-        records: const [],
-      ),
-      attachments: const <BackupAttachment>[],
-    );
+  snapshot: BackupSnapshot(
+    schemaVersion: BackupSnapshot.currentSchemaVersion,
+    exportedAt: DateTime.utc(2026, 8, 25),
+    records: const [],
+  ),
+  attachments: const <BackupAttachment>[],
+);
 
 final class _SuccessfulCodec implements BackupBundleArchiveCodec {
   const _SuccessfulCodec(this.bundle);
@@ -171,8 +169,7 @@ final class _SuccessfulCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async =>
-      Success<BackupAttachmentBundle>(bundle);
+  ) async => Success<BackupAttachmentBundle>(bundle);
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) {
@@ -186,10 +183,9 @@ final class _FailingCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async =>
-      const Failed<BackupAttachmentBundle>(
-        Failure(code: 'decode_failed', message: 'Decode failed.'),
-      );
+  ) async => const Failed<BackupAttachmentBundle>(
+    Failure(code: 'decode_failed', message: 'Decode failed.'),
+  );
 
   @override
   Future<Result<Uint8List>> encodeBundle(BackupAttachmentBundle bundle) {
@@ -199,7 +195,7 @@ final class _FailingCodec implements BackupBundleArchiveCodec {
 
 final class _FakeAttachmentRestorePort implements BackupAttachmentRestorePort {
   _FakeAttachmentRestorePort({List<String>? events})
-      : events = events ?? <String>[];
+    : events = events ?? <String>[];
 
   int stageCalls = 0;
   int commitCalls = 0;
@@ -249,12 +245,12 @@ final class _FakeDataPort implements BackupDataPort {
 
   @override
   Future<Result<BackupSnapshot>> capture() async => Success<BackupSnapshot>(
-        BackupSnapshot(
-          schemaVersion: BackupSnapshot.currentSchemaVersion,
-          exportedAt: DateTime.utc(2026, 8, 25),
-          records: const [],
-        ),
-      );
+    BackupSnapshot(
+      schemaVersion: BackupSnapshot.currentSchemaVersion,
+      exportedAt: DateTime.utc(2026, 8, 25),
+      records: const [],
+    ),
+  );
 
   @override
   Future<Result<void>> restoreAtomically(BackupSnapshot snapshot) async {

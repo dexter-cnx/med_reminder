@@ -5,9 +5,8 @@ import 'commit_prepared_backup_restore.dart';
 import 'prepare_backup_restore.dart';
 
 typedef BackupRestoreReminderStateCapture = Result<List<int>> Function();
-typedef BackupRestoreSuccessCallback = Future<Result<void>> Function(
-  List<int> previousNotificationIds,
-);
+typedef BackupRestoreSuccessCallback =
+    Future<Result<void>> Function(List<int> previousNotificationIds);
 
 final class RestoreBackupBundle {
   const RestoreBackupBundle({
@@ -38,8 +37,9 @@ final class RestoreBackupBundle {
       previousNotificationIds = (captured as Success<List<int>>).value;
     }
 
-    final committed =
-        await commit((prepared as Success<PreparedBackupRestore>).value);
+    final committed = await commit(
+      (prepared as Success<PreparedBackupRestore>).value,
+    );
     if (committed case Failed<void>()) return committed;
 
     final successCallback = onSuccess;

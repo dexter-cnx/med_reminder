@@ -23,34 +23,36 @@ void main() {
     expect(restored.note, event.note);
   });
 
-  test('repository persists refills and returns them chronologically',
-      () async {
-    final dataSource = _MemoryRefillLocalDataSource();
-    final repository = LocalRefillRepository(dataSource);
+  test(
+    'repository persists refills and returns them chronologically',
+    () async {
+      final dataSource = _MemoryRefillLocalDataSource();
+      final repository = LocalRefillRepository(dataSource);
 
-    final later = RefillEvent(
-      id: 'r2',
-      medicationId: 'm1',
-      quantity: 60,
-      createdAt: DateTime(2026, 8, 22, 12),
-    );
-    final earlier = RefillEvent(
-      id: 'r1',
-      medicationId: 'm1',
-      quantity: 30,
-      createdAt: DateTime(2026, 8, 21, 12),
-    );
+      final later = RefillEvent(
+        id: 'r2',
+        medicationId: 'm1',
+        quantity: 60,
+        createdAt: DateTime(2026, 8, 22, 12),
+      );
+      final earlier = RefillEvent(
+        id: 'r1',
+        medicationId: 'm1',
+        quantity: 30,
+        createdAt: DateTime(2026, 8, 21, 12),
+      );
 
-    await repository.append(later);
-    await repository.append(earlier);
+      await repository.append(later);
+      await repository.append(earlier);
 
-    final events = repository.readAll().fold(
-          onSuccess: (items) => items,
-          onFailure: (failure) => throw StateError(failure.message),
-        );
+      final events = repository.readAll().fold(
+        onSuccess: (items) => items,
+        onFailure: (failure) => throw StateError(failure.message),
+      );
 
-    expect(events.map((event) => event.id), <String>['r1', 'r2']);
-  });
+      expect(events.map((event) => event.id), <String>['r1', 'r2']);
+    },
+  );
 
   test('event id is the persistence key and append is retry-safe', () async {
     final dataSource = _MemoryRefillLocalDataSource();
@@ -66,9 +68,9 @@ void main() {
     await repository.append(event);
 
     final events = repository.readAll().fold(
-          onSuccess: (items) => items,
-          onFailure: (failure) => throw StateError(failure.message),
-        );
+      onSuccess: (items) => items,
+      onFailure: (failure) => throw StateError(failure.message),
+    );
 
     expect(events, hasLength(1));
     expect(events.single.quantity, 30);
@@ -83,10 +85,7 @@ class _MemoryRefillLocalDataSource implements RefillLocalDataSource {
       _records.values.map(Map<dynamic, dynamic>.from).toList(growable: false);
 
   @override
-  Future<void> putRefillRecord(
-    String id,
-    Map<String, dynamic> record,
-  ) async {
+  Future<void> putRefillRecord(String id, Map<String, dynamic> record) async {
     _records[id] = Map<String, dynamic>.from(record);
   }
 }

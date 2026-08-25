@@ -1,10 +1,4 @@
-enum MedicationCheckInKind {
-  noIssue,
-  dizziness,
-  nausea,
-  rash,
-  other,
-}
+enum MedicationCheckInKind { noIssue, dizziness, nausea, rash, other }
 
 /// A factual, user-reported observation associated with a medication.
 ///

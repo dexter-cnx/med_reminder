@@ -24,46 +24,49 @@ void main() {
       onSuccess: (snapshot) {
         expect(snapshot.schemaVersion, BackupSnapshot.currentSchemaVersion);
         expect(snapshot.exportedAt, DateTime.utc(2026, 8, 24, 12));
-        expect(
-          snapshot.records.map((record) => record.id),
-          <String>['med-1', 'log-1'],
-        );
+        expect(snapshot.records.map((record) => record.id), <String>[
+          'med-1',
+          'log-1',
+        ]);
       },
       onFailure: (failure) => fail(failure.toString()),
     );
   });
 
-  test('capture excludes dose logs whose medication no longer exists',
-      () async {
-    final medication = _medication('med-1');
-    final medicationRepository =
-        _FakeMedicationRepository(<Medication>[medication]);
-    final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[
-      _doseLog('log-1', 'med-1'),
-      _doseLog('orphan-log', 'deleted-med'),
-    ]);
-    final port = MedicationBackupDataPort(
-      medicationRepository: medicationRepository,
-      doseLogRepository: doseLogRepository,
-      now: () => DateTime.utc(2026, 8, 24, 12),
-    );
+  test(
+    'capture excludes dose logs whose medication no longer exists',
+    () async {
+      final medication = _medication('med-1');
+      final medicationRepository = _FakeMedicationRepository(<Medication>[
+        medication,
+      ]);
+      final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[
+        _doseLog('log-1', 'med-1'),
+        _doseLog('orphan-log', 'deleted-med'),
+      ]);
+      final port = MedicationBackupDataPort(
+        medicationRepository: medicationRepository,
+        doseLogRepository: doseLogRepository,
+        now: () => DateTime.utc(2026, 8, 24, 12),
+      );
 
-    final result = await port.capture();
+      final result = await port.capture();
 
-    result.fold(
-      onSuccess: (snapshot) {
-        expect(
-          snapshot.records.map((record) => record.id),
-          containsAll(<String>['med-1', 'log-1']),
-        );
-        expect(
-          snapshot.records.map((record) => record.id),
-          isNot(contains('orphan-log')),
-        );
-      },
-      onFailure: (failure) => fail(failure.toString()),
-    );
-  });
+      result.fold(
+        onSuccess: (snapshot) {
+          expect(
+            snapshot.records.map((record) => record.id),
+            containsAll(<String>['med-1', 'log-1']),
+          );
+          expect(
+            snapshot.records.map((record) => record.id),
+            isNot(contains('orphan-log')),
+          );
+        },
+        onFailure: (failure) => fail(failure.toString()),
+      );
+    },
+  );
 
   test('restore preflight rejects duplicate records before mutation', () async {
     final medication = _medication('med-1');
@@ -115,8 +118,9 @@ void main() {
     final oldLog = _doseLog('old-log', 'old-med');
     final newMedication = _medication('new-med');
     final newLog = _doseLog('new-log', 'new-med');
-    final medicationRepository =
-        _FakeMedicationRepository(<Medication>[oldMedication]);
+    final medicationRepository = _FakeMedicationRepository(<Medication>[
+      oldMedication,
+    ]);
     final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[oldLog]);
     final snapshot = _snapshot(<BackupRecord>[
       BackupRecord(
@@ -138,116 +142,114 @@ void main() {
     final result = await port.restoreAtomically(snapshot);
 
     expect(result.isSuccess, isTrue);
-    expect(
-      medicationRepository.values.map((value) => value.id),
-      <String>['new-med'],
-    );
-    expect(
-      doseLogRepository.values.map((value) => value.id),
-      <String>['new-log'],
-    );
-  });
-
-  test('restore rolls medication data back when first replacement fails',
-      () async {
-    final oldMedication = _medication('old-med');
-    final newMedication = _medication('new-med');
-    final medicationRepository = _FakeMedicationRepository(
-      <Medication>[oldMedication],
-      failFirstReplaceAfterMutation: true,
-    );
-    final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[]);
-    final port = MedicationBackupDataPort(
-      medicationRepository: medicationRepository,
-      doseLogRepository: doseLogRepository,
-    );
-    final snapshot = _snapshot(<BackupRecord>[
-      BackupRecord(
-        namespace: MedicationBackupDataPort.medicationNamespace,
-        id: newMedication.id,
-        payload: MedicationBackupDto.encode(newMedication),
-      ),
+    expect(medicationRepository.values.map((value) => value.id), <String>[
+      'new-med',
     ]);
-
-    final result = await port.restoreAtomically(snapshot);
-
-    expect(result.isFailure, isTrue);
-    expect(
-      medicationRepository.values.map((value) => value.id),
-      <String>['old-med'],
-    );
-    expect(medicationRepository.replaceCalls, 2);
-    expect(doseLogRepository.replaceCalls, 0);
-  });
-
-  test('restore rolls both repositories back when dose-log replacement fails',
-      () async {
-    final oldMedication = _medication('old-med');
-    final oldLog = _doseLog('old-log', 'old-med');
-    final newMedication = _medication('new-med');
-    final newLog = _doseLog('new-log', 'new-med');
-    final medicationRepository =
-        _FakeMedicationRepository(<Medication>[oldMedication]);
-    final doseLogRepository = _FakeDoseLogRepository(
-      <DoseLog>[oldLog],
-      failFirstReplaceAfterMutation: true,
-    );
-    final port = MedicationBackupDataPort(
-      medicationRepository: medicationRepository,
-      doseLogRepository: doseLogRepository,
-    );
-    final snapshot = _snapshot(<BackupRecord>[
-      BackupRecord(
-        namespace: MedicationBackupDataPort.medicationNamespace,
-        id: newMedication.id,
-        payload: MedicationBackupDto.encode(newMedication),
-      ),
-      BackupRecord(
-        namespace: MedicationBackupDataPort.doseLogNamespace,
-        id: newLog.id,
-        payload: DoseLogBackupDto.encode(newLog),
-      ),
+    expect(doseLogRepository.values.map((value) => value.id), <String>[
+      'new-log',
     ]);
-
-    final result = await port.restoreAtomically(snapshot);
-
-    expect(result.isFailure, isTrue);
-    expect(
-      medicationRepository.values.map((value) => value.id),
-      <String>['old-med'],
-    );
-    expect(
-      doseLogRepository.values.map((value) => value.id),
-      <String>['old-log'],
-    );
-    expect(medicationRepository.replaceCalls, 2);
-    expect(doseLogRepository.replaceCalls, 2);
   });
+
+  test(
+    'restore rolls medication data back when first replacement fails',
+    () async {
+      final oldMedication = _medication('old-med');
+      final newMedication = _medication('new-med');
+      final medicationRepository = _FakeMedicationRepository(<Medication>[
+        oldMedication,
+      ], failFirstReplaceAfterMutation: true);
+      final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[]);
+      final port = MedicationBackupDataPort(
+        medicationRepository: medicationRepository,
+        doseLogRepository: doseLogRepository,
+      );
+      final snapshot = _snapshot(<BackupRecord>[
+        BackupRecord(
+          namespace: MedicationBackupDataPort.medicationNamespace,
+          id: newMedication.id,
+          payload: MedicationBackupDto.encode(newMedication),
+        ),
+      ]);
+
+      final result = await port.restoreAtomically(snapshot);
+
+      expect(result.isFailure, isTrue);
+      expect(medicationRepository.values.map((value) => value.id), <String>[
+        'old-med',
+      ]);
+      expect(medicationRepository.replaceCalls, 2);
+      expect(doseLogRepository.replaceCalls, 0);
+    },
+  );
+
+  test(
+    'restore rolls both repositories back when dose-log replacement fails',
+    () async {
+      final oldMedication = _medication('old-med');
+      final oldLog = _doseLog('old-log', 'old-med');
+      final newMedication = _medication('new-med');
+      final newLog = _doseLog('new-log', 'new-med');
+      final medicationRepository = _FakeMedicationRepository(<Medication>[
+        oldMedication,
+      ]);
+      final doseLogRepository = _FakeDoseLogRepository(<DoseLog>[
+        oldLog,
+      ], failFirstReplaceAfterMutation: true);
+      final port = MedicationBackupDataPort(
+        medicationRepository: medicationRepository,
+        doseLogRepository: doseLogRepository,
+      );
+      final snapshot = _snapshot(<BackupRecord>[
+        BackupRecord(
+          namespace: MedicationBackupDataPort.medicationNamespace,
+          id: newMedication.id,
+          payload: MedicationBackupDto.encode(newMedication),
+        ),
+        BackupRecord(
+          namespace: MedicationBackupDataPort.doseLogNamespace,
+          id: newLog.id,
+          payload: DoseLogBackupDto.encode(newLog),
+        ),
+      ]);
+
+      final result = await port.restoreAtomically(snapshot);
+
+      expect(result.isFailure, isTrue);
+      expect(medicationRepository.values.map((value) => value.id), <String>[
+        'old-med',
+      ]);
+      expect(doseLogRepository.values.map((value) => value.id), <String>[
+        'old-log',
+      ]);
+      expect(medicationRepository.replaceCalls, 2);
+      expect(doseLogRepository.replaceCalls, 2);
+    },
+  );
 }
 
 BackupSnapshot _snapshot(List<BackupRecord> records) => BackupSnapshot(
-      schemaVersion: BackupSnapshot.currentSchemaVersion,
-      exportedAt: DateTime.utc(2026, 8, 24),
-      records: records,
-    );
+  schemaVersion: BackupSnapshot.currentSchemaVersion,
+  exportedAt: DateTime.utc(2026, 8, 24),
+  records: records,
+);
 
 Medication _medication(String id) => Medication(
-      id: id,
-      name: 'Medication $id',
-      genericName: 'generic',
-      description: 'description',
-      times: const <String>['08:00'],
-      createdAt: DateTime(2026, 8, 24),
-      mode: MedicationMode.forever,
-      dosePlan: MedicationDosePlan.scheduled,
-    );
+  id: id,
+  name: 'Medication $id',
+  genericName: 'generic',
+  description: 'description',
+  times: const <String>['08:00'],
+  createdAt: DateTime(2026, 8, 24),
+  mode: MedicationMode.forever,
+  dosePlan: MedicationDosePlan.scheduled,
+);
 
 DoseLog _doseLog(String id, String medId) => DoseLog(
-      id: id,
-      medId: medId,
-      scheduledAt: DateTime(2026, 8, 24, 8),
-      status: DoseStatus.pending,
-    );
+  id: id,
+  medId: medId,
+  scheduledAt: DateTime(2026, 8, 24, 8),
+  status: DoseStatus.pending,
+);
 
 final class _FakeMedicationRepository implements MedicationRepository {
   _FakeMedicationRepository(
@@ -260,9 +262,8 @@ final class _FakeMedicationRepository implements MedicationRepository {
   int replaceCalls = 0;
 
   @override
-  Result<List<Medication>> readAll() => Success<List<Medication>>(
-        List<Medication>.of(values),
-      );
+  Result<List<Medication>> readAll() =>
+      Success<List<Medication>>(List<Medication>.of(values));
 
   @override
   Future<Result<void>> replaceAll(List<Medication> medications) async {
@@ -297,9 +298,8 @@ final class _FakeDoseLogRepository implements DoseLogRepository {
   int replaceCalls = 0;
 
   @override
-  Result<List<DoseLog>> readAll() => Success<List<DoseLog>>(
-        List<DoseLog>.of(values),
-      );
+  Result<List<DoseLog>> readAll() =>
+      Success<List<DoseLog>>(List<DoseLog>.of(values));
 
   @override
   Future<Result<void>> replaceAll(List<DoseLog> logs) async {

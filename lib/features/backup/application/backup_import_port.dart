@@ -4,7 +4,7 @@ import '../../../core/result/result.dart';
 
 final class BackupImportSelection {
   BackupImportSelection({required this.fileName, required Uint8List bytes})
-      : bytes = Uint8List.fromList(bytes);
+    : bytes = Uint8List.fromList(bytes);
 
   final String fileName;
   final Uint8List bytes;

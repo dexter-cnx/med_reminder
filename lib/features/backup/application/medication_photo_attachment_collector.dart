@@ -15,7 +15,8 @@ final class MedicationPhotoAttachmentCollector {
   final BackupAttachmentSource source;
 
   Future<Result<BackupAttachmentBundle>> collect(
-      BackupSnapshot snapshot) async {
+    BackupSnapshot snapshot,
+  ) async {
     final records = <BackupRecord>[];
     final attachments = <BackupAttachment>[];
 

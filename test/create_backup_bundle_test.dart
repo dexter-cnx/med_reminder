@@ -90,6 +90,5 @@ final class _FakeBundleCodec implements BackupBundleArchiveCodec {
   @override
   Future<Result<BackupAttachmentBundle>> decodeBundle(
     Uint8List archiveBytes,
-  ) async =>
-      throw UnimplementedError();
+  ) async => throw UnimplementedError();
 }

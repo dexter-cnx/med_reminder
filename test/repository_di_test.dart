@@ -147,8 +147,8 @@ void main() {
 class _FailingMedicationRepository implements MedicationRepository {
   @override
   Result<List<Medication>> readAll() => const Failed<List<Medication>>(
-        Failure(code: 'test_read_failed', message: 'boom'),
-      );
+    Failure(code: 'test_read_failed', message: 'boom'),
+  );
 
   @override
   Future<Result<void>> replaceAll(List<Medication> medications) async =>

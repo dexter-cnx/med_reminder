@@ -23,48 +23,57 @@ class BuildDoctorVisitSummary {
     bool inPeriod(DateTime value) =>
         !value.isBefore(periodStart) && !value.isAfter(periodEnd);
 
-    final medicationSummaries = medications.map((medication) {
-      final medicationLogs = doseLogs.where(
-        (log) => log.medId == medication.id && inPeriod(log.scheduledAt),
-      );
-      final medicationRefills = refillEvents.where(
-        (event) =>
-            event.medicationId == medication.id && inPeriod(event.createdAt),
-      );
-      final medicationCheckIns = checkIns
-          .where(
-            (checkIn) =>
-                checkIn.medicationId == medication.id &&
-                inPeriod(checkIn.recordedAt),
-          )
-          .toList(growable: false)
-        ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+    final medicationSummaries =
+        medications
+            .map((medication) {
+              final medicationLogs = doseLogs.where(
+                (log) =>
+                    log.medId == medication.id && inPeriod(log.scheduledAt),
+              );
+              final medicationRefills = refillEvents.where(
+                (event) =>
+                    event.medicationId == medication.id &&
+                    inPeriod(event.createdAt),
+              );
+              final medicationCheckIns =
+                  checkIns
+                      .where(
+                        (checkIn) =>
+                            checkIn.medicationId == medication.id &&
+                            inPeriod(checkIn.recordedAt),
+                      )
+                      .toList(growable: false)
+                    ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
 
-      return DoctorVisitMedicationSummary(
-        medication: medication,
-        takenCount: medicationLogs
-            .where((log) => log.status == DoseStatus.taken)
-            .length,
-        skippedCount: medicationLogs
-            .where((log) => log.status == DoseStatus.skipped)
-            .length,
-        refillQuantity: medicationRefills.fold<int>(
-          0,
-          (total, event) => total + event.quantity,
-        ),
-        checkIns: List<MedicationCheckIn>.unmodifiable(medicationCheckIns),
-      );
-    }).toList(growable: false)
-      ..sort(
-        (a, b) => a.medication.name.toLowerCase().compareTo(
+              return DoctorVisitMedicationSummary(
+                medication: medication,
+                takenCount: medicationLogs
+                    .where((log) => log.status == DoseStatus.taken)
+                    .length,
+                skippedCount: medicationLogs
+                    .where((log) => log.status == DoseStatus.skipped)
+                    .length,
+                refillQuantity: medicationRefills.fold<int>(
+                  0,
+                  (total, event) => total + event.quantity,
+                ),
+                checkIns: List<MedicationCheckIn>.unmodifiable(
+                  medicationCheckIns,
+                ),
+              );
+            })
+            .toList(growable: false)
+          ..sort(
+            (a, b) => a.medication.name.toLowerCase().compareTo(
               b.medication.name.toLowerCase(),
             ),
-      );
+          );
 
-    final upcomingAppointments = appointments
-        .where((appointment) => !appointment.startsAt.isBefore(now))
-        .toList(growable: false)
-      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    final upcomingAppointments =
+        appointments
+            .where((appointment) => !appointment.startsAt.isBefore(now))
+            .toList(growable: false)
+          ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
 
     return DoctorVisitSummary(
       generatedAt: now,

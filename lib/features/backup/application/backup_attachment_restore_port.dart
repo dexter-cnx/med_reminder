@@ -16,9 +16,9 @@ class StagedBackupAttachments {
     required this.stageId,
     required Map<String, StagedBackupAttachmentPath> pathsByArchivePath,
   }) : pathsByArchivePath =
-            Map<String, StagedBackupAttachmentPath>.unmodifiable(
-          pathsByArchivePath,
-        );
+           Map<String, StagedBackupAttachmentPath>.unmodifiable(
+             pathsByArchivePath,
+           );
 
   final String stageId;
   final Map<String, StagedBackupAttachmentPath> pathsByArchivePath;

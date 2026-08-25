@@ -36,38 +36,35 @@ final createBackupBundleProvider = Provider<CreateBackupBundle>(
 );
 
 final backupRestorePortProvider =
-    FutureProvider<FileBackupAttachmentRestorePort>(
-  (ref) async {
-    final documents = await getApplicationDocumentsDirectory();
-    final support = await getApplicationSupportDirectory();
-    return FileBackupAttachmentRestorePort(
-      documentsPath: documents.path,
-      stagingRootPath: p.join(support.path, 'backup_restore_staging'),
-    );
-  },
-);
+    FutureProvider<FileBackupAttachmentRestorePort>((ref) async {
+      final documents = await getApplicationDocumentsDirectory();
+      final support = await getApplicationSupportDirectory();
+      return FileBackupAttachmentRestorePort(
+        documentsPath: documents.path,
+        stagingRootPath: p.join(support.path, 'backup_restore_staging'),
+      );
+    });
 
-final backupRestoreMaintenanceProvider =
-    FutureProvider<Result<int>>((ref) async {
+final backupRestoreMaintenanceProvider = FutureProvider<Result<int>>((
+  ref,
+) async {
   final restorePort = await ref.watch(backupRestorePortProvider.future);
-  return restorePort.cleanupStaleStages(
-    olderThan: const Duration(hours: 24),
-  );
+  return restorePort.cleanupStaleStages(olderThan: const Duration(hours: 24));
 });
 
 final reminderRepairControllerProvider =
     StateNotifierProvider<ReminderRepairController, bool>(
-  (ref) => ReminderRepairController(
-    medicationRepository: ref.watch(medicationRepositoryProvider),
-    doseLogRepository: ref.watch(doseLogRepositoryProvider),
-    reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
-    stockResolver: ref.watch(medicationStockResolverProvider),
-    refreshState: () {
-      ref.invalidate(logsProvider);
-      ref.invalidate(medsProvider);
-    },
-  ),
-);
+      (ref) => ReminderRepairController(
+        medicationRepository: ref.watch(medicationRepositoryProvider),
+        doseLogRepository: ref.watch(doseLogRepositoryProvider),
+        reminderScheduler: ref.watch(medicationReminderSchedulerProvider),
+        stockResolver: ref.watch(medicationStockResolverProvider),
+        refreshState: () {
+          ref.invalidate(logsProvider);
+          ref.invalidate(medsProvider);
+        },
+      ),
+    );
 
 final class ReminderRepairController extends StateNotifier<bool> {
   ReminderRepairController({
@@ -96,16 +93,15 @@ final class ReminderRepairController extends StateNotifier<bool> {
 
     state = true;
     try {
-      final notificationIdsResult =
-          medicationRepository.readAll().fold<Result<List<int>>>(
-                onSuccess: (medications) => Success<List<int>>(
-                  <int>[
-                    for (final medication in medications)
-                      ...medication.notificationIds,
-                  ],
-                ),
-                onFailure: (failure) => Failed<List<int>>(failure),
-              );
+      final notificationIdsResult = medicationRepository
+          .readAll()
+          .fold<Result<List<int>>>(
+            onSuccess: (medications) => Success<List<int>>(<int>[
+              for (final medication in medications)
+                ...medication.notificationIds,
+            ]),
+            onFailure: (failure) => Failed<List<int>>(failure),
+          );
       if (notificationIdsResult case Failed<List<int>>(:final failure)) {
         return Failed<void>(failure);
       }
@@ -127,11 +123,13 @@ final class ReminderRepairController extends StateNotifier<bool> {
   }
 }
 
-final restoreBackupBundleProvider =
-    FutureProvider<RestoreBackupBundle>((ref) async {
+final restoreBackupBundleProvider = FutureProvider<RestoreBackupBundle>((
+  ref,
+) async {
   final dataPort = ref.watch(backupDataPortProvider);
-  final attachmentRestorePort =
-      await ref.watch(backupRestorePortProvider.future);
+  final attachmentRestorePort = await ref.watch(
+    backupRestorePortProvider.future,
+  );
   const codec = ZipBackupBundleArchiveCodec();
 
   return RestoreBackupBundle(
@@ -143,16 +141,15 @@ final restoreBackupBundleProvider =
       dataPort: dataPort,
       attachmentRestorePort: attachmentRestorePort,
     ),
-    captureReminderState: () =>
-        ref.read(medicationRepositoryProvider).readAll().fold(
-              onSuccess: (medications) => Success<List<int>>(
-                <int>[
-                  for (final medication in medications)
-                    ...medication.notificationIds,
-                ],
-              ),
-              onFailure: (failure) => Failed<List<int>>(failure),
-            ),
+    captureReminderState: () => ref
+        .read(medicationRepositoryProvider)
+        .readAll()
+        .fold(
+          onSuccess: (medications) => Success<List<int>>(<int>[
+            for (final medication in medications) ...medication.notificationIds,
+          ]),
+          onFailure: (failure) => Failed<List<int>>(failure),
+        ),
     onSuccess: (previousNotificationIds) async {
       ref.invalidate(logsProvider);
       ref.invalidate(medsProvider);

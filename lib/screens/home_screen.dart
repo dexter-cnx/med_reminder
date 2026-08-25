@@ -39,11 +39,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final body = switch (_tab) {
       0 => DailyTimelineView(
-          items: timeline,
-          onTake: _take,
-          onSkip: _skip,
-          onSnooze: _snooze,
-        ),
+        items: timeline,
+        onTake: _take,
+        onSkip: _skip,
+        onSnooze: _snooze,
+      ),
       1 => _MedicationList(meds: meds),
       2 => const AppointmentScreen(),
       _ => const SettingsScreen(embedded: true),
@@ -75,15 +75,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: body,
       floatingActionButton: switch (_tab) {
         0 || 1 => FloatingActionButton.extended(
-            onPressed: _addMedication,
-            icon: const Icon(Icons.add),
-            label: Text('add_med'.tr()),
-          ),
+          onPressed: _addMedication,
+          icon: const Icon(Icons.add),
+          label: Text('add_med'.tr()),
+        ),
         2 => FloatingActionButton.extended(
-            onPressed: _addAppointment,
-            icon: const Icon(Icons.event_available_outlined),
-            label: Text('appointment_add'.tr()),
-          ),
+          onPressed: _addAppointment,
+          icon: const Icon(Icons.event_available_outlined),
+          label: Text('appointment_add'.tr()),
+        ),
         _ => null,
       },
       bottomNavigationBar: NavigationBar(
@@ -329,15 +329,15 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             ),
             const SizedBox(height: 12),
             ..._times.asMap().entries.map(
-                  (entry) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(entry.value),
-                    trailing: IconButton(
-                      onPressed: () => _editTime(entry.key),
-                      icon: const Icon(Icons.schedule),
-                    ),
-                  ),
+              (entry) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(entry.value),
+                trailing: IconButton(
+                  onPressed: () => _editTime(entry.key),
+                  icon: const Icon(Icons.schedule),
                 ),
+              ),
+            ),
             TextButton.icon(
               onPressed: () => setState(() => _times.add('12:00')),
               icon: const Icon(Icons.add),

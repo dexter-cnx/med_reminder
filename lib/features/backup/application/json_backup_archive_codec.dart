@@ -82,11 +82,7 @@ final class JsonBackupArchiveCodec implements BackupArchiveCodec {
           return _invalidManifest();
         }
         records.add(
-          BackupRecord(
-            namespace: namespace,
-            id: id,
-            payload: payload,
-          ),
+          BackupRecord(namespace: namespace, id: id, payload: payload),
         );
       }
 

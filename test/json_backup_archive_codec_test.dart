@@ -42,8 +42,10 @@ void main() {
         expect(value.records.single.namespace, 'medication');
         expect(value.records.single.id, 'med-1');
         expect(value.records.single.payload['name'], 'Example');
-        expect(
-            value.records.single.payload['times'], <Object?>['08:00', '20:00']);
+        expect(value.records.single.payload['times'], <Object?>[
+          '08:00',
+          '20:00',
+        ]);
       },
       onFailure: (failure) => fail(failure.toString()),
     );

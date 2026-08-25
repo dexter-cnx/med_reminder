@@ -9,10 +9,7 @@ void main() {
   test('record use case persists trimmed factual observation', () async {
     final repository = _MemoryCheckInRepository();
     final recordedAt = DateTime(2026, 8, 23, 16, 30);
-    final useCase = RecordMedicationCheckIn(
-      repository,
-      now: () => recordedAt,
-    );
+    final useCase = RecordMedicationCheckIn(repository, now: () => recordedAt);
 
     final result = await useCase(
       medicationId: 'med-1',

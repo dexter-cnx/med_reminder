@@ -12,15 +12,16 @@ class LocalAppointmentRepository implements AppointmentRepository {
   @override
   Result<List<DoctorAppointment>> readAll() {
     try {
-      final appointments = _dataSource
-          .readAppointmentRecords()
-          .map(
-            (record) => AppointmentRecord(
-              Map<String, dynamic>.from(record),
-            ).toEntity(),
-          )
-          .toList(growable: false)
-        ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      final appointments =
+          _dataSource
+              .readAppointmentRecords()
+              .map(
+                (record) => AppointmentRecord(
+                  Map<String, dynamic>.from(record),
+                ).toEntity(),
+              )
+              .toList(growable: false)
+            ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
       return Success<List<DoctorAppointment>>(appointments);
     } catch (error) {
       return Failed<List<DoctorAppointment>>(

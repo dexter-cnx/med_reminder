@@ -217,8 +217,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           status: _notificationsGranted == null
               ? null
               : (_notificationsGranted!
-                  ? 'onboarding_permission_enabled'.tr()
-                  : 'onboarding_permission_not_enabled'.tr()),
+                    ? 'onboarding_permission_enabled'.tr()
+                    : 'onboarding_permission_not_enabled'.tr()),
         );
       case 2:
         if (widget.showExactAlarmStep) {
@@ -229,8 +229,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             status: _exactAlarmGranted == null
                 ? 'onboarding_precise_optional'.tr()
                 : (_exactAlarmGranted!
-                    ? 'onboarding_permission_enabled'.tr()
-                    : 'onboarding_permission_not_enabled'.tr()),
+                      ? 'onboarding_permission_enabled'.tr()
+                      : 'onboarding_permission_not_enabled'.tr()),
           );
         }
         return _OnboardingPanel(
@@ -272,9 +272,9 @@ class _OnboardingPanel extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             Text(

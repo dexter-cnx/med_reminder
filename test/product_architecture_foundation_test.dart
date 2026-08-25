@@ -89,13 +89,7 @@ void main() {
       ),
     ];
 
-    expect(
-      calculateRemainingStock(
-        medication: medication,
-        doseLogs: logs,
-      ),
-      10,
-    );
+    expect(calculateRemainingStock(medication: medication, doseLogs: logs), 10);
   });
 
   test('daily timeline is an ordered projection of feature read models', () {

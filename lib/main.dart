@@ -67,27 +67,32 @@ class _BootstrapAppState extends State<BootstrapApp> {
   Future<void> _bootstrap() async {
     try {
       _checkpoint('Initializing localization');
-      await EasyLocalization.ensureInitialized()
-          .timeout(const Duration(seconds: 5));
+      await EasyLocalization.ensureInitialized().timeout(
+        const Duration(seconds: 5),
+      );
 
       _checkpoint('Initializing local storage');
       await Hive.initFlutter().timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening medication storage');
-      final medsBox = await Hive.openBox<dynamic>('meds')
-          .timeout(const Duration(seconds: 5));
+      final medsBox = await Hive.openBox<dynamic>(
+        'meds',
+      ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening dose-log storage');
-      final logsBox = await Hive.openBox<dynamic>('logs')
-          .timeout(const Duration(seconds: 5));
+      final logsBox = await Hive.openBox<dynamic>(
+        'logs',
+      ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening refill storage');
-      final refillsBox = await Hive.openBox<dynamic>('refills')
-          .timeout(const Duration(seconds: 5));
+      final refillsBox = await Hive.openBox<dynamic>(
+        'refills',
+      ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening appointment storage');
-      final appointmentsBox = await Hive.openBox<dynamic>('appointments')
-          .timeout(const Duration(seconds: 5));
+      final appointmentsBox = await Hive.openBox<dynamic>(
+        'appointments',
+      ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening medication check-in storage');
       final medicationCheckInsBox = await Hive.openBox<dynamic>(
@@ -100,33 +105,41 @@ class _BootstrapAppState extends State<BootstrapApp> {
       ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Opening app settings');
-      final settingsBox = await Hive.openBox<dynamic>('settings')
-          .timeout(const Duration(seconds: 5));
+      final settingsBox = await Hive.openBox<dynamic>(
+        'settings',
+      ).timeout(const Duration(seconds: 5));
 
       _checkpoint('Loading app themes');
-      final themeCatalog =
-          await AppThemeCatalog.load().timeout(const Duration(seconds: 5));
+      final themeCatalog = await AppThemeCatalog.load().timeout(
+        const Duration(seconds: 5),
+      );
 
       final localDataSource = HiveMedicationLocalDataSource(
         medicationBox: medsBox,
         doseLogBox: logsBox,
       );
       final refillDataSource = HiveRefillLocalDataSource(refillsBox);
-      final appointmentDataSource =
-          HiveAppointmentLocalDataSource(appointmentsBox);
-      final medicationCheckInDataSource =
-          HiveMedicationCheckInLocalDataSource(medicationCheckInsBox);
-      final emergencyProfileDataSource =
-          HiveEmergencyProfileLocalDataSource(emergencyProfileBox);
+      final appointmentDataSource = HiveAppointmentLocalDataSource(
+        appointmentsBox,
+      );
+      final medicationCheckInDataSource = HiveMedicationCheckInLocalDataSource(
+        medicationCheckInsBox,
+      );
+      final emergencyProfileDataSource = HiveEmergencyProfileLocalDataSource(
+        emergencyProfileBox,
+      );
       final medicationRepository = LocalMedicationRepository(localDataSource);
       final doseLogRepository = LocalDoseLogRepository(localDataSource);
       final refillRepository = LocalRefillRepository(refillDataSource);
-      final appointmentRepository =
-          LocalAppointmentRepository(appointmentDataSource);
-      final medicationCheckInRepository =
-          LocalMedicationCheckInRepository(medicationCheckInDataSource);
-      final emergencyProfileRepository =
-          LocalEmergencyProfileRepository(emergencyProfileDataSource);
+      final appointmentRepository = LocalAppointmentRepository(
+        appointmentDataSource,
+      );
+      final medicationCheckInRepository = LocalMedicationCheckInRepository(
+        medicationCheckInDataSource,
+      );
+      final emergencyProfileRepository = LocalEmergencyProfileRepository(
+        emergencyProfileDataSource,
+      );
       const reminderScheduler = LocalMedicationReminderScheduler();
       final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
@@ -134,26 +147,26 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
       int? stockResolver(medication, logs) {
         return refillRepository.readAll().fold(
-              onSuccess: (refills) => calculateRemainingStock(
-                medication: medication,
-                doseLogs: logs,
-                refillEvents: refills,
-              ),
-              onFailure: (_) => null,
-            );
+          onSuccess: (refills) => calculateRemainingStock(
+            medication: medication,
+            doseLogs: logs,
+            refillEvents: refills,
+          ),
+          onFailure: (_) => null,
+        );
       }
 
       _checkpoint('Checking medication photos');
       await medicationRepository.readAll().fold(
-            onSuccess: (medications) => photoStore
-                .pruneOrphaned(
-                  medications
-                      .map((medication) => medication.imagePath)
-                      .whereType<String>(),
-                )
-                .timeout(const Duration(seconds: 5)),
-            onFailure: (_) async => 0,
-          );
+        onSuccess: (medications) => photoStore
+            .pruneOrphaned(
+              medications
+                  .map((medication) => medication.imagePath)
+                  .whereType<String>(),
+            )
+            .timeout(const Duration(seconds: 5)),
+        onFailure: (_) async => 0,
+      );
 
       final onboardingCompleted =
           settingsBox.get(_onboardingCompletedKey) == true;

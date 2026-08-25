@@ -89,9 +89,9 @@ class AppointmentScreen extends ConsumerWidget {
   String _subtitle(BuildContext context, DoctorAppointment appointment) {
     final local = appointment.startsAt.toLocal();
     final date = MaterialLocalizations.of(context).formatMediumDate(local);
-    final time = MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(local),
-    );
+    final time = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(local));
     final location = appointment.location?.trim();
     return <String>[
       '$date · $time',
@@ -104,19 +104,17 @@ Future<void> showAppointmentEditor(
   BuildContext context,
   WidgetRef ref, {
   DoctorAppointment? appointment,
-}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _AppointmentEditor(
-        appointment: appointment,
-        onSave: (draft) =>
-            ref.read(appointmentsProvider.notifier).upsert(draft),
-        failureMessage: () =>
-            ref.read(appointmentFailureProvider)?.message ??
-            'Unable to save appointment.',
-      ),
-    );
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  builder: (_) => _AppointmentEditor(
+    appointment: appointment,
+    onSave: (draft) => ref.read(appointmentsProvider.notifier).upsert(draft),
+    failureMessage: () =>
+        ref.read(appointmentFailureProvider)?.message ??
+        'Unable to save appointment.',
+  ),
+);
 
 class _AppointmentEditor extends StatefulWidget {
   const _AppointmentEditor({
@@ -148,7 +146,8 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
     _title = TextEditingController(text: existing?.title ?? '');
     _location = TextEditingController(text: existing?.location ?? '');
     _note = TextEditingController(text: existing?.note ?? '');
-    _startsAt = existing?.startsAt.toLocal() ??
+    _startsAt =
+        existing?.startsAt.toLocal() ??
         DateTime.now().add(const Duration(hours: 1));
   }
 
@@ -168,9 +167,7 @@ class _AppointmentEditorState extends State<_AppointmentEditor> {
     final localizations = MaterialLocalizations.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
         top: false,
         child: Align(

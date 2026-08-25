@@ -73,9 +73,9 @@ void main() {
   setUpAll(() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(sharedPreferencesChannel, (call) async {
-      if (call.method == 'getAll') return <String, Object>{};
-      return null;
-    });
+          if (call.method == 'getAll') return <String, Object>{};
+          return null;
+        });
     await EasyLocalization.ensureInitialized();
   });
 
@@ -84,45 +84,45 @@ void main() {
         .setMockMethodCallHandler(sharedPreferencesChannel, null);
   });
 
-  testWidgets('Emergency Medical Card is read-only and opens profile settings',
-      (
-    tester,
-  ) async {
-    const profile = EmergencyProfile(
-      displayName: 'Dexter',
-      emergencyContactName: 'Contact',
-      emergencyContactPhone: '0812345678',
-      medicationAllergies: 'None known',
-      medicalNotes: 'Local-only note',
-    );
-    final repository = _MemoryEmergencyProfileRepository(profile);
-    final card = EmergencyMedicalCard(
-      generatedAt: DateTime(2026, 8, 24),
-      profile: profile,
-      currentMedications: const [],
-    );
+  testWidgets(
+    'Emergency Medical Card is read-only and opens profile settings',
+    (tester) async {
+      const profile = EmergencyProfile(
+        displayName: 'Dexter',
+        emergencyContactName: 'Contact',
+        emergencyContactPhone: '0812345678',
+        medicationAllergies: 'None known',
+        medicalNotes: 'Local-only note',
+      );
+      final repository = _MemoryEmergencyProfileRepository(profile);
+      final card = EmergencyMedicalCard(
+        generatedAt: DateTime(2026, 8, 24),
+        profile: profile,
+        currentMedications: const [],
+      );
 
-    await _pumpLocalizedApp(
-      tester,
-      repository: repository,
-      card: card,
-      home: const EmergencyMedicalCardScreen(),
-    );
+      await _pumpLocalizedApp(
+        tester,
+        repository: repository,
+        card: card,
+        home: const EmergencyMedicalCardScreen(),
+      );
 
-    expect(find.byType(TextField), findsNothing);
-    expect(find.text('Dexter'), findsOneWidget);
-    expect(find.text('Contact · 0812345678'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Dexter'), findsOneWidget);
+      expect(find.text('Contact · 0812345678'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.edit_outlined));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(EmergencyProfileSettingsScreen), findsOneWidget);
-    expect(find.byType(TextField), findsNWidgets(5));
+      expect(find.byType(EmergencyProfileSettingsScreen), findsOneWidget);
+      expect(find.byType(TextField), findsNWidgets(5));
 
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.save_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
-  });
+      expect(find.byIcon(Icons.save_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    },
+  );
 }

@@ -3,10 +3,8 @@ import 'dart:typed_data';
 import 'backup_snapshot.dart';
 
 class BackupAttachment {
-  BackupAttachment({
-    required this.archivePath,
-    required Uint8List bytes,
-  }) : _bytes = Uint8List.fromList(bytes);
+  BackupAttachment({required this.archivePath, required Uint8List bytes})
+    : _bytes = Uint8List.fromList(bytes);
 
   final String archivePath;
   final Uint8List _bytes;

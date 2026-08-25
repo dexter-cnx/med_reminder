@@ -57,9 +57,9 @@ void main() {
     expect(await repository.append(earlier), isNotNull);
 
     final ids = repository.readAll().fold(
-          onSuccess: (items) => items.map((item) => item.id).toList(),
-          onFailure: (failure) => <String>['failure:${failure.code}'],
-        );
+      onSuccess: (items) => items.map((item) => item.id).toList(),
+      onFailure: (failure) => <String>['failure:${failure.code}'],
+    );
 
     expect(ids, <String>['earlier', 'later']);
   });
@@ -67,10 +67,7 @@ void main() {
   test('view model replaces an existing check-in with the same id', () async {
     final dataSource = _MemoryCheckInDataSource();
     final repository = LocalMedicationCheckInRepository(dataSource);
-    final viewModel = MedicationCheckInViewModel(
-      repository,
-      onFailure: (_) {},
-    );
+    final viewModel = MedicationCheckInViewModel(repository, onFailure: (_) {});
 
     final first = MedicationCheckIn(
       id: 'same',
@@ -104,10 +101,7 @@ class _MemoryCheckInDataSource implements MedicationCheckInLocalDataSource {
       _records.values.map(Map<dynamic, dynamic>.from).toList(growable: false);
 
   @override
-  Future<void> putCheckInRecord(
-    String id,
-    Map<String, dynamic> record,
-  ) async {
+  Future<void> putCheckInRecord(String id, Map<String, dynamic> record) async {
     _records[id] = Map<String, dynamic>.from(record);
   }
 }

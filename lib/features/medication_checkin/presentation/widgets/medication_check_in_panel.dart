@@ -7,10 +7,7 @@ import '../../domain/entities/medication_check_in.dart';
 import '../providers/medication_check_in_providers.dart';
 
 class MedicationCheckInPanel extends ConsumerStatefulWidget {
-  const MedicationCheckInPanel({
-    required this.medication,
-    super.key,
-  });
+  const MedicationCheckInPanel({required this.medication, super.key});
 
   final Medication medication;
 
@@ -75,8 +72,8 @@ class _MedicationCheckInPanelState
                 onChanged: _saving
                     ? null
                     : (value) => setState(
-                          () => _kind = value ?? MedicationCheckInKind.noIssue,
-                        ),
+                        () => _kind = value ?? MedicationCheckInKind.noIssue,
+                      ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -135,7 +132,9 @@ class _MedicationCheckInPanelState
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final saved = await ref.read(medicationCheckInsProvider.notifier).record(
+    final saved = await ref
+        .read(medicationCheckInsProvider.notifier)
+        .record(
           medicationId: widget.medication.id,
           kind: _kind,
           note: _note.text,
@@ -143,25 +142,25 @@ class _MedicationCheckInPanelState
     if (!mounted) return;
     setState(() => _saving = false);
     if (!saved) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('checkin_save_failed'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('checkin_save_failed'.tr())));
       return;
     }
     _note.clear();
     setState(() => _kind = MedicationCheckInKind.noIssue);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('checkin_saved'.tr())),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('checkin_saved'.tr())));
   }
 
   String _kindLabel(MedicationCheckInKind kind) => switch (kind) {
-        MedicationCheckInKind.noIssue => 'checkin_kind_no_issue'.tr(),
-        MedicationCheckInKind.dizziness => 'checkin_kind_dizziness'.tr(),
-        MedicationCheckInKind.nausea => 'checkin_kind_nausea'.tr(),
-        MedicationCheckInKind.rash => 'checkin_kind_rash'.tr(),
-        MedicationCheckInKind.other => 'checkin_kind_other'.tr(),
-      };
+    MedicationCheckInKind.noIssue => 'checkin_kind_no_issue'.tr(),
+    MedicationCheckInKind.dizziness => 'checkin_kind_dizziness'.tr(),
+    MedicationCheckInKind.nausea => 'checkin_kind_nausea'.tr(),
+    MedicationCheckInKind.rash => 'checkin_kind_rash'.tr(),
+    MedicationCheckInKind.other => 'checkin_kind_other'.tr(),
+  };
 
   String _formatTimestamp(DateTime value) {
     String two(int number) => number.toString().padLeft(2, '0');

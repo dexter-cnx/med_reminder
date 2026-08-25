@@ -200,38 +200,40 @@ void main() {
     );
   });
 
-  test('decode rejects oversized uncompressed entries before materializing',
-      () async {
-    final encoded = await codec.encodeBundle(
-      BackupAttachmentBundle(
-        snapshot: _snapshot(''),
-        attachments: const <BackupAttachment>[],
-      ),
-    );
-    final bytes = Uint8List.fromList(
-      encoded.fold(
-        onSuccess: (value) => value,
-        onFailure: (failure) => fail(failure.toString()),
-      ),
-    );
-    final centralDirectoryOffset = _findCentralDirectoryHeader(bytes);
-    expect(centralDirectoryOffset, greaterThanOrEqualTo(0));
-    ByteData.sublistView(bytes).setUint32(
-      centralDirectoryOffset + 24,
-      ZipBackupBundleArchiveCodec.maxUncompressedEntryBytes + 1,
-      Endian.little,
-    );
+  test(
+    'decode rejects oversized uncompressed entries before materializing',
+    () async {
+      final encoded = await codec.encodeBundle(
+        BackupAttachmentBundle(
+          snapshot: _snapshot(''),
+          attachments: const <BackupAttachment>[],
+        ),
+      );
+      final bytes = Uint8List.fromList(
+        encoded.fold(
+          onSuccess: (value) => value,
+          onFailure: (failure) => fail(failure.toString()),
+        ),
+      );
+      final centralDirectoryOffset = _findCentralDirectoryHeader(bytes);
+      expect(centralDirectoryOffset, greaterThanOrEqualTo(0));
+      ByteData.sublistView(bytes).setUint32(
+        centralDirectoryOffset + 24,
+        ZipBackupBundleArchiveCodec.maxUncompressedEntryBytes + 1,
+        Endian.little,
+      );
 
-    final result = await codec.decodeBundle(bytes);
+      final result = await codec.decodeBundle(bytes);
 
-    expect(result.isFailure, isTrue);
-    result.fold(
-      onSuccess: (_) => fail('Expected ZIP expansion limit failure.'),
-      onFailure: (failure) {
-        expect(failure.code, 'backup_zip_expansion_limit_exceeded');
-      },
-    );
-  });
+      expect(result.isFailure, isTrue);
+      result.fold(
+        onSuccess: (_) => fail('Expected ZIP expansion limit failure.'),
+        onFailure: (failure) {
+          expect(failure.code, 'backup_zip_expansion_limit_exceeded');
+        },
+      );
+    },
+  );
 }
 
 int _findCentralDirectoryHeader(Uint8List bytes) {
@@ -247,17 +249,17 @@ int _findCentralDirectoryHeader(Uint8List bytes) {
 }
 
 BackupSnapshot _snapshot(String? imagePath) => BackupSnapshot(
-      schemaVersion: BackupSnapshot.currentSchemaVersion,
-      exportedAt: DateTime.utc(2026, 8, 24),
-      records: <BackupRecord>[
-        BackupRecord(
-          namespace: 'medication',
-          id: 'med-1',
-          payload: <String, Object?>{
-            'version': 1,
-            'id': 'med-1',
-            'imagePath': imagePath,
-          },
-        ),
-      ],
-    );
+  schemaVersion: BackupSnapshot.currentSchemaVersion,
+  exportedAt: DateTime.utc(2026, 8, 24),
+  records: <BackupRecord>[
+    BackupRecord(
+      namespace: 'medication',
+      id: 'med-1',
+      payload: <String, Object?>{
+        'version': 1,
+        'id': 'med-1',
+        'imagePath': imagePath,
+      },
+    ),
+  ],
+);

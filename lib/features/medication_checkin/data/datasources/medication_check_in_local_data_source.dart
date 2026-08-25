@@ -17,9 +17,6 @@ class HiveMedicationCheckInLocalDataSource
       .toList(growable: false);
 
   @override
-  Future<void> putCheckInRecord(
-    String id,
-    Map<String, dynamic> record,
-  ) =>
+  Future<void> putCheckInRecord(String id, Map<String, dynamic> record) =>
       _box.put(id, record);
 }

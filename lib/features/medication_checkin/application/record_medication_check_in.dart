@@ -9,8 +9,8 @@ class RecordMedicationCheckIn {
     this._repository, {
     Uuid uuid = const Uuid(),
     DateTime Function()? now,
-  })  : _uuid = uuid,
-        _now = now ?? DateTime.now;
+  }) : _uuid = uuid,
+       _now = now ?? DateTime.now;
 
   final MedicationCheckInRepository _repository;
   final Uuid _uuid;

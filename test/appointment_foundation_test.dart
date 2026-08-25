@@ -26,9 +26,9 @@ void main() {
     expect(await repository.upsert(earlier), isNotNull);
 
     final appointments = repository.readAll().fold(
-          onSuccess: (items) => items,
-          onFailure: (failure) => throw StateError(failure.message),
-        );
+      onSuccess: (items) => items,
+      onFailure: (failure) => throw StateError(failure.message),
+    );
 
     expect(appointments.map((item) => item.id), <String>['earlier', 'later']);
     expect(appointments.first.location, 'Clinic A');

@@ -90,10 +90,7 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       }
 
       return Success<Uint8List>(
-        ZipEncoder().encodeBytes(
-          archive,
-          modified: _deterministicModifiedAt,
-        ),
+        ZipEncoder().encodeBytes(archive, modified: _deterministicModifiedAt),
       );
     } on Object {
       return const Failed<Uint8List>(
@@ -216,8 +213,10 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       if (bytes.length < 22) return _invalidZip();
       final data = ByteData.sublistView(bytes);
       final searchStart = bytes.length - 22;
-      final searchEnd =
-          (bytes.length - 22 - _maxZipCommentLength).clamp(0, bytes.length);
+      final searchEnd = (bytes.length - 22 - _maxZipCommentLength).clamp(
+        0,
+        bytes.length,
+      );
 
       var eocdOffset = -1;
       for (var offset = searchStart; offset >= searchEnd; offset--) {
@@ -232,14 +231,20 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
       }
 
       final diskNumber = data.getUint16(eocdOffset + 4, Endian.little);
-      final centralDirectoryDisk =
-          data.getUint16(eocdOffset + 6, Endian.little);
+      final centralDirectoryDisk = data.getUint16(
+        eocdOffset + 6,
+        Endian.little,
+      );
       final entriesOnDisk = data.getUint16(eocdOffset + 8, Endian.little);
       final totalEntries = data.getUint16(eocdOffset + 10, Endian.little);
-      final centralDirectorySize =
-          data.getUint32(eocdOffset + 12, Endian.little);
-      final centralDirectoryOffset =
-          data.getUint32(eocdOffset + 16, Endian.little);
+      final centralDirectorySize = data.getUint32(
+        eocdOffset + 12,
+        Endian.little,
+      );
+      final centralDirectoryOffset = data.getUint32(
+        eocdOffset + 16,
+        Endian.little,
+      );
       final commentLength = data.getUint16(eocdOffset + 20, Endian.little);
 
       if (eocdOffset + 22 + commentLength != bytes.length ||
@@ -309,18 +314,18 @@ final class ZipBackupBundleArchiveCodec implements BackupBundleArchiveCodec {
   }
 
   static Failed<void> _invalidZip() => const Failed<void>(
-        Failure(
-          code: 'backup_zip_invalid',
-          message: 'Backup ZIP is invalid or corrupt.',
-        ),
-      );
+    Failure(
+      code: 'backup_zip_invalid',
+      message: 'Backup ZIP is invalid or corrupt.',
+    ),
+  );
 
   static Failed<void> _unsafeZip() => const Failed<void>(
-        Failure(
-          code: 'backup_zip_expansion_limit_exceeded',
-          message: 'Backup ZIP exceeds safe expansion limits.',
-        ),
-      );
+    Failure(
+      code: 'backup_zip_expansion_limit_exceeded',
+      message: 'Backup ZIP exceeds safe expansion limits.',
+    ),
+  );
 
   static Result<Set<String>> _referencedAttachmentPaths(
     BackupSnapshot snapshot,
