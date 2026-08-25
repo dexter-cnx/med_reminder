@@ -8,6 +8,7 @@ import '../../application/backup_import_port.dart';
 import '../../application/medication_backup_data_port.dart';
 import '../../application/restore_backup_bundle.dart';
 import '../../application/zip_backup_bundle_archive_codec.dart';
+import '../../domain/entities/backup_attachment.dart';
 import '../../infrastructure/file_picker_backup_import_port.dart';
 import 'backup_restore_providers.dart';
 
@@ -80,13 +81,13 @@ final class BackupImportController extends StateNotifier<BackupImportState> {
       }
 
       final decoded = await codec.decodeBundle(selection.bytes);
-      if (decoded case Failed(:final failure)) {
+      if (decoded case Failed<BackupAttachmentBundle>(:final failure)) {
         _selection = null;
         state = const BackupImportState();
         return Failed<BackupImportPreview?>(failure);
       }
 
-      final bundle = (decoded as Success).value;
+      final bundle = (decoded as Success<BackupAttachmentBundle>).value;
       final preview = BackupImportPreview(
         fileName: selection.fileName,
         exportedAt: bundle.snapshot.exportedAt,
