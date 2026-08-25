@@ -39,6 +39,30 @@ final backupRestoreMaintenanceProvider =
   );
 });
 
+Future<Result<void>> repairMedicationReminders(WidgetRef ref) async {
+  final medicationsResult = ref.read(medicationRepositoryProvider).readAll();
+  if (medicationsResult case Failed(:final failure)) {
+    return Failed<void>(failure);
+  }
+
+  final previousNotificationIds = <int>[
+    for (final medication
+        in (medicationsResult as Success).value)
+      ...medication.notificationIds,
+  ];
+
+  final result = await RebuildRestoredReminders(
+    medicationRepository: ref.read(medicationRepositoryProvider),
+    doseLogRepository: ref.read(doseLogRepositoryProvider),
+    reminderScheduler: ref.read(medicationReminderSchedulerProvider),
+    stockResolver: ref.read(medicationStockResolverProvider),
+  )(previousNotificationIds: previousNotificationIds);
+
+  ref.invalidate(logsProvider);
+  ref.invalidate(medsProvider);
+  return result;
+}
+
 final restoreBackupBundleProvider =
     FutureProvider<RestoreBackupBundle>((ref) async {
   final dataPort = ref.watch(backupDataPortProvider);
