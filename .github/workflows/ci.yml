@@ -62,16 +62,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Cache Pub and build artifacts
+      - name: Cache Pub packages
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-            build
-          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock', 'pubspec.yaml', '.github/workflows/ci.yml') }}
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-pub-${{ hashFiles('pubspec.lock', 'pubspec.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-
+            ${{ runner.os }}-flutter-pub-
 
       - run: flutter pub get
       - run: make l10n-check
