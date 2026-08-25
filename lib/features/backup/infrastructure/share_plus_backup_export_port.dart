@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,7 @@ final class SharePlusBackupExportPort implements BackupExportPort {
   Future<Result<void>> shareArchive(
     Uint8List archiveBytes, {
     required String fileName,
+    BackupShareAnchor? anchor,
   }) async {
     File? temporaryFile;
     try {
@@ -29,6 +31,14 @@ final class SharePlusBackupExportPort implements BackupExportPort {
       await Share.shareXFiles(
         <XFile>[XFile(temporaryFile.path, mimeType: 'application/zip')],
         subject: 'Besyu backup',
+        sharePositionOrigin: anchor == null
+            ? null
+            : Rect.fromLTWH(
+                anchor.left,
+                anchor.top,
+                anchor.width,
+                anchor.height,
+              ),
       );
       return const Success<void>(null);
     } on Object {
