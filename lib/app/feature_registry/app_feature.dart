@@ -9,6 +9,8 @@ enum AppCapability {
   healthData,
 }
 
+enum AppNavigationSlot { today, medications, appointments }
+
 final class FeatureManifest {
   FeatureManifest({
     required this.id,
@@ -16,13 +18,16 @@ final class FeatureManifest {
     required this.displayNameKey,
     this.enabledByDefault = true,
     Iterable<AppCapability> capabilities = const <AppCapability>{},
-  }) : capabilities = Set<AppCapability>.unmodifiable(capabilities);
+    Iterable<AppNavigationSlot> navigationSlots = const <AppNavigationSlot>{},
+  }) : capabilities = Set<AppCapability>.unmodifiable(capabilities),
+       navigationSlots = Set<AppNavigationSlot>.unmodifiable(navigationSlots);
 
   final String id;
   final String version;
   final String displayNameKey;
   final bool enabledByDefault;
   final Set<AppCapability> capabilities;
+  final Set<AppNavigationSlot> navigationSlots;
 }
 
 abstract interface class AppFeature {
