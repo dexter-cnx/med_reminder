@@ -21,10 +21,10 @@ Current stable feature IDs and defaults:
 ```text
 medication    enabled by default    notifications, camera
 appointments  enabled by default    calendar
-emergency     enabled by default    no platform capability declared yet
+emergency     enabled by default    phone/SMS
 ```
 
-All three remain enabled by default so introducing the registry does not change current UX. Capability declarations describe feature ownership only; they must not cause startup permission prompts. Emergency intentionally declares no contacts/phone capability until the shipped runtime actually uses such an integration.
+All three remain enabled by default so introducing the registry does not change current UX. Capability declarations describe feature ownership only; they must not cause startup permission prompts. Emergency declares `phoneSms` because the shipped SOS flow already launches phone calls and SMS; this remains distinct from contacts access.
 
 ## Persisted enablement
 
