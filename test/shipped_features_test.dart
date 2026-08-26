@@ -58,4 +58,18 @@ void main() {
     });
     expect(byId['emergency']!.manifest.navigationSlots, isEmpty);
   });
+
+  test('declares emergency app-shell actions semantically', () {
+    final byId = <String, AppFeature>{
+      for (final feature in buildShippedFeatures())
+        feature.manifest.id: feature,
+    };
+
+    expect(byId['medication']!.manifest.shellActions, isEmpty);
+    expect(byId['appointments']!.manifest.shellActions, isEmpty);
+    expect(byId['emergency']!.manifest.shellActions, <AppShellAction>{
+      AppShellAction.emergencySos,
+      AppShellAction.emergencyMedicalCard,
+    });
+  });
 }

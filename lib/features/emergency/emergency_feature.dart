@@ -9,5 +9,9 @@ final class EmergencyFeature implements AppFeature {
     version: '1',
     displayNameKey: 'emergency_profile_title',
     capabilities: const <AppCapability>{AppCapability.phoneSms},
+    shellActions: const <AppShellAction>{
+      AppShellAction.emergencySos,
+      AppShellAction.emergencyMedicalCard,
+    },
   );
 }

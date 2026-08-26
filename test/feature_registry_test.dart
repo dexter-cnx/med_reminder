@@ -49,6 +49,35 @@ void main() {
     });
   });
 
+  test('projects shell actions from enabled features only', () async {
+    final store = _MemoryEnablementStore();
+    final registry = FeatureRegistry(
+      features: <AppFeature>[
+        _Feature(
+          FeatureManifest(
+            id: 'emergency',
+            version: '1',
+            displayNameKey: 'feature_emergency',
+            shellActions: <AppShellAction>{
+              AppShellAction.emergencySos,
+              AppShellAction.emergencyMedicalCard,
+            },
+          ),
+        ),
+      ],
+      enablementStore: store,
+    );
+
+    expect(registry.enabledShellActions, <AppShellAction>{
+      AppShellAction.emergencySos,
+      AppShellAction.emergencyMedicalCard,
+    });
+
+    await registry.setEnabled('emergency', false);
+
+    expect(registry.enabledShellActions, isEmpty);
+  });
+
   test('persisted enablement overrides manifest defaults', () async {
     final store = _MemoryEnablementStore();
     final registry = FeatureRegistry(
