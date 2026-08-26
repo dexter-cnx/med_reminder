@@ -86,25 +86,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('app_title'.tr()),
-        actions: [
-          TextButton.icon(
-            onPressed: () => showSosActionSheet(context),
-            icon: const Icon(Icons.health_and_safety_outlined),
-            label: const Text('SOS'),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-          ),
-          IconButton(
-            tooltip: 'emergency_card_title'.tr(),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const EmergencyMedicalCardScreen(),
-              ),
-            ),
-            icon: const Icon(Icons.medical_information_outlined),
-          ),
-        ],
+        actions: registry.enabledShellActions
+            .map((action) => _shellAction(context, action))
+            .toList(),
       ),
       body: body,
       floatingActionButton: switch (selectedSection) {
@@ -131,6 +115,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           : null,
     );
   }
+
+  Widget _shellAction(BuildContext context, AppShellAction action) =>
+      switch (action) {
+        AppShellAction.emergencySos => TextButton.icon(
+          onPressed: () => showSosActionSheet(context),
+          icon: const Icon(Icons.health_and_safety_outlined),
+          label: const Text('SOS'),
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+        ),
+        AppShellAction.emergencyMedicalCard => IconButton(
+          tooltip: 'emergency_card_title'.tr(),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const EmergencyMedicalCardScreen(),
+            ),
+          ),
+          icon: const Icon(Icons.medical_information_outlined),
+        ),
+      };
 
   _HomeSection _sectionForSlot(AppNavigationSlot slot) => switch (slot) {
     AppNavigationSlot.today => _HomeSection.today,
