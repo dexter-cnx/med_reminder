@@ -15,6 +15,7 @@ Besyu now has the first executable boundary for the compile-time Feature Plugin 
 - `featureEnablementStoreProvider` — app-DI boundary for the persistence adapter.
 - `featureRegistryProvider` — reactive Riverpod state for the shipped registry.
 - `FeatureRegistryController` — the write path for enablement changes; successful writes publish a fresh registry state so watched navigation/capability consumers recompute immediately.
+- `HomeScreen` — consumes `enabledNavigationSlots` reactively, maps semantic slots to the current Flutter destinations, and keeps Settings as a core app destination.
 
 The app bootstrap injects `HiveFeatureEnablementStore(settingsBox)` into the provider scope. The registry itself remains unaware of Hive and reads the compile-time shipped catalog through `buildShippedFeatures()`.
 
@@ -36,6 +37,8 @@ All three remain enabled by default so introducing the registry does not change 
 
 Navigation slots are semantic shell contributions, not Flutter widgets. Feature manifests must not import `MaterialPageRoute`, `NavigationDestination`, screens, or other presentation types. The app shell owns the mapping from a slot such as `AppNavigationSlot.appointments` to the current presentation implementation.
 
+`HomeScreen` stores the selected semantic section rather than a raw numeric tab index. If reactive enablement removes the currently selected feature destination, the shell falls back to the first remaining destination and keeps `NavigationBar.selectedIndex` in range. Settings remains available even when all feature navigation slots are disabled.
+
 ## Persisted enablement
 
 Feature registration and enablement are separate:
@@ -52,6 +55,8 @@ manifest default + persisted user preference
 effective enabled feature set
     ↓
 effective capabilities + navigation slots
+    ↓
+reactive app-shell composition
 ```
 
 Persisted overrides use stable keys:
@@ -72,9 +77,8 @@ The app shell may depend on the Riverpod providers and registry contracts; featu
 
 ## Next slices
 
-1. Consume `enabledNavigationSlots` in `HomeScreen`, replacing hard-coded feature tab indexes with semantic destinations while keeping Settings as a core app destination.
-2. Move Emergency app-bar actions to a separate shell contribution after bottom-navigation composition is stable.
-3. Migrate onboarding/settings composition incrementally; do not rewrite routing atomically.
-4. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
-5. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
-6. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
+1. Move Emergency app-bar actions to a separate shell contribution after bottom-navigation composition is stable.
+2. Migrate onboarding/settings composition incrementally; do not rewrite routing atomically.
+3. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
+4. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
+5. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.

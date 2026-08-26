@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../app/feature_registry/app_feature.dart';
+import '../app/feature_registry/feature_registry_providers.dart';
 import '../features/appointment/presentation/screens/appointment_screen.dart';
 import '../features/emergency/presentation/screens/emergency_medical_card_screen.dart';
 import '../features/emergency/presentation/widgets/sos_action_sheet.dart';
@@ -24,6 +26,8 @@ import '../services/watch_sync_service.dart';
 import 'settings_screen.dart';
 import 'widgets/daily_timeline_view.dart';
 
+enum _HomeSection { today, medications, appointments, settings }
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -32,7 +36,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  var _tab = 0;
+  var _section = _HomeSection.today;
 
   @override
   void initState() {
@@ -55,19 +59,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final registry = ref.watch(featureRegistryProvider);
+    final sections = <_HomeSection>[
+      ...registry.enabledNavigationSlots.map(_sectionForSlot),
+      _HomeSection.settings,
+    ];
+    final selectedSection = sections.contains(_section)
+        ? _section
+        : sections.first;
+    final selectedIndex = sections.indexOf(selectedSection);
     final timeline = ref.watch(dailyTimelineProvider);
     final meds = ref.watch(medsProvider);
 
-    final body = switch (_tab) {
-      0 => DailyTimelineView(
+    final body = switch (selectedSection) {
+      _HomeSection.today => DailyTimelineView(
         items: timeline,
         onTake: _take,
         onSkip: _skip,
         onSnooze: _snooze,
       ),
-      1 => _MedicationList(meds: meds),
-      2 => const AppointmentScreen(),
-      _ => const SettingsScreen(embedded: true),
+      _HomeSection.medications => _MedicationList(meds: meds),
+      _HomeSection.appointments => const AppointmentScreen(),
+      _HomeSection.settings => const SettingsScreen(embedded: true),
     };
 
     return Scaffold(
@@ -94,47 +107,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: body,
-      floatingActionButton: switch (_tab) {
-        0 || 1 => FloatingActionButton.extended(
+      floatingActionButton: switch (selectedSection) {
+        _HomeSection.today ||
+        _HomeSection.medications => FloatingActionButton.extended(
           onPressed: _addMedication,
           icon: const Icon(Icons.add),
           label: Text('add_med'.tr()),
         ),
-        2 => FloatingActionButton.extended(
+        _HomeSection.appointments => FloatingActionButton.extended(
           onPressed: _addAppointment,
           icon: const Icon(Icons.event_available_outlined),
           label: Text('appointment_add'.tr()),
         ),
-        _ => null,
+        _HomeSection.settings => null,
       },
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (value) => setState(() => _tab = value),
-        destinations: <NavigationDestination>[
-          NavigationDestination(
-            icon: const Icon(Icons.today_outlined),
-            selectedIcon: const Icon(Icons.today),
-            label: 'today'.tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.medication_outlined),
-            selectedIcon: const Icon(Icons.medication),
-            label: 'all_meds'.tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.event_outlined),
-            selectedIcon: const Icon(Icons.event),
-            label: 'appointments'.tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: 'settings_title'.tr(),
-          ),
-        ],
-      ),
+      bottomNavigationBar: sections.length >= 2
+          ? NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) =>
+                  setState(() => _section = sections[value]),
+              destinations: sections.map(_destinationForSection).toList(),
+            )
+          : null,
     );
   }
+
+  _HomeSection _sectionForSlot(AppNavigationSlot slot) => switch (slot) {
+    AppNavigationSlot.today => _HomeSection.today,
+    AppNavigationSlot.medications => _HomeSection.medications,
+    AppNavigationSlot.appointments => _HomeSection.appointments,
+  };
+
+  NavigationDestination _destinationForSection(_HomeSection section) =>
+      switch (section) {
+        _HomeSection.today => NavigationDestination(
+          icon: const Icon(Icons.today_outlined),
+          selectedIcon: const Icon(Icons.today),
+          label: 'today'.tr(),
+        ),
+        _HomeSection.medications => NavigationDestination(
+          icon: const Icon(Icons.medication_outlined),
+          selectedIcon: const Icon(Icons.medication),
+          label: 'all_meds'.tr(),
+        ),
+        _HomeSection.appointments => NavigationDestination(
+          icon: const Icon(Icons.event_outlined),
+          selectedIcon: const Icon(Icons.event),
+          label: 'appointments'.tr(),
+        ),
+        _HomeSection.settings => NavigationDestination(
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: 'settings_title'.tr(),
+        ),
+      };
 
   Future<void> _take(ScheduledDose dose) async {
     await ref
