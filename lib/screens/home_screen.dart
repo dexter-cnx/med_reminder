@@ -121,12 +121,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         _HomeSection.settings => null,
       },
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (value) =>
-            setState(() => _section = sections[value]),
-        destinations: sections.map(_destinationForSection).toList(),
-      ),
+      bottomNavigationBar: sections.length >= 2
+          ? NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) =>
+                  setState(() => _section = sections[value]),
+              destinations: sections.map(_destinationForSection).toList(),
+            )
+          : null,
     );
   }
 
