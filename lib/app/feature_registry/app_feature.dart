@@ -11,6 +11,8 @@ enum AppCapability {
 
 enum AppNavigationSlot { today, medications, appointments }
 
+enum AppShellAction { emergencySos, emergencyMedicalCard }
+
 final class FeatureManifest {
   FeatureManifest({
     required this.id,
@@ -19,8 +21,10 @@ final class FeatureManifest {
     this.enabledByDefault = true,
     Iterable<AppCapability> capabilities = const <AppCapability>{},
     Iterable<AppNavigationSlot> navigationSlots = const <AppNavigationSlot>{},
+    Iterable<AppShellAction> shellActions = const <AppShellAction>{},
   }) : capabilities = Set<AppCapability>.unmodifiable(capabilities),
-       navigationSlots = Set<AppNavigationSlot>.unmodifiable(navigationSlots);
+       navigationSlots = Set<AppNavigationSlot>.unmodifiable(navigationSlots),
+       shellActions = Set<AppShellAction>.unmodifiable(shellActions);
 
   final String id;
   final String version;
@@ -28,6 +32,7 @@ final class FeatureManifest {
   final bool enabledByDefault;
   final Set<AppCapability> capabilities;
   final Set<AppNavigationSlot> navigationSlots;
+  final Set<AppShellAction> shellActions;
 }
 
 abstract interface class AppFeature {
