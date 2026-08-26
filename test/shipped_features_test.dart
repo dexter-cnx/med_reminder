@@ -45,7 +45,8 @@ void main() {
 
   test('declares navigation slots without importing presentation widgets', () {
     final byId = <String, AppFeature>{
-      for (final feature in buildShippedFeatures()) feature.manifest.id: feature,
+      for (final feature in buildShippedFeatures())
+        feature.manifest.id: feature,
     };
 
     expect(byId['medication']!.manifest.navigationSlots, <AppNavigationSlot>{
