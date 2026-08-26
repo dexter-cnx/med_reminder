@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_reminder_offline/app/feature_registry/app_feature.dart';
+import 'package:med_reminder_offline/app/feature_registry/feature_registry.dart';
 import 'package:med_reminder_offline/app/feature_registry/feature_registry_providers.dart';
 
 void main() {
