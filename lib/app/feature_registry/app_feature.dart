@@ -3,6 +3,7 @@ enum AppCapability {
   notifications,
   calendar,
   contacts,
+  phoneSms,
   location,
   localAi,
   healthData,
