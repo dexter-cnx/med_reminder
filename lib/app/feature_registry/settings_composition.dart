@@ -9,7 +9,9 @@ final settingsCompositionProvider = Provider<SettingsComposition>((ref) {
     showMedicationPermissions: sections.contains(
       AppSettingsSection.medicationPermissions,
     ),
-    showEmergencyProfile: sections.contains(AppSettingsSection.emergencyProfile),
+    showEmergencyProfile: sections.contains(
+      AppSettingsSection.emergencyProfile,
+    ),
   );
 });
 
