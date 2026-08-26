@@ -9,13 +9,13 @@ enum AppCapability {
 }
 
 final class FeatureManifest {
-  const FeatureManifest({
+  FeatureManifest({
     required this.id,
     required this.version,
     required this.displayNameKey,
     this.enabledByDefault = true,
-    this.capabilities = const <AppCapability>{},
-  });
+    Iterable<AppCapability> capabilities = const <AppCapability>{},
+  }) : capabilities = Set<AppCapability>.unmodifiable(capabilities);
 
   final String id;
   final String version;
