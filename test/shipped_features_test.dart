@@ -37,7 +37,9 @@ void main() {
       expect(byId['appointments']!.manifest.capabilities, <AppCapability>{
         AppCapability.calendar,
       });
-      expect(byId['emergency']!.manifest.capabilities, isEmpty);
+      expect(byId['emergency']!.manifest.capabilities, <AppCapability>{
+        AppCapability.phoneSms,
+      });
     },
   );
 }
