@@ -108,12 +108,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: body,
       floatingActionButton: switch (selectedSection) {
-        _HomeSection.today || _HomeSection.medications =>
-          FloatingActionButton.extended(
-            onPressed: _addMedication,
-            icon: const Icon(Icons.add),
-            label: Text('add_med'.tr()),
-          ),
+        _HomeSection.today ||
+        _HomeSection.medications => FloatingActionButton.extended(
+          onPressed: _addMedication,
+          icon: const Icon(Icons.add),
+          label: Text('add_med'.tr()),
+        ),
         _HomeSection.appointments => FloatingActionButton.extended(
           onPressed: _addAppointment,
           icon: const Icon(Icons.event_available_outlined),
