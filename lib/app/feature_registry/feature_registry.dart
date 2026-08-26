@@ -68,9 +68,10 @@ final class FeatureRegistry {
         enabledFeatures.expand((feature) => feature.manifest.navigationSlots),
       );
 
-  Set<AppShellAction> get enabledShellActions => Set<AppShellAction>.unmodifiable(
-    enabledFeatures.expand((feature) => feature.manifest.shellActions),
-  );
+  Set<AppShellAction> get enabledShellActions =>
+      Set<AppShellAction>.unmodifiable(
+        enabledFeatures.expand((feature) => feature.manifest.shellActions),
+      );
 
   Future<void> setEnabled(String featureId, bool enabled) async {
     if (featureById(featureId) == null) {
