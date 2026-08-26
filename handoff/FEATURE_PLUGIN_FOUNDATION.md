@@ -7,10 +7,11 @@ Besyu now has the first executable boundary for the compile-time Feature Plugin 
 - `AppCapability` — domain-neutral platform/runtime capabilities a feature may declare.
 - `AppNavigationSlot` — domain-neutral app-shell navigation surfaces a feature may contribute without importing presentation widgets.
 - `AppShellAction` — domain-neutral app-shell actions contributed by features without importing Flutter widgets or routes.
-- `FeatureManifest` — stable feature identity, version, localization key, default enablement, capabilities, navigation contributions, and shell actions.
+- `AppSettingsSection` — domain-neutral settings surfaces contributed by features without coupling manifests to `SettingsScreen` widgets.
+- `FeatureManifest` — stable feature identity, version, localization key, default enablement, capabilities, navigation contributions, shell actions, and settings contributions.
 - `AppFeature` — minimal compile-time feature contract.
 - `FeatureEnablementStore` — application boundary for persisted per-feature enablement.
-- `FeatureRegistry` — immutable registered feature catalog plus effective enabled-feature/capability/navigation/shell-action projection.
+- `FeatureRegistry` — immutable registered feature catalog plus effective enabled-feature/capability/navigation/shell-action/settings projection.
 - `HiveFeatureEnablementStore` — concrete adapter backed by the existing local `settings` Hive box.
 - `buildShippedFeatures()` — compile-time catalog for shipped Medication, Appointments, and Emergency features.
 - `featureEnablementStoreProvider` — app-DI boundary for the persistence adapter.
@@ -22,25 +23,27 @@ The app bootstrap injects `HiveFeatureEnablementStore(settingsBox)` into the pro
 
 Feature enablement writes should go through `featureRegistryProvider.notifier` rather than mutating a watched registry instance directly. The controller persists the new preference and then publishes a fresh `FeatureRegistry`, making `ref.watch(featureRegistryProvider)` reactive to enablement changes.
 
-The registry rejects blank, non-canonical, and duplicate feature IDs. Stable IDs are user-preference keys and must not be casually renamed after shipping. Manifest capability, navigation, and shell-action sets are defensively frozen so the registered catalog cannot mutate behind the registry.
+The registry rejects blank, non-canonical, and duplicate feature IDs. Stable IDs are user-preference keys and must not be casually renamed after shipping. Manifest capability, navigation, shell-action, and settings-section sets are defensively frozen so the registered catalog cannot mutate behind the registry.
 
 ## Shipped manifests
 
 Current stable feature IDs and defaults:
 
 ```text
-medication    enabled by default    notifications, camera    today, medications    no shell action
-appointments  enabled by default    calendar                 appointments          no shell action
-emergency     enabled by default    phone/SMS                no bottom-nav slot    SOS, medical card
+medication    enabled by default    notifications, camera    today, medications    no shell action    medication permissions
+appointments  enabled by default    calendar                 appointments          no shell action    no settings section
+emergency     enabled by default    phone/SMS                no bottom-nav slot    SOS, medical card  emergency profile
 ```
 
 All three remain enabled by default so introducing the registry does not change current UX. Capability declarations describe feature ownership only; they must not cause startup permission prompts. Emergency declares `phoneSms` because the shipped SOS flow already launches phone calls and SMS; this remains distinct from contacts access.
 
-Navigation slots and shell actions are semantic contributions, not Flutter widgets. Feature manifests must not import `MaterialPageRoute`, `NavigationDestination`, screens, or other presentation types. The app shell owns the mapping from semantic values such as `AppNavigationSlot.appointments` and `AppShellAction.emergencySos` to the current presentation implementation.
+Navigation slots, shell actions, and settings sections are semantic contributions, not Flutter widgets. Feature manifests must not import `MaterialPageRoute`, `NavigationDestination`, screens, or other presentation types. The app shell owns the mapping from semantic values such as `AppNavigationSlot.appointments`, `AppShellAction.emergencySos`, and `AppSettingsSection.emergencyProfile` to the current presentation implementation.
 
 `HomeScreen` stores the selected semantic section rather than a raw numeric tab index. If reactive enablement removes the currently selected feature destination, the shell falls back to the first remaining destination and keeps `NavigationBar.selectedIndex` in range. When fewer than two destinations remain, the bottom navigation bar is omitted. Settings therefore remains usable even when all feature navigation slots are disabled.
 
 Emergency app-bar actions now come from `enabledShellActions`. Disabling Emergency removes both SOS and the emergency medical-card shortcut reactively; re-enabling it restores them. This shell composition does not request permissions or initialize feature-specific runtime services.
+
+Settings composition now has a semantic contract ready for incremental consumption. Medication owns the medication permission/reminder settings surface and Emergency owns the emergency profile surface. The current PR only establishes the contract/projection; `SettingsScreen` consumption remains a separate focused slice so a large settings widget refactor is not mixed with manifest schema changes.
 
 ## Persisted enablement
 
@@ -57,9 +60,9 @@ manifest default + persisted user preference
     ↓
 effective enabled feature set
     ↓
-effective capabilities + navigation slots + shell actions
+effective capabilities + navigation slots + shell actions + settings sections
     ↓
-reactive app-shell composition
+reactive app-shell/settings composition
 ```
 
 Persisted overrides use stable keys:
@@ -76,11 +79,12 @@ Disabling a feature is not data deletion. Future feature-specific lifecycle/boot
 
 The contracts and registry remain pure Dart. Hive is isolated in the concrete enablement-store adapter; screens and feature implementations must not read feature enablement keys directly.
 
-The app shell may depend on the Riverpod providers and registry contracts; feature implementations should not make the registry depend on their internal repositories or presentation state.
+The app shell and Settings may depend on the Riverpod providers and registry contracts; feature implementations should not make the registry depend on their internal repositories or presentation state.
 
 ## Next slices
 
-1. Migrate onboarding/settings composition incrementally; do not rewrite routing atomically.
-2. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
-3. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
-4. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
+1. Consume `enabledSettingsSections` in `SettingsScreen`, hiding only feature-owned settings surfaces while keeping core appearance/language/profile/about settings available.
+2. Migrate onboarding composition incrementally; do not rewrite routing atomically.
+3. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
+4. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
+5. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
