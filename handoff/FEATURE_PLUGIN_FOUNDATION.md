@@ -5,10 +5,11 @@ Besyu now has the first executable boundary for the compile-time Feature Plugin 
 ## Implemented
 
 - `AppCapability` — domain-neutral platform/runtime capabilities a feature may declare.
-- `FeatureManifest` — stable feature identity, version, localization key, default enablement, and capabilities.
+- `AppNavigationSlot` — domain-neutral app-shell navigation surfaces a feature may contribute without importing presentation widgets.
+- `FeatureManifest` — stable feature identity, version, localization key, default enablement, capabilities, and navigation contributions.
 - `AppFeature` — minimal compile-time feature contract.
 - `FeatureEnablementStore` — application boundary for persisted per-feature enablement.
-- `FeatureRegistry` — immutable registered feature catalog plus effective enabled-feature/capability projection.
+- `FeatureRegistry` — immutable registered feature catalog plus effective enabled-feature/capability/navigation projection.
 - `HiveFeatureEnablementStore` — concrete adapter backed by the existing local `settings` Hive box.
 - `buildShippedFeatures()` — compile-time catalog for shipped Medication, Appointments, and Emergency features.
 - `featureEnablementStoreProvider` — app-DI boundary for the persistence adapter.
@@ -19,19 +20,21 @@ The app bootstrap injects `HiveFeatureEnablementStore(settingsBox)` into the pro
 
 Feature enablement writes should go through `featureRegistryProvider.notifier` rather than mutating a watched registry instance directly. The controller persists the new preference and then publishes a fresh `FeatureRegistry`, making `ref.watch(featureRegistryProvider)` reactive to enablement changes.
 
-The registry rejects blank, non-canonical, and duplicate feature IDs. Stable IDs are user-preference keys and must not be casually renamed after shipping. Manifest capability sets are defensively frozen so the registered catalog cannot mutate behind the registry.
+The registry rejects blank, non-canonical, and duplicate feature IDs. Stable IDs are user-preference keys and must not be casually renamed after shipping. Manifest capability and navigation sets are defensively frozen so the registered catalog cannot mutate behind the registry.
 
 ## Shipped manifests
 
 Current stable feature IDs and defaults:
 
 ```text
-medication    enabled by default    notifications, camera
-appointments  enabled by default    calendar
-emergency     enabled by default    phone/SMS
+medication    enabled by default    notifications, camera    today, medications
+appointments  enabled by default    calendar                 appointments
+emergency     enabled by default    phone/SMS                no bottom-nav slot yet
 ```
 
 All three remain enabled by default so introducing the registry does not change current UX. Capability declarations describe feature ownership only; they must not cause startup permission prompts. Emergency declares `phoneSms` because the shipped SOS flow already launches phone calls and SMS; this remains distinct from contacts access.
+
+Navigation slots are semantic shell contributions, not Flutter widgets. Feature manifests must not import `MaterialPageRoute`, `NavigationDestination`, screens, or other presentation types. The app shell owns the mapping from a slot such as `AppNavigationSlot.appointments` to the current presentation implementation.
 
 ## Persisted enablement
 
@@ -47,6 +50,8 @@ Riverpod app-DI + reactive controller
 manifest default + persisted user preference
     ↓
 effective enabled feature set
+    ↓
+effective capabilities + navigation slots
 ```
 
 Persisted overrides use stable keys:
@@ -67,7 +72,9 @@ The app shell may depend on the Riverpod providers and registry contracts; featu
 
 ## Next slices
 
-1. Migrate navigation/onboarding/settings composition incrementally to registry contributions; do not rewrite routing atomically.
-2. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
-3. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
-4. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
+1. Consume `enabledNavigationSlots` in `HomeScreen`, replacing hard-coded feature tab indexes with semantic destinations while keeping Settings as a core app destination.
+2. Move Emergency app-bar actions to a separate shell contribution after bottom-navigation composition is stable.
+3. Migrate onboarding/settings composition incrementally; do not rewrite routing atomically.
+4. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
+5. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
+6. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
