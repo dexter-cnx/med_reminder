@@ -10,10 +10,18 @@ final class FeatureRegistry {
     for (final feature in _features) {
       final id = feature.manifest.id.trim();
       if (id.isEmpty) {
-        throw ArgumentError.value(id, 'features', 'Feature id must not be empty.');
+        throw ArgumentError.value(
+          id,
+          'features',
+          'Feature id must not be empty.',
+        );
       }
       if (!ids.add(id)) {
-        throw ArgumentError.value(id, 'features', 'Feature ids must be unique.');
+        throw ArgumentError.value(
+          id,
+          'features',
+          'Feature ids must be unique.',
+        );
       }
     }
   }

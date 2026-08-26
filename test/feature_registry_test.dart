@@ -103,7 +103,10 @@ void main() {
     );
 
     expect(registry.isEnabled('missing'), isFalse);
-    await expectLater(registry.setEnabled('missing', true), throwsArgumentError);
+    await expectLater(
+      registry.setEnabled('missing', true),
+      throwsArgumentError,
+    );
   });
 }
 
