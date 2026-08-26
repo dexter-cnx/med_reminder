@@ -9,5 +9,6 @@ final class AppointmentFeature implements AppFeature {
     version: '1',
     displayNameKey: 'appointments',
     capabilities: const <AppCapability>{AppCapability.calendar},
+    navigationSlots: const <AppNavigationSlot>{AppNavigationSlot.appointments},
   );
 }

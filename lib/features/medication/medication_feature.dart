@@ -12,5 +12,9 @@ final class MedicationFeature implements AppFeature {
       AppCapability.notifications,
       AppCapability.camera,
     },
+    navigationSlots: const <AppNavigationSlot>{
+      AppNavigationSlot.today,
+      AppNavigationSlot.medications,
+    },
   );
 }
