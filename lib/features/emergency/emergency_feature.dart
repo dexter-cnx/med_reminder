@@ -13,5 +13,8 @@ final class EmergencyFeature implements AppFeature {
       AppShellAction.emergencySos,
       AppShellAction.emergencyMedicalCard,
     },
+    settingsSections: const <AppSettingsSection>{
+      AppSettingsSection.emergencyProfile,
+    },
   );
 }

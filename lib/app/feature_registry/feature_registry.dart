@@ -73,6 +73,11 @@ final class FeatureRegistry {
         enabledFeatures.expand((feature) => feature.manifest.shellActions),
       );
 
+  Set<AppSettingsSection> get enabledSettingsSections =>
+      Set<AppSettingsSection>.unmodifiable(
+        enabledFeatures.expand((feature) => feature.manifest.settingsSections),
+      );
+
   Future<void> setEnabled(String featureId, bool enabled) async {
     if (featureById(featureId) == null) {
       throw ArgumentError.value(featureId, 'featureId', 'Unknown feature.');

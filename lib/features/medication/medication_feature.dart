@@ -16,5 +16,8 @@ final class MedicationFeature implements AppFeature {
       AppNavigationSlot.today,
       AppNavigationSlot.medications,
     },
+    settingsSections: const <AppSettingsSection>{
+      AppSettingsSection.medicationPermissions,
+    },
   );
 }

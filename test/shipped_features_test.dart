@@ -72,4 +72,19 @@ void main() {
       AppShellAction.emergencyMedicalCard,
     });
   });
+
+  test('declares feature-owned settings sections semantically', () {
+    final byId = <String, AppFeature>{
+      for (final feature in buildShippedFeatures())
+        feature.manifest.id: feature,
+    };
+
+    expect(byId['medication']!.manifest.settingsSections, <AppSettingsSection>{
+      AppSettingsSection.medicationPermissions,
+    });
+    expect(byId['appointments']!.manifest.settingsSections, isEmpty);
+    expect(byId['emergency']!.manifest.settingsSections, <AppSettingsSection>{
+      AppSettingsSection.emergencyProfile,
+    });
+  });
 }
