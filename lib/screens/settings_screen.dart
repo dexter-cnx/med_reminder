@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../app/feature_registry/settings_composition.dart';
 import '../features/backup/presentation/widgets/reminder_repair_card.dart';
 import '../features/emergency/presentation/screens/emergency_profile_settings_screen.dart';
 import '../features/medication/application/reminder_system_trigger_coordinator.dart';
@@ -152,6 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final selectedThemeId = ref.watch(appThemeProvider);
     final themeCatalog = ref.watch(appThemeCatalogProvider);
     final selectedTheme = themeCatalog.definitionFor(selectedThemeId);
+    final composition = ref.watch(settingsCompositionProvider);
 
     final content = ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -241,52 +243,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        _SectionTitle('emergency_profile_title'.tr()),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.health_and_safety_outlined),
-            title: Text('emergency_edit_title'.tr()),
-            subtitle: Text('emergency_local_note'.tr()),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const EmergencyProfileSettingsScreen(),
+        if (composition.showEmergencyProfile) ...[
+          const SizedBox(height: 20),
+          _SectionTitle('emergency_profile_title'.tr()),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.health_and_safety_outlined),
+              title: Text('emergency_edit_title'.tr()),
+              subtitle: Text('emergency_local_note'.tr()),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const EmergencyProfileSettingsScreen(),
+                ),
               ),
             ),
           ),
-        ),
+        ],
         const SizedBox(height: 20),
         _SectionTitle('settings_permissions'.tr()),
         Card(
           child: Column(
             children: [
-              ListTile(
-                leading: const Icon(Icons.notifications_outlined),
-                title: Text('settings_notifications'.tr()),
-                subtitle: Text('settings_notifications_desc'.tr()),
-                trailing: const Icon(Icons.chevron_right),
-                enabled: !_permissionBusy,
-                onTap: _requestNotifications,
-              ),
-              if (Platform.isAndroid) ...[
-                const Divider(height: 1),
+              if (composition.showMedicationPermissions) ...[
                 ListTile(
-                  leading: const Icon(Icons.alarm_outlined),
-                  title: Text('settings_precise_reminders'.tr()),
-                  subtitle: Text('settings_precise_reminders_desc'.tr()),
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: Text('settings_notifications'.tr()),
+                  subtitle: Text('settings_notifications_desc'.tr()),
                   trailing: const Icon(Icons.chevron_right),
                   enabled: !_permissionBusy,
-                  onTap: _requestExactAlarm,
+                  onTap: _requestNotifications,
                 ),
+                if (Platform.isAndroid) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.alarm_outlined),
+                    title: Text('settings_precise_reminders'.tr()),
+                    subtitle: Text('settings_precise_reminders_desc'.tr()),
+                    trailing: const Icon(Icons.chevron_right),
+                    enabled: !_permissionBusy,
+                    onTap: _requestExactAlarm,
+                  ),
+                ],
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: Text('settings_camera_photos'.tr()),
+                  subtitle: Text('settings_camera_photos_desc'.tr()),
+                ),
+                const Divider(height: 1),
               ],
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: Text('settings_camera_photos'.tr()),
-                subtitle: Text('settings_camera_photos_desc'.tr()),
-              ),
-              const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.settings_outlined),
                 title: Text('settings_system_permissions'.tr()),
@@ -298,8 +304,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        const ReminderRepairCard(),
+        if (composition.showMedicationPermissions) ...[
+          const SizedBox(height: 20),
+          const ReminderRepairCard(),
+        ],
         const SizedBox(height: 20),
         _SectionTitle('settings_about'.tr()),
         Card(
