@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../app/feature_registry/settings_composition.dart';
+import '../features/backup/presentation/widgets/backup_export_card.dart';
 import '../features/backup/presentation/widgets/reminder_repair_card.dart';
 import '../features/emergency/presentation/screens/emergency_profile_settings_screen.dart';
 import '../features/medication/application/reminder_system_trigger_coordinator.dart';
@@ -304,6 +305,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 20),
+        const BackupExportCard(),
         if (composition.showMedicationPermissions) ...[
           const SizedBox(height: 20),
           const ReminderRepairCard(),
