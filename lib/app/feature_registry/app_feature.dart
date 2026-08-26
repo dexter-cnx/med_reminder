@@ -29,7 +29,9 @@ final class FeatureManifest {
   }) : capabilities = Set<AppCapability>.unmodifiable(capabilities),
        navigationSlots = Set<AppNavigationSlot>.unmodifiable(navigationSlots),
        shellActions = Set<AppShellAction>.unmodifiable(shellActions),
-       settingsSections = Set<AppSettingsSection>.unmodifiable(settingsSections);
+       settingsSections = Set<AppSettingsSection>.unmodifiable(
+         settingsSections,
+       );
 
   final String id;
   final String version;
