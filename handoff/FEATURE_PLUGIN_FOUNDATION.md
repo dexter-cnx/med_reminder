@@ -12,9 +12,12 @@ Besyu now has the first executable boundary for the compile-time Feature Plugin 
 - `HiveFeatureEnablementStore` — concrete adapter backed by the existing local `settings` Hive box.
 - `buildShippedFeatures()` — compile-time catalog for shipped Medication, Appointments, and Emergency features.
 - `featureEnablementStoreProvider` — app-DI boundary for the persistence adapter.
-- `featureRegistryProvider` — Riverpod entry point for the shipped registry.
+- `featureRegistryProvider` — reactive Riverpod state for the shipped registry.
+- `FeatureRegistryController` — the write path for enablement changes; successful writes publish a fresh registry state so watched navigation/capability consumers recompute immediately.
 
-The app bootstrap now injects `HiveFeatureEnablementStore(settingsBox)` into the provider scope. The registry itself remains unaware of Hive and reads the compile-time shipped catalog through `buildShippedFeatures()`.
+The app bootstrap injects `HiveFeatureEnablementStore(settingsBox)` into the provider scope. The registry itself remains unaware of Hive and reads the compile-time shipped catalog through `buildShippedFeatures()`.
+
+Feature enablement writes should go through `featureRegistryProvider.notifier` rather than mutating a watched registry instance directly. The controller persists the new preference and then publishes a fresh `FeatureRegistry`, making `ref.watch(featureRegistryProvider)` reactive to enablement changes.
 
 The registry rejects blank, non-canonical, and duplicate feature IDs. Stable IDs are user-preference keys and must not be casually renamed after shipping. Manifest capability sets are defensively frozen so the registered catalog cannot mutate behind the registry.
 
@@ -39,7 +42,7 @@ compiled into app
     ↓
 registered in FeatureRegistry
     ↓
-Riverpod app-DI boundary
+Riverpod app-DI + reactive controller
     ↓
 manifest default + persisted user preference
     ↓
