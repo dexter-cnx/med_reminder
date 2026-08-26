@@ -34,10 +34,7 @@ void main() {
 
     await store.setEnabled('appointments', true);
 
-    expect(
-      box.get(HiveFeatureEnablementStore.keyFor('appointments')),
-      isTrue,
-    );
+    expect(box.get(HiveFeatureEnablementStore.keyFor('appointments')), isTrue);
     expect(store.isEnabled('appointments', defaultValue: false), isTrue);
   });
 
