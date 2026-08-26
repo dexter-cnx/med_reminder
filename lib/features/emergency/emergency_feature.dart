@@ -8,5 +8,6 @@ final class EmergencyFeature implements AppFeature {
     id: 'emergency',
     version: '1',
     displayNameKey: 'emergency_profile_title',
+    capabilities: const <AppCapability>{AppCapability.phoneSms},
   );
 }
