@@ -8,17 +8,25 @@ final class FeatureRegistry {
        _enablementStore = enablementStore {
     final ids = <String>{};
     for (final feature in _features) {
-      final id = feature.manifest.id.trim();
-      if (id.isEmpty) {
+      final rawId = feature.manifest.id;
+      final canonicalId = rawId.trim();
+      if (canonicalId.isEmpty) {
         throw ArgumentError.value(
-          id,
+          rawId,
           'features',
           'Feature id must not be empty.',
         );
       }
-      if (!ids.add(id)) {
+      if (rawId != canonicalId) {
         throw ArgumentError.value(
-          id,
+          rawId,
+          'features',
+          'Feature id must already be canonical without surrounding whitespace.',
+        );
+      }
+      if (!ids.add(canonicalId)) {
+        throw ArgumentError.value(
+          rawId,
           'features',
           'Feature ids must be unique.',
         );
