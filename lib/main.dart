@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'app/feature_registry/feature_registry_providers.dart';
+import 'app/feature_registry/hive_feature_enablement_store.dart';
 import 'features/appointment/data/datasources/appointment_local_data_source.dart';
 import 'features/appointment/data/repositories/local_appointment_repository.dart';
 import 'features/appointment/presentation/providers/appointment_providers.dart';
@@ -144,6 +146,7 @@ class _BootstrapAppState extends State<BootstrapApp> {
       );
       const reminderScheduler = LocalMedicationReminderScheduler();
       final lowStockAlertStateStore = HiveLowStockAlertStateStore(settingsBox);
+      final featureEnablementStore = HiveFeatureEnablementStore(settingsBox);
       const photoStore = LocalMedicationPhotoStore();
       final themeController = AppThemeController(settingsBox, themeCatalog);
 
@@ -185,6 +188,9 @@ class _BootstrapAppState extends State<BootstrapApp> {
         saveLocale: false,
         child: ProviderScope(
           overrides: [
+            featureEnablementStoreProvider.overrideWithValue(
+              featureEnablementStore,
+            ),
             medicationRepositoryProvider.overrideWithValue(
               medicationRepository,
             ),
