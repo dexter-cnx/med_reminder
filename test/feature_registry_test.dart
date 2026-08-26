@@ -7,7 +7,7 @@ void main() {
     final store = _MemoryEnablementStore();
     final registry = FeatureRegistry(
       features: <AppFeature>[
-        const _Feature(
+        _Feature(
           FeatureManifest(
             id: 'medication',
             version: '1',
@@ -15,7 +15,7 @@ void main() {
             capabilities: <AppCapability>{AppCapability.notifications},
           ),
         ),
-        const _Feature(
+        _Feature(
           FeatureManifest(
             id: 'appointments',
             version: '1',
@@ -53,7 +53,7 @@ void main() {
     final store = _MemoryEnablementStore();
     final registry = FeatureRegistry(
       features: <AppFeature>[
-        const _Feature(
+        _Feature(
           FeatureManifest(
             id: 'medication',
             version: '1',
@@ -74,7 +74,7 @@ void main() {
   test('rejects duplicate stable feature ids', () {
     expect(
       () => FeatureRegistry(
-        features: const <AppFeature>[
+        features: <AppFeature>[
           _Feature(
             FeatureManifest(
               id: 'medication',
@@ -96,6 +96,42 @@ void main() {
     );
   });
 
+  test('rejects non-canonical feature ids', () {
+    expect(
+      () => FeatureRegistry(
+        features: <AppFeature>[
+          _Feature(
+            FeatureManifest(
+              id: 'medication ',
+              version: '1',
+              displayNameKey: 'feature_medication',
+            ),
+          ),
+        ],
+        enablementStore: _MemoryEnablementStore(),
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('manifest freezes caller-owned capability sets', () {
+    final capabilities = <AppCapability>{AppCapability.notifications};
+    final manifest = FeatureManifest(
+      id: 'medication',
+      version: '1',
+      displayNameKey: 'feature_medication',
+      capabilities: capabilities,
+    );
+
+    capabilities.add(AppCapability.camera);
+
+    expect(manifest.capabilities, <AppCapability>{AppCapability.notifications});
+    expect(
+      () => manifest.capabilities.add(AppCapability.calendar),
+      throwsUnsupportedError,
+    );
+  });
+
   test('unknown features are disabled and cannot be mutated', () async {
     final registry = FeatureRegistry(
       features: const <AppFeature>[],
@@ -111,7 +147,7 @@ void main() {
 }
 
 final class _Feature implements AppFeature {
-  const _Feature(this.manifest);
+  _Feature(this.manifest);
 
   @override
   final FeatureManifest manifest;
