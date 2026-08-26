@@ -27,7 +27,9 @@ Current behavior:
 - finite `MedicationMode.days` courses are projected into a 14-calendar-day rolling native scheduling window before reaching `NotificationService`;
 - in-progress finite courses restart their scheduling projection from the current calendar date while preserving the original persisted course definition;
 - future finite courses consume the days before their start from the same 14-day horizon, and courses starting outside the horizon are not scheduled yet;
-- `forever` and `untilEmpty` schedules retain their repeating-notification behavior and are not expanded into per-day future notifications.
+- `forever` and `untilEmpty` schedules retain their repeating-notification behavior and are not expanded into per-day future notifications;
+- a dedicated read-only physical-device probe can snapshot timezone, native pending notification IDs/count, and Android notification/exact-alarm capability without emitting medication names, notification content, or repository health data;
+- the physical validation matrix is documented in `handoff/REMINDER_PHYSICAL_VALIDATION.md` and is the evidence gate before introducing platform-specific global notification-budget policy.
 
 ## Reliability invariants
 
@@ -46,6 +48,8 @@ Current behavior:
 13. Calendar-day calculations must not depend on elapsed wall-clock hours, so DST transitions cannot move a finite course by one day.
 14. Foreground reminder repair has one lifecycle owner. `HomeScreen` may perform cold-launch repair after mount but must not register its own resume observer.
 15. Backup reminder rebuild must not maintain an independent scheduling algorithm; it must reuse the medication reminder transaction core so PRN and future scheduling rules cannot drift.
+16. Physical reliability diagnostics must remain read-only and metadata-only: no permission mutation, reconciliation, medication names, notification title/body/payload, or repository health data may be emitted by the probe.
+17. A global pending-notification allocator must be justified by physical iOS evidence rather than an assumed queue limit.
 
 ## Recovery model
 
@@ -53,8 +57,18 @@ Android reboot/package replacement does not start the Flutter application to per
 
 Android force-stop remains a platform limitation: alarms/notifications may be suppressed until the user launches the app again. Besyu repairs reminder state on that next launch/resume rather than claiming background recovery while force-stopped.
 
+## Physical validation
+
+Run the read-only probe on a physical device with:
+
+```bash
+flutter run -t lib/reminder_reliability_probe_main.dart -d <device-id>
+```
+
+The full reboot, package replacement, force-stop, permission, timezone, rolling-window, long-idle, and high queue-pressure procedure is maintained in `handoff/REMINDER_PHYSICAL_VALIDATION.md`.
+
 ## Next slices
 
-1. Validate reboot, force-stop recovery, timezone changes, permission transitions, rolling-window refill, and long-idle behavior on physical Android/iOS devices.
-2. Add global pending-notification budget allocation if physical iOS validation shows that per-course rolling windows can still exceed the platform queue under high medication/time counts.
-3. Add physical-validation evidence/checklists for reminder reliability before changing platform-specific scheduling policy further.
+1. Execute the physical validation matrix on Android and iOS and retain before/after JSON snapshots for each case.
+2. Add a global pending-notification budget allocator only if physical iOS evidence shows that per-course rolling windows still cause dropped or unavailable near-term reminders under high medication/time counts.
+3. If physical validation reveals platform-specific ordering or recovery gaps, repair the shared reconciliation/system-trigger path first rather than adding parallel scheduling logic.
