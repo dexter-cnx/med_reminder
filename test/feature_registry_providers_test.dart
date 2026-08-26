@@ -24,22 +24,43 @@ void main() {
         registry.enabledCapabilities,
         contains(AppCapability.notifications),
       );
-
-      await registry.setEnabled('medication', false);
-
-      expect(registry.isEnabled('medication'), isFalse);
-      expect(
-        registry.enabledCapabilities,
-        isNot(contains(AppCapability.camera)),
-      );
-      expect(
-        registry.enabledCapabilities,
-        isNot(contains(AppCapability.notifications)),
-      );
-      expect(registry.enabledCapabilities, contains(AppCapability.calendar));
-      expect(registry.enabledCapabilities, contains(AppCapability.phoneSms));
     },
   );
+
+  test('publishes enablement changes through Riverpod state', () async {
+    final store = _MemoryFeatureEnablementStore();
+    final container = ProviderContainer(
+      overrides: [featureEnablementStoreProvider.overrideWithValue(store)],
+    );
+    addTearDown(container.dispose);
+
+    final emitted = <FeatureRegistry>[];
+    final subscription = container.listen<FeatureRegistry>(
+      featureRegistryProvider,
+      (previous, next) => emitted.add(next),
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    await container
+        .read(featureRegistryProvider.notifier)
+        .setEnabled('medication', false);
+
+    final registry = container.read(featureRegistryProvider);
+    expect(registry.isEnabled('medication'), isFalse);
+    expect(
+      registry.enabledCapabilities,
+      isNot(contains(AppCapability.camera)),
+    );
+    expect(
+      registry.enabledCapabilities,
+      isNot(contains(AppCapability.notifications)),
+    );
+    expect(registry.enabledCapabilities, contains(AppCapability.calendar));
+    expect(registry.enabledCapabilities, contains(AppCapability.phoneSms));
+    expect(emitted, hasLength(2));
+    expect(emitted.last, same(registry));
+  });
 }
 
 final class _MemoryFeatureEnablementStore implements FeatureEnablementStore {
