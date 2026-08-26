@@ -18,6 +18,8 @@ Besyu now has the first executable boundary for the compile-time Feature Plugin 
 - `featureRegistryProvider` — reactive Riverpod state for the shipped registry.
 - `FeatureRegistryController` — the write path for enablement changes; successful writes publish a fresh registry state so watched shell consumers recompute immediately.
 - `HomeScreen` — consumes effective navigation slots and shell actions reactively while keeping Settings as a core app destination.
+- `settingsCompositionProvider` — derives feature-owned Settings visibility from the reactive registry.
+- `SettingsScreen` — consumes the settings composition model while preserving core settings surfaces independently from feature enablement.
 
 The app bootstrap injects `HiveFeatureEnablementStore(settingsBox)` into the provider scope. The registry itself remains unaware of Hive and reads the compile-time shipped catalog through `buildShippedFeatures()`.
 
@@ -43,7 +45,7 @@ Navigation slots, shell actions, and settings sections are semantic contribution
 
 Emergency app-bar actions now come from `enabledShellActions`. Disabling Emergency removes both SOS and the emergency medical-card shortcut reactively; re-enabling it restores them. This shell composition does not request permissions or initialize feature-specific runtime services.
 
-Settings composition now has a semantic contract ready for incremental consumption. Medication owns the medication permission/reminder settings surface and Emergency owns the emergency profile surface. The current PR only establishes the contract/projection; `SettingsScreen` consumption remains a separate focused slice so a large settings widget refactor is not mixed with manifest schema changes.
+Settings composition is now consumed reactively. Emergency owns the emergency profile section. Medication owns notification permission, Android exact-alarm permission, camera guidance, and reminder repair. Disabling Medication hides only those Medication-owned surfaces; the generic system-permissions launcher remains visible because it is a core app setting. Appearance, language, profile, system settings, and About remain available independently of feature enablement.
 
 ## Persisted enablement
 
@@ -83,8 +85,7 @@ The app shell and Settings may depend on the Riverpod providers and registry con
 
 ## Next slices
 
-1. Consume `enabledSettingsSections` in `SettingsScreen`, hiding only feature-owned settings surfaces while keeping core appearance/language/profile/about settings available.
-2. Migrate onboarding composition incrementally; do not rewrite routing atomically.
-3. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
-4. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
-5. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
+1. Migrate onboarding composition incrementally; do not rewrite routing atomically.
+2. Gate feature-specific initialization/permissions only after registry state is wired through the app shell.
+3. Add an explicit user-facing feature enablement surface only when product behavior for disabling shipped features is defined.
+4. Add opt-in manifests only when the corresponding feature is actually shipped; do not register speculative roadmap features.
