@@ -63,6 +63,11 @@ final class FeatureRegistry {
     enabledFeatures.expand((feature) => feature.manifest.capabilities),
   );
 
+  Set<AppNavigationSlot> get enabledNavigationSlots =>
+      Set<AppNavigationSlot>.unmodifiable(
+        enabledFeatures.expand((feature) => feature.manifest.navigationSlots),
+      );
+
   Future<void> setEnabled(String featureId, bool enabled) async {
     if (featureById(featureId) == null) {
       throw ArgumentError.value(featureId, 'featureId', 'Unknown feature.');
