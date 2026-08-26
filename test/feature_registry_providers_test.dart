@@ -48,10 +48,7 @@ void main() {
 
     final registry = container.read(featureRegistryProvider);
     expect(registry.isEnabled('medication'), isFalse);
-    expect(
-      registry.enabledCapabilities,
-      isNot(contains(AppCapability.camera)),
-    );
+    expect(registry.enabledCapabilities, isNot(contains(AppCapability.camera)));
     expect(
       registry.enabledCapabilities,
       isNot(contains(AppCapability.notifications)),

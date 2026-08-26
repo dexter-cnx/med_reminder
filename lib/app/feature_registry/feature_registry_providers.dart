@@ -25,10 +25,7 @@ final class FeatureRegistryController extends StateNotifier<FeatureRegistry> {
   }) : _features = List<AppFeature>.unmodifiable(features),
        _enablementStore = enablementStore,
        super(
-         FeatureRegistry(
-           features: features,
-           enablementStore: enablementStore,
-         ),
+         FeatureRegistry(features: features, enablementStore: enablementStore),
        );
 
   final List<AppFeature> _features;
