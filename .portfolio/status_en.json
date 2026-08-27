@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "title": "med_reminder",
+    "tagline": "A local-first Flutter medication reminder and personal health utility app.",
+    "status": "active",
+    "version": null
+  },
+  "summary": {
+    "short": "med_reminder is a Flutter app for medication management and reminders with a local-first data model and an expanding personal health utility roadmap.",
+    "long": "Current work includes macOS usability and cleanup, medicine data improvements, reminder workflows, privacy-conscious local-first design, and future non-caregiver health features such as opt-in period tracking."
+  },
+  "highlights": [
+    "Medication schedules and reminders",
+    "Local-first privacy model",
+    "macOS usability work",
+    "Extensible personal health feature roadmap"
+  ],
+  "tech": ["Dart", "Flutter"],
+  "links": {
+    "repository": "https://github.com/dexter-cnx/med_reminder",
+    "homepage": null,
+    "package": null,
+    "docs": null,
+    "demo": null
+  },
+  "updatedAt": "2026-08-27T00:00:00Z"
+}
