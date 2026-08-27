@@ -7,14 +7,14 @@
     "version": null
   },
   "summary": {
-    "short": "med_reminder is a Flutter app for medication management and reminders with a local-first data model and an expanding personal health utility roadmap.",
-    "long": "Current work includes macOS usability and cleanup, medicine data improvements, reminder workflows, privacy-conscious local-first design, and future non-caregiver health features such as opt-in period tracking."
+    "short": "med_reminder is a Flutter app for medication management and reminders with a local-first data model and an expanding personal health utility direction.",
+    "long": "Current work focuses on medicine data improvements, reminder workflows, and privacy-conscious local-first design. Additional personal health features are being evaluated separately; period tracking remains an unapproved proposal rather than committed roadmap scope."
   },
   "highlights": [
     "Medication schedules and reminders",
+    "Medicine data and workflow improvements",
     "Local-first privacy model",
-    "macOS usability work",
-    "Extensible personal health feature roadmap"
+    "Extensible personal health architecture"
   ],
   "tech": ["Dart", "Flutter"],
   "links": {
