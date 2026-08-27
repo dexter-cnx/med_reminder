@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "title": "med_reminder",
+    "tagline": "แอป Flutter แบบ local-first สำหรับเตือนยาและเครื่องมือดูแลสุขภาพส่วนตัว",
+    "status": "active",
+    "version": null
+  },
+  "summary": {
+    "short": "med_reminder เป็นแอป Flutter สำหรับจัดการยาและการแจ้งเตือน โดยใช้แนวทาง local-first และออกแบบให้ขยายไปสู่เครื่องมือสุขภาพส่วนตัวเพิ่มเติมได้",
+    "long": "งานปัจจุบันเน้นการปรับข้อมูลยา, flow การแจ้งเตือน และการออกแบบแบบ local-first ที่ให้ความสำคัญกับความเป็นส่วนตัว ส่วนฟีเจอร์สุขภาพเพิ่มเติมอยู่ระหว่างการประเมินแยกต่างหาก โดย period tracking ยังเป็นข้อเสนอที่ยังไม่ได้อนุมัติ ไม่ใช่ roadmap ที่ผูกมัดแล้ว"
+  },
+  "highlights": [
+    "ตารางยาและการแจ้งเตือน",
+    "ปรับปรุงข้อมูลยาและ workflow",
+    "Local-first privacy model",
+    "สถาปัตยกรรมที่ขยายไปสู่เครื่องมือสุขภาพส่วนตัวได้"
+  ],
+  "tech": ["Dart", "Flutter"],
+  "links": {
+    "repository": "https://github.com/dexter-cnx/med_reminder",
+    "homepage": null,
+    "package": null,
+    "docs": null,
+    "demo": null
+  },
+  "updatedAt": "2026-08-27T00:00:00Z"
+}
