@@ -9,6 +9,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'app/feature_registry/feature_registry_providers.dart';
 import 'app/feature_registry/hive_feature_enablement_store.dart';
+import 'app/feature_registry/onboarding_composition.dart';
 import 'features/appointment/data/datasources/appointment_local_data_source.dart';
 import 'features/appointment/data/repositories/local_appointment_repository.dart';
 import 'features/appointment/presentation/providers/appointment_providers.dart';
@@ -400,6 +401,9 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
   Widget build(BuildContext context) {
     final themeId = ref.watch(appThemeProvider);
     final themeCatalog = ref.watch(appThemeCatalogProvider);
+    final onboardingComposition = ref.watch(onboardingCompositionProvider);
+    final showMedicationPermissions =
+        onboardingComposition.showMedicationPermissions;
     return MaterialApp(
       title: 'Besyu',
       debugShowCheckedModeBanner: false,
@@ -412,10 +416,13 @@ class _BesyuAppState extends ConsumerState<BesyuApp>
           : OnboardingScreen(
               onLanguageSelected: widget.onLanguageSelected,
               onRequestNotifications: _requestNotificationPermission,
-              onRequestExactAlarm: Platform.isAndroid
+              onRequestExactAlarm:
+                  Platform.isAndroid && showMedicationPermissions
                   ? _requestExactAlarmPermission
                   : null,
-              showExactAlarmStep: Platform.isAndroid,
+              showMedicationPermissionSteps: showMedicationPermissions,
+              showExactAlarmStep:
+                  Platform.isAndroid && showMedicationPermissions,
               onComplete: _completeOnboarding,
             ),
     );
