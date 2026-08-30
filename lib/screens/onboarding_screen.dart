@@ -7,6 +7,7 @@ class OnboardingScreen extends StatefulWidget {
     required this.onComplete,
     required this.onLanguageSelected,
     this.onRequestExactAlarm,
+    this.showMedicationPermissionSteps = true,
     this.showExactAlarmStep = false,
     super.key,
   });
@@ -15,17 +16,31 @@ class OnboardingScreen extends StatefulWidget {
   final Future<bool> Function()? onRequestExactAlarm;
   final Future<void> Function() onComplete;
   final Future<void> Function(String languageCode) onLanguageSelected;
+  final bool showMedicationPermissionSteps;
   final bool showExactAlarmStep;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
+enum _OnboardingStep { welcome, notifications, preciseReminders, ready }
+
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  int _step = 0;
+  int _stepIndex = 0;
   bool _busy = false;
   bool? _notificationsGranted;
   bool? _exactAlarmGranted;
+
+  List<_OnboardingStep> get _steps => <_OnboardingStep>[
+    _OnboardingStep.welcome,
+    if (widget.showMedicationPermissionSteps) _OnboardingStep.notifications,
+    if (widget.showMedicationPermissionSteps && widget.showExactAlarmStep)
+      _OnboardingStep.preciseReminders
+    else
+      _OnboardingStep.ready,
+  ];
+
+  _OnboardingStep get _currentStep => _steps[_stepIndex];
 
   Future<void> _toggleLanguage() async {
     if (_busy) return;
@@ -81,8 +96,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  void _advance() {
+    if (_stepIndex >= _steps.length - 1) return;
+    setState(() => _stepIndex += 1);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final steps = _steps;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -102,14 +123,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List<Widget>.generate(
-                  3,
+                  steps.length,
                   (index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: index == _step ? 24 : 8,
+                    width: index == _stepIndex ? 24 : 8,
                     height: 8,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: index == _step
+                      color: index == _stepIndex
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(99),
@@ -130,13 +151,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       : Text(_primaryLabel.tr()),
                 ),
               ),
-              if (_step == 1 && _notificationsGranted != true)
+              if (_currentStep == _OnboardingStep.notifications &&
+                  _notificationsGranted != true)
                 TextButton(
-                  onPressed: _busy ? null : () => setState(() => _step = 2),
+                  onPressed: _busy ? null : _advance,
                   child: Text('onboarding_not_now'.tr()),
                 )
-              else if (_step == 2 &&
-                  widget.showExactAlarmStep &&
+              else if (_currentStep == _OnboardingStep.preciseReminders &&
                   _exactAlarmGranted != true)
                 TextButton(
                   onPressed: _busy ? null : _finish,
@@ -151,65 +172,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  String get _primaryLabel {
-    switch (_step) {
-      case 0:
-        return 'onboarding_continue';
-      case 1:
-        return _notificationsGranted == true
-            ? 'onboarding_continue'
-            : 'onboarding_enable_notifications';
-      case 2:
-        if (widget.showExactAlarmStep && _exactAlarmGranted != true) {
-          return 'onboarding_enable_precise_reminders';
-        }
-        return 'onboarding_get_started';
-      default:
-        return 'onboarding_get_started';
-    }
-  }
+  String get _primaryLabel => switch (_currentStep) {
+    _OnboardingStep.welcome => 'onboarding_continue',
+    _OnboardingStep.notifications => _notificationsGranted == true
+        ? 'onboarding_continue'
+        : 'onboarding_enable_notifications',
+    _OnboardingStep.preciseReminders => _exactAlarmGranted == true
+        ? 'onboarding_get_started'
+        : 'onboarding_enable_precise_reminders',
+    _OnboardingStep.ready => 'onboarding_get_started',
+  };
 
   Future<void> _primaryAction() async {
-    switch (_step) {
-      case 0:
-        setState(() => _step = 1);
-        return;
-      case 1:
+    switch (_currentStep) {
+      case _OnboardingStep.welcome:
+        _advance();
+      case _OnboardingStep.notifications:
         if (_notificationsGranted == true) {
-          setState(() => _step = 2);
+          _advance();
           return;
         }
         await _requestNotifications();
-        if (mounted && _notificationsGranted == true) {
-          setState(() => _step = 2);
-        }
-        return;
-      case 2:
-        if (widget.showExactAlarmStep && _exactAlarmGranted != true) {
-          await _requestExactAlarm();
-          if (!mounted) return;
-          if (_exactAlarmGranted == true) await _finish();
+        if (mounted && _notificationsGranted == true) _advance();
+      case _OnboardingStep.preciseReminders:
+        if (_exactAlarmGranted == true) {
+          await _finish();
           return;
         }
+        await _requestExactAlarm();
+        if (mounted && _exactAlarmGranted == true) await _finish();
+      case _OnboardingStep.ready:
         await _finish();
-        return;
     }
   }
 
   Widget _buildStep(BuildContext context) {
-    switch (_step) {
-      case 0:
+    switch (_currentStep) {
+      case _OnboardingStep.welcome:
         return _OnboardingPanel(
           icon: Icons.favorite_outline,
           title: 'onboarding_welcome_title'.tr(),
           body: 'onboarding_welcome_body'.tr(),
           bullets: [
             'onboarding_feature_offline'.tr(),
-            'onboarding_feature_reminders'.tr(),
-            'onboarding_feature_stock'.tr(),
+            if (widget.showMedicationPermissionSteps)
+              'onboarding_feature_reminders'.tr(),
+            if (widget.showMedicationPermissionSteps)
+              'onboarding_feature_stock'.tr(),
           ],
         );
-      case 1:
+      case _OnboardingStep.notifications:
         return _OnboardingPanel(
           icon: Icons.notifications_active_outlined,
           title: 'onboarding_notifications_title'.tr(),
@@ -220,26 +232,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ? 'onboarding_permission_enabled'.tr()
                     : 'onboarding_permission_not_enabled'.tr()),
         );
-      case 2:
-        if (widget.showExactAlarmStep) {
-          return _OnboardingPanel(
-            icon: Icons.alarm_outlined,
-            title: 'onboarding_precise_title'.tr(),
-            body: 'onboarding_precise_body'.tr(),
-            status: _exactAlarmGranted == null
-                ? 'onboarding_precise_optional'.tr()
-                : (_exactAlarmGranted!
-                      ? 'onboarding_permission_enabled'.tr()
-                      : 'onboarding_permission_not_enabled'.tr()),
-          );
-        }
+      case _OnboardingStep.preciseReminders:
+        return _OnboardingPanel(
+          icon: Icons.alarm_outlined,
+          title: 'onboarding_precise_title'.tr(),
+          body: 'onboarding_precise_body'.tr(),
+          status: _exactAlarmGranted == null
+              ? 'onboarding_precise_optional'.tr()
+              : (_exactAlarmGranted!
+                    ? 'onboarding_permission_enabled'.tr()
+                    : 'onboarding_permission_not_enabled'.tr()),
+        );
+      case _OnboardingStep.ready:
         return _OnboardingPanel(
           icon: Icons.check_circle_outline,
           title: 'onboarding_ready_title'.tr(),
           body: 'onboarding_ready_body'.tr(),
         );
-      default:
-        return const SizedBox.shrink();
     }
   }
 }
