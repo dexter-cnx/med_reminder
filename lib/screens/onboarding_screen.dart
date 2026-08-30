@@ -40,7 +40,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _OnboardingStep.ready,
   ];
 
-  _OnboardingStep get _currentStep => _steps[_stepIndex];
+  int get _effectiveStepIndex {
+    final lastIndex = _steps.length - 1;
+    return _stepIndex <= lastIndex ? _stepIndex : lastIndex;
+  }
+
+  _OnboardingStep get _currentStep => _steps[_effectiveStepIndex];
 
   Future<void> _toggleLanguage() async {
     if (_busy) return;
@@ -97,13 +102,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _advance() {
-    if (_stepIndex >= _steps.length - 1) return;
-    setState(() => _stepIndex += 1);
+    final currentIndex = _effectiveStepIndex;
+    if (currentIndex >= _steps.length - 1) return;
+    setState(() => _stepIndex = currentIndex + 1);
   }
 
   @override
   Widget build(BuildContext context) {
     final steps = _steps;
+    final effectiveStepIndex = _effectiveStepIndex;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -126,11 +133,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   steps.length,
                   (index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: index == _stepIndex ? 24 : 8,
+                    width: index == effectiveStepIndex ? 24 : 8,
                     height: 8,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: index == _stepIndex
+                      color: index == effectiveStepIndex
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(99),
@@ -187,6 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     switch (_currentStep) {
       case _OnboardingStep.welcome:
         _advance();
+        return;
       case _OnboardingStep.notifications:
         if (_notificationsGranted == true) {
           _advance();
@@ -194,6 +202,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         }
         await _requestNotifications();
         if (mounted && _notificationsGranted == true) _advance();
+        return;
       case _OnboardingStep.preciseReminders:
         if (_exactAlarmGranted == true) {
           await _finish();
@@ -201,8 +210,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         }
         await _requestExactAlarm();
         if (mounted && _exactAlarmGranted == true) await _finish();
+        return;
       case _OnboardingStep.ready:
         await _finish();
+        return;
     }
   }
 
