@@ -19,5 +19,8 @@ final class MedicationFeature implements AppFeature {
     settingsSections: const <AppSettingsSection>{
       AppSettingsSection.medicationPermissions,
     },
+    onboardingSteps: const <AppOnboardingStep>{
+      AppOnboardingStep.medicationPermissions,
+    },
   );
 }
