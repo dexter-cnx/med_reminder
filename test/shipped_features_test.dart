@@ -87,4 +87,17 @@ void main() {
       AppSettingsSection.emergencyProfile,
     });
   });
+
+  test('declares medication-owned onboarding permissions semantically', () {
+    final byId = <String, AppFeature>{
+      for (final feature in buildShippedFeatures())
+        feature.manifest.id: feature,
+    };
+
+    expect(byId['medication']!.manifest.onboardingSteps, <AppOnboardingStep>{
+      AppOnboardingStep.medicationPermissions,
+    });
+    expect(byId['appointments']!.manifest.onboardingSteps, isEmpty);
+    expect(byId['emergency']!.manifest.onboardingSteps, isEmpty);
+  });
 }
