@@ -181,12 +181,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   String get _primaryLabel => switch (_currentStep) {
     _OnboardingStep.welcome => 'onboarding_continue',
-    _OnboardingStep.notifications => _notificationsGranted == true
-        ? 'onboarding_continue'
-        : 'onboarding_enable_notifications',
-    _OnboardingStep.preciseReminders => _exactAlarmGranted == true
-        ? 'onboarding_get_started'
-        : 'onboarding_enable_precise_reminders',
+    _OnboardingStep.notifications =>
+      _notificationsGranted == true
+          ? 'onboarding_continue'
+          : 'onboarding_enable_notifications',
+    _OnboardingStep.preciseReminders =>
+      _exactAlarmGranted == true
+          ? 'onboarding_get_started'
+          : 'onboarding_enable_precise_reminders',
     _OnboardingStep.ready => 'onboarding_get_started',
   };
 
