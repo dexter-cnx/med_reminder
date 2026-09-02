@@ -15,6 +15,8 @@ enum AppShellAction { emergencySos, emergencyMedicalCard }
 
 enum AppSettingsSection { medicationPermissions, emergencyProfile }
 
+enum AppOnboardingStep { medicationPermissions }
+
 final class FeatureManifest {
   FeatureManifest({
     required this.id,
@@ -26,12 +28,14 @@ final class FeatureManifest {
     Iterable<AppShellAction> shellActions = const <AppShellAction>{},
     Iterable<AppSettingsSection> settingsSections =
         const <AppSettingsSection>{},
+    Iterable<AppOnboardingStep> onboardingSteps = const <AppOnboardingStep>{},
   }) : capabilities = Set<AppCapability>.unmodifiable(capabilities),
        navigationSlots = Set<AppNavigationSlot>.unmodifiable(navigationSlots),
        shellActions = Set<AppShellAction>.unmodifiable(shellActions),
        settingsSections = Set<AppSettingsSection>.unmodifiable(
          settingsSections,
-       );
+       ),
+       onboardingSteps = Set<AppOnboardingStep>.unmodifiable(onboardingSteps);
 
   final String id;
   final String version;
@@ -41,6 +45,7 @@ final class FeatureManifest {
   final Set<AppNavigationSlot> navigationSlots;
   final Set<AppShellAction> shellActions;
   final Set<AppSettingsSection> settingsSections;
+  final Set<AppOnboardingStep> onboardingSteps;
 }
 
 abstract interface class AppFeature {

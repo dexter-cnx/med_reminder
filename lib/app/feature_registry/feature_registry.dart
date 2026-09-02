@@ -78,6 +78,11 @@ final class FeatureRegistry {
         enabledFeatures.expand((feature) => feature.manifest.settingsSections),
       );
 
+  Set<AppOnboardingStep> get enabledOnboardingSteps =>
+      Set<AppOnboardingStep>.unmodifiable(
+        enabledFeatures.expand((feature) => feature.manifest.onboardingSteps),
+      );
+
   Future<void> setEnabled(String featureId, bool enabled) async {
     if (featureById(featureId) == null) {
       throw ArgumentError.value(featureId, 'featureId', 'Unknown feature.');
