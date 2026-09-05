@@ -67,6 +67,34 @@ Do not expand the first theme milestone into an unrestricted theme editor. Custo
 
 These items are documented for future evaluation but are **not approved for implementation and are not committed roadmap scope**.
 
+### Daily Assistant / Life Reminder Foundation
+
+Status: **Product direction documented; implementation priority pending**.
+
+Potential direction:
+
+- Add a cross-feature **Today / Daily Heads-up** aggregation surface rather than letting new domains become isolated feature silos.
+- Add **Universal Quick Capture** so users can enter reminders/tasks/dates in natural language and confirm the parsed structured intent before saving.
+- Replace single-reminder assumptions with a reusable **multi-trigger reminder model** supporting multiple offsets for one item.
+- Add a first-class **recurrence rule** model, explicitly distinguishing fixed schedules from "next occurrence after completion" schedules.
+- Model checklists as structured items with completion state/timestamps instead of only markdown/free text.
+- Add an **Expirable** capability for medication/documents/licenses/passports/insurance and other user-defined expiry dates.
+- Prefer shared capabilities such as `Remindable`, `Schedulable`, `Repeatable`, `Completable`, and `Expirable`; do not force every domain into `Task` or `Medication`.
+- Keep deterministic parsing local and fast; any future on-device LLM/Gemma layer must be optional and validated before persistence/scheduling.
+- Preserve local-first/privacy rules: reminder text, free-text notes, exact medication/cycle/expiry data must not be sent to analytics by default.
+- Keep Workspace/shared lists/family/caregiver collaboration deferred because they require accounts, sync, roles, conflict resolution, and additional privacy boundaries.
+
+Suggested order:
+
+1. P0 — reminder/recurrence/checklist/expiry foundation.
+2. P1 — Today / Daily Heads-up + Universal Quick Capture + deterministic parser + confirmation preview.
+3. P2 — optional on-device intent parsing and suggestion/ranking intelligence.
+4. Later — shared lists, workspace, family/caregiver.
+
+Highest-value initial slice: **Today / Daily Heads-up + Universal Quick Capture + multi-trigger/recurring Reminder Engine**.
+
+Detailed architecture, privacy notes, examples, and quality gates: `docs/DAILY_ASSISTANT_PROPOSAL.md`.
+
 ### Cycle Tracking / Period Log
 
 Status: **Awaiting product decision**.
